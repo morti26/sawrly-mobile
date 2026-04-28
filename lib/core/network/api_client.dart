@@ -3,7 +3,7 @@ import '../auth/token_storage.dart';
 
 class ApiClient {
   // Use local network IP for real device, 10.0.2.2 for Android Emulator
-  static const String baseUrl = 'https://ph.sitely24.com/api';
+  static const String baseUrl = 'https://sawrly.com/api';
 
   final Dio _dio;
   final TokenStorage _tokenStorage;
