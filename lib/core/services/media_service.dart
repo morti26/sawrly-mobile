@@ -140,8 +140,15 @@ class MediaService {
       });
 
       // Using the new generic /api/upload endpoint
-      final res = await _apiClient.client
-          .post('/upload', queryParameters: {'subDir': subDir}, data: formData);
+      final res = await _apiClient.client.post(
+        '/upload',
+        queryParameters: {'subDir': subDir},
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 5),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = res.data;
@@ -266,10 +273,9 @@ class MediaService {
       mediaItems.add({'url': url, 'type': 'video'});
     }
 
-    final imageUrl =
-        mediaItems.firstWhere((e) => e['type'] == 'image', orElse: () => {})
-            ['url']
-            ?.toString();
+    final imageUrl = mediaItems
+        .firstWhere((e) => e['type'] == 'image', orElse: () => {})['url']
+        ?.toString();
 
     try {
       await _apiClient.client.post('/offers', data: {

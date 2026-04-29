@@ -31,9 +31,12 @@ class CreatorStatus {
     if (raw == null || raw.trim().isEmpty) return '';
     final value = raw.trim();
     if (value.startsWith('/')) {
-      return "https://ph.sitely24.com$value";
+      return "https://sawrly.com$value";
     }
     if (value.startsWith('http://ph.sitely24.com')) {
+      return value.replaceFirst('http://ph.sitely24.com', 'https://sawrly.com');
+    }
+    if (value.startsWith('http://sawrly.com')) {
       return value.replaceFirst('http://', 'https://');
     }
     return value;
