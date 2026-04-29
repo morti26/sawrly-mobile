@@ -187,7 +187,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
                 (avatarUrl != null && avatarUrl.toString().isNotEmpty)
                     ? NetworkImage(
                         avatarUrl.startsWith('/')
-                            ? 'https://ph.sitely24.com$avatarUrl'
+                            ? 'https://sawrly.com$avatarUrl'
                             : avatarUrl,
                       )
                     : null,
@@ -248,7 +248,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
         String? imgSrc;
         if (imageUrl != null && imageUrl.toString().isNotEmpty) {
           imgSrc = imageUrl.startsWith('/')
-              ? 'https://ph.sitely24.com$imageUrl'
+              ? 'https://sawrly.com$imageUrl'
               : imageUrl;
         }
 

@@ -16,17 +16,61 @@ class OfferDetailsScreen extends StatefulWidget {
 class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   VideoPlayerController? _videoController;
   Future<void>? _videoInitFuture;
-  late final String _mediaUrl;
-  late final bool _isVideo;
+  late final List<OfferMediaItem> _mediaItems;
+  int _activeIndex = 0;
+  String _activeUrl = '';
+  bool _activeIsVideo = false;
 
   @override
   void initState() {
     super.initState();
-    _mediaUrl = _normalizeMediaUrl(widget.offer.imageUrl);
-    _isVideo = _isVideoUrl(_mediaUrl);
+    if (widget.offer.mediaItems.isNotEmpty) {
+      _mediaItems = widget.offer.mediaItems;
+    } else if (widget.offer.imageUrl.trim().isNotEmpty) {
+      final url = widget.offer.imageUrl.trim();
+      _mediaItems = [
+        OfferMediaItem(url: url, type: _isVideoUrl(url) ? 'video' : 'image'),
+      ];
+    } else {
+      _mediaItems = const [];
+    }
+    _setActiveMedia(0);
+  }
 
-    if (_isVideo && _mediaUrl.isNotEmpty) {
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(_mediaUrl))
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  void _setActiveMedia(int index) {
+    if (_mediaItems.isEmpty) {
+      setState(() {
+        _activeIndex = 0;
+        _activeUrl = '';
+        _activeIsVideo = false;
+      });
+      return;
+    }
+
+    final boundedIndex = index.clamp(0, _mediaItems.length - 1);
+    final rawUrl = _mediaItems[boundedIndex].url;
+    final url = _normalizeMediaUrl(rawUrl);
+    final isVideo =
+        _isVideoUrl(url) || _mediaItems[boundedIndex].type == 'video';
+
+    _videoController?.dispose();
+    _videoController = null;
+    _videoInitFuture = null;
+
+    setState(() {
+      _activeIndex = boundedIndex;
+      _activeUrl = url;
+      _activeIsVideo = isVideo;
+    });
+
+    if (isVideo && url.isNotEmpty) {
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(url))
         ..setLooping(true);
       _videoInitFuture = _videoController!.initialize().then((_) {
         if (mounted) {
@@ -37,22 +81,18 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _videoController?.dispose();
-    super.dispose();
-  }
-
   String _normalizeMediaUrl(String raw) {
     if (raw.trim().isEmpty) return '';
     String url = raw.trim();
     if (url.startsWith('/')) {
-      url = 'https://ph.sitely24.com$url';
+      url = 'https://sawrly.com$url';
     } else if (url.startsWith('http://10.0.2.2:') ||
         url.startsWith('http://localhost:')) {
-      url = url.replaceFirst(RegExp(r'http://(10\.0\.2\.2|localhost):\d+'),
-          'https://ph.sitely24.com');
+      url = url.replaceFirst(
+          RegExp(r'http://(10\.0\.2\.2|localhost):\d+'), 'https://sawrly.com');
     } else if (url.startsWith('http://ph.sitely24.com')) {
+      url = url.replaceFirst('http://ph.sitely24.com', 'https://sawrly.com');
+    } else if (url.startsWith('http://sawrly.com')) {
       url = url.replaceFirst('http://', 'https://');
     }
 
@@ -73,8 +113,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
         .any((ext) => lower.contains('$ext?') || lower.endsWith(ext));
   }
 
-  Widget _buildMedia() {
-    if (_mediaUrl.isEmpty) {
+  Widget _buildMediaFor(int index) {
+    if (_mediaItems.isEmpty) {
       return Container(
         color: Colors.grey.shade200,
         alignment: Alignment.center,
@@ -82,7 +122,27 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
       );
     }
 
-    if (_isVideo) {
+    final item = _mediaItems[index];
+    final url = _normalizeMediaUrl(item.url);
+    final isVideo = item.type == 'video' || _isVideoUrl(url);
+
+    if (url.isEmpty) {
+      return Container(
+        color: Colors.grey.shade200,
+        alignment: Alignment.center,
+        child: const Icon(Icons.image_not_supported, size: 48),
+      );
+    }
+
+    if (isVideo) {
+      if (index != _activeIndex) {
+        return Container(
+          color: Colors.black,
+          alignment: Alignment.center,
+          child:
+              const Icon(Icons.videocam_rounded, color: Colors.white, size: 56),
+        );
+      }
       return FutureBuilder<void>(
         future: _videoInitFuture,
         builder: (context, snapshot) {
@@ -109,7 +169,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     }
 
     return Image.network(
-      _mediaUrl,
+      url,
       fit: BoxFit.cover,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
@@ -145,8 +205,35 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
           children: [
             AspectRatio(
               aspectRatio: 16 / 10,
-              child: _buildMedia(),
+              child: _mediaItems.length <= 1
+                  ? _buildMediaFor(_activeIndex)
+                  : PageView.builder(
+                      itemCount: _mediaItems.length,
+                      onPageChanged: _setActiveMedia,
+                      itemBuilder: (_, index) => _buildMediaFor(index),
+                    ),
             ),
+            if (_mediaItems.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _mediaItems.length,
+                    (index) => Container(
+                      width: 8,
+                      height: 8,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: index == _activeIndex
+                            ? Colors.black
+                            : Colors.black26,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(

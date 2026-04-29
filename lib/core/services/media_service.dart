@@ -100,9 +100,12 @@ class MediaService {
   }
 
   String _normalizePublicUrl(String url) {
-    if (url.startsWith('/')) return 'https://ph.sitely24.com$url';
-    if (url.startsWith('http://ph.sitely24.com')) {
+    if (url.startsWith('/')) return 'https://sawrly.com$url';
+    if (url.startsWith('http://sawrly.com')) {
       return url.replaceFirst('http://', 'https://');
+    }
+    if (url.startsWith('http://ph.sitely24.com')) {
+      return url.replaceFirst('http://ph.sitely24.com', 'https://sawrly.com');
     }
     return url;
   }
@@ -120,7 +123,7 @@ class MediaService {
   }
 
   // Generic upload returning URL (for ephemeral use like Status)
-  Future<String?> uploadFile(File file) async {
+  Future<String?> uploadFile(File file, {String subDir = 'status'}) async {
     _lastUploadError = null;
     try {
       String fileName = file.path.split(Platform.pathSeparator).last;
@@ -137,7 +140,8 @@ class MediaService {
       });
 
       // Using the new generic /api/upload endpoint
-      final res = await _apiClient.client.post('/upload', data: formData);
+      final res = await _apiClient.client
+          .post('/upload', queryParameters: {'subDir': subDir}, data: formData);
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = res.data;
@@ -239,23 +243,41 @@ class MediaService {
     String title,
     String description,
     double price,
-    File? image, {
+    List<File> images,
+    File? video, {
     int? discountPercent,
     double? originalPrice,
   }) async {
     _lastUploadError = null;
-    String? imageUrl;
-    if (image != null) {
-      imageUrl = await uploadFile(image);
-      if (imageUrl == null) return _lastUploadError ?? "فشل رفع الوسائط";
+
+    if (images.length > 3) {
+      return "يمكنك رفع 3 صور كحد أقصى";
     }
+    final mediaItems = <Map<String, dynamic>>[];
+
+    for (final image in images) {
+      final url = await uploadFile(image, subDir: 'offers');
+      if (url == null) return _lastUploadError ?? "فشل رفع الوسائط";
+      mediaItems.add({'url': url, 'type': 'image'});
+    }
+    if (video != null) {
+      final url = await uploadFile(video, subDir: 'offers');
+      if (url == null) return _lastUploadError ?? "فشل رفع الوسائط";
+      mediaItems.add({'url': url, 'type': 'video'});
+    }
+
+    final imageUrl =
+        mediaItems.firstWhere((e) => e['type'] == 'image', orElse: () => {})
+            ['url']
+            ?.toString();
 
     try {
       await _apiClient.client.post('/offers', data: {
         'title': title,
         'description': description,
         'priceIqd': price > 0 ? price : 0.0,
-        'imageUrl': imageUrl,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+        if (mediaItems.isNotEmpty) 'mediaItems': mediaItems,
         if (discountPercent != null) 'discountPercent': discountPercent,
         if (originalPrice != null) 'originalPriceIqd': originalPrice,
       });
@@ -558,15 +580,32 @@ class MediaService {
     String? title,
     String? description,
     double? price,
-    File? image,
+    List<File>? images,
+    File? video,
     int? discountPercent,
     double? originalPrice,
   }) async {
     _lastUploadError = null;
+    List<Map<String, dynamic>>? mediaItems;
     String? imageUrl;
-    if (image != null) {
-      imageUrl = await uploadFile(image);
-      if (imageUrl == null) return _lastUploadError ?? "فشل رفع الصورة";
+    if (images != null || video != null) {
+      if ((images?.length ?? 0) > 3) {
+        return "يمكنك رفع 3 صور كحد أقصى";
+      }
+      mediaItems = <Map<String, dynamic>>[];
+      for (final image in images ?? const <File>[]) {
+        final url = await uploadFile(image, subDir: 'offers');
+        if (url == null) return _lastUploadError ?? "فشل رفع الوسائط";
+        mediaItems.add({'url': url, 'type': 'image'});
+      }
+      if (video != null) {
+        final url = await uploadFile(video, subDir: 'offers');
+        if (url == null) return _lastUploadError ?? "فشل رفع الوسائط";
+        mediaItems.add({'url': url, 'type': 'video'});
+      }
+      imageUrl = mediaItems
+          .firstWhere((e) => e['type'] == 'image', orElse: () => {})['url']
+          ?.toString();
     }
 
     try {
@@ -576,6 +615,7 @@ class MediaService {
         if (description != null) 'description': description,
         if (price != null) 'priceIqd': price,
         if (imageUrl != null) 'imageUrl': imageUrl,
+        if (mediaItems != null) 'mediaItems': mediaItems,
         if (discountPercent != null) 'discountPercent': discountPercent,
         if (originalPrice != null) 'originalPriceIqd': originalPrice,
       });
@@ -593,6 +633,7 @@ class MediaService {
           if (description != null) 'description': description,
           if (price != null) 'priceIqd': price,
           if (imageUrl != null) 'imageUrl': imageUrl,
+          if (mediaItems != null) 'mediaItems': mediaItems,
           if (discountPercent != null) 'discountPercent': discountPercent,
           if (originalPrice != null) 'originalPriceIqd': originalPrice,
         });

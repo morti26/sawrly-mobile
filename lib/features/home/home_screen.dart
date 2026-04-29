@@ -141,9 +141,12 @@ class _HomeScreenState extends State<HomeScreen> {
               final offer = Offer.fromJson(e);
               String img = offer.imageUrl.trim();
               if (img.startsWith('/')) {
-                img = 'https://ph.sitely24.com$img';
-              } else if (img.startsWith('http://ph.sitely24.com')) {
+                img = 'https://sawrly.com$img';
+              } else if (img.startsWith('http://sawrly.com')) {
                 img = img.replaceFirst('http://', 'https://');
+              } else if (img.startsWith('http://ph.sitely24.com')) {
+                img = img.replaceFirst(
+                    'http://ph.sitely24.com', 'https://sawrly.com');
               } else if (img.isEmpty) {
                 img = 'https://via.placeholder.com/300';
               }
@@ -182,9 +185,12 @@ class _HomeScreenState extends State<HomeScreen> {
               final offer = Offer.fromJson(e);
               String img = offer.imageUrl.trim();
               if (img.startsWith('/')) {
-                img = 'https://ph.sitely24.com$img';
-              } else if (img.startsWith('http://ph.sitely24.com')) {
+                img = 'https://sawrly.com$img';
+              } else if (img.startsWith('http://sawrly.com')) {
                 img = img.replaceFirst('http://', 'https://');
+              } else if (img.startsWith('http://ph.sitely24.com')) {
+                img = img.replaceFirst(
+                    'http://ph.sitely24.com', 'https://sawrly.com');
               } else if (img.isEmpty) {
                 img = 'https://via.placeholder.com/300';
               }
@@ -234,14 +240,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Normalize media URL for real mobile devices
                 String img = offer.imageUrl.trim();
                 if (img.startsWith("/")) {
-                  img = "https://ph.sitely24.com$img";
+                  img = "https://sawrly.com$img";
                 } else if (img.startsWith("http://10.0.2.2:3000")) {
                   img = img.replaceFirst(
-                      "http://10.0.2.2:3000", "https://ph.sitely24.com");
+                      "http://10.0.2.2:3000", "https://sawrly.com");
                 } else if (img.startsWith("http://localhost:3000")) {
                   img = img.replaceFirst(
-                      "http://localhost:3000", "https://ph.sitely24.com");
+                      "http://localhost:3000", "https://sawrly.com");
                 } else if (img.startsWith("http://ph.sitely24.com")) {
+                  img = img.replaceFirst(
+                      "http://ph.sitely24.com", "https://sawrly.com");
+                } else if (img.startsWith("http://sawrly.com")) {
                   img = img.replaceFirst("http://", "https://");
                 } else if (img.isEmpty) {
                   img = "https://via.placeholder.com/300";
@@ -591,7 +600,7 @@ class _HomeScreenState extends State<HomeScreen> {
         currentUser?.avatarUrl == null || currentUser!.avatarUrl!.trim().isEmpty
             ? "https://picsum.photos/seed/avatar/200/200"
             : (currentUser.avatarUrl!.startsWith('/')
-                ? "https://ph.sitely24.com${currentUser.avatarUrl}"
+                ? "https://sawrly.com${currentUser.avatarUrl}"
                 : currentUser.avatarUrl!);
     CreatorStatus? myStatus;
     final Map<String, Offer> discountOfferMap = <String, Offer>{};

@@ -1,9 +1,28 @@
+class OfferMediaItem {
+  final String url;
+  final String type;
+
+  const OfferMediaItem({required this.url, required this.type});
+
+  bool get isVideo => type == 'video';
+
+  factory OfferMediaItem.fromJson(dynamic json) {
+    if (json is Map) {
+      final url = json['url']?.toString() ?? '';
+      final type = json['type']?.toString() ?? '';
+      return OfferMediaItem(url: url, type: type);
+    }
+    return const OfferMediaItem(url: '', type: '');
+  }
+}
+
 class Offer {
   final String id;
   final String title;
   final String description;
   final double price; // Current price in IQD (after discount if any)
   final String imageUrl;
+  final List<OfferMediaItem> mediaItems;
   final bool isPopular;
   final bool hasDiscount;
   final int discountPercent; // 0-100
@@ -17,6 +36,7 @@ class Offer {
     required this.description,
     required this.price,
     required this.imageUrl,
+    this.mediaItems = const [],
     this.isPopular = false,
     this.hasDiscount = false,
     this.discountPercent = 0,
@@ -24,6 +44,17 @@ class Offer {
     this.likeCount = 0,
     this.orderCount = 0,
   });
+
+  String get primaryMediaUrl {
+    if (mediaItems.isNotEmpty) {
+      final firstImage = mediaItems.firstWhere(
+        (item) => !item.isVideo && item.url.trim().isNotEmpty,
+        orElse: () => mediaItems.first,
+      );
+      if (firstImage.url.trim().isNotEmpty) return firstImage.url;
+    }
+    return imageUrl;
+  }
 
   String get displayDescription {
     if (description.trim().isEmpty) return '';
@@ -72,12 +103,36 @@ class Offer {
     final originalPrice =
         originalRaw == null ? null : _parseDouble(originalRaw);
 
+    final parsedMediaItems = <OfferMediaItem>[];
+    final rawMediaItems = json['media_items'];
+    if (rawMediaItems is List) {
+      for (final item in rawMediaItems) {
+        final parsed = OfferMediaItem.fromJson(item);
+        if (parsed.url.trim().isNotEmpty) {
+          parsedMediaItems.add(parsed);
+        }
+      }
+    }
+
+    final legacyImageUrl = (json['image_url'] ?? '').toString();
+    String effectiveImageUrl = legacyImageUrl;
+    if (parsedMediaItems.isNotEmpty) {
+      final firstImage = parsedMediaItems.firstWhere(
+        (item) => !item.isVideo && item.url.trim().isNotEmpty,
+        orElse: () => parsedMediaItems.first,
+      );
+      if (firstImage.url.trim().isNotEmpty) {
+        effectiveImageUrl = firstImage.url;
+      }
+    }
+
     return Offer(
       id: json['id']?.toString() ?? '',
       title: json['title'] ?? '',
       description: rawDescription,
       price: _parseDouble(json['price_iqd']),
-      imageUrl: json['image_url'] ?? '',
+      imageUrl: effectiveImageUrl,
+      mediaItems: parsedMediaItems,
       discountPercent: discount,
       originalPrice: originalPrice,
       hasDiscount: discount > 0,

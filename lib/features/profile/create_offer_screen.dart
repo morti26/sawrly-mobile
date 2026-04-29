@@ -27,8 +27,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   final List<String> _discounts =
       List<String>.generate(20, (index) => "${(index + 1) * 5}%");
 
-  File? _selectedImage;
-  bool _selectedMediaIsVideo = false;
+  final List<File> _selectedImages = [];
+  File? _selectedVideo;
+  List<dynamic>? _initialMediaItems;
   String? _initialImageUrl;
 
   @override
@@ -41,6 +42,18 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     _priceController = TextEditingController(
         text: widget.initialItem?['price_iqd']?.toString());
     _initialImageUrl = widget.initialItem?['image_url'];
+    final rawMediaItems = widget.initialItem?['media_items'];
+    if (rawMediaItems is List) {
+      _initialMediaItems = rawMediaItems;
+    } else if (_initialImageUrl != null &&
+        _initialImageUrl!.trim().isNotEmpty) {
+      _initialMediaItems = [
+        {
+          'url': _initialImageUrl,
+          'type': _isVideoUrl(_initialImageUrl) ? 'video' : 'image'
+        }
+      ];
+    }
     final initialDiscount = widget.initialItem?['discount_percent'];
     if (initialDiscount is num && initialDiscount > 0) {
       _discountPercentage = "${initialDiscount.toInt()}%";
@@ -55,7 +68,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickMedia() async {
     final selection = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -79,13 +92,30 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     if (!mounted || selection == null) return;
 
     final mediaService = context.read<MediaService>();
-    final file = selection == "video"
-        ? await mediaService.pickVideo()
-        : await mediaService.pickImage();
+    if (selection == "video") {
+      if (_selectedVideo != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("يمكنك رفع فيديو واحد فقط")));
+        return;
+      }
+      final file = await mediaService.pickVideo();
+      if (file != null) {
+        setState(() {
+          _selectedVideo = file;
+        });
+      }
+      return;
+    }
+
+    if (_selectedImages.length >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("يمكنك رفع 3 صور كحد أقصى")));
+      return;
+    }
+    final file = await mediaService.pickImage();
     if (file != null) {
       setState(() {
-        _selectedImage = file;
-        _selectedMediaIsVideo = selection == "video";
+        _selectedImages.add(file);
       });
     }
   }
@@ -136,8 +166,6 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isEditing = widget.initialItem != null;
-    final bool hasVideoPreview = _selectedMediaIsVideo ||
-        (_selectedImage == null && _isVideoUrl(_initialImageUrl));
 
     return Scaffold(
       backgroundColor: const Color(0xFF161921),
@@ -231,58 +259,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
             const SizedBox(height: 20),
 
             // Media Upload Section
-            InkWell(
-              onTap: _pickImage,
-              child: Container(
-                height: 150,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey[400]!),
-                  image: hasVideoPreview
-                      ? null
-                      : _selectedImage != null
-                          ? DecorationImage(
-                              image: FileImage(_selectedImage!),
-                              fit: BoxFit.cover)
-                          : (_initialImageUrl != null
-                              ? DecorationImage(
-                                  image: NetworkImage(_initialImageUrl!
-                                          .startsWith('/')
-                                      ? "https://ph.sitely24.com$_initialImageUrl"
-                                      : _initialImageUrl!),
-                                  fit: BoxFit.cover)
-                              : null),
-                ),
-                child: _selectedImage == null && _initialImageUrl == null
-                    ? const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.perm_media, size: 40, color: Colors.grey),
-                          SizedBox(height: 8),
-                          Text("اضافة صورة أو فيديو",
-                              style: TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.bold)),
-                        ],
-                      )
-                    : hasVideoPreview
-                        ? const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.videocam_rounded,
-                                  size: 40, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text("تم اختيار فيديو",
-                                  style: TextStyle(
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.bold)),
-                            ],
-                          )
-                        : null,
-              ),
-            ),
+            _buildMediaPicker(),
             const SizedBox(height: 20),
 
             // 4. Discount Dropdown
@@ -375,6 +352,163 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     );
   }
 
+  Widget _buildMediaPicker() {
+    final selectedTiles = <Widget>[];
+    for (int i = 0; i < _selectedImages.length; i++) {
+      selectedTiles.add(_buildLocalImageTile(_selectedImages[i], i));
+    }
+    if (_selectedVideo != null) {
+      selectedTiles.add(_buildLocalVideoTile());
+    }
+
+    final initialTiles = <Widget>[];
+    if (selectedTiles.isEmpty && (_initialMediaItems?.isNotEmpty ?? false)) {
+      for (final item in _initialMediaItems!) {
+        if (item is! Map) continue;
+        final rawUrl = item['url']?.toString() ?? '';
+        if (rawUrl.trim().isEmpty) continue;
+        final isVideo =
+            (item['type']?.toString() == 'video') || _isVideoUrl(rawUrl);
+        initialTiles.add(_buildRemoteTile(rawUrl, isVideo));
+      }
+    }
+
+    final tiles = selectedTiles.isNotEmpty ? selectedTiles : initialTiles;
+
+    tiles.add(_buildAddTile());
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[400]!),
+      ),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        alignment: WrapAlignment.end,
+        children: tiles,
+      ),
+    );
+  }
+
+  Widget _buildTileFrame({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(width: 110, height: 80, child: child),
+    );
+  }
+
+  Widget _buildLocalImageTile(File file, int index) {
+    return Stack(
+      children: [
+        _buildTileFrame(
+          child: Image.file(file, fit: BoxFit.cover),
+        ),
+        Positioned(
+          top: 4,
+          left: 4,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selectedImages.removeAt(index);
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.close, size: 16, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocalVideoTile() {
+    return Stack(
+      children: [
+        _buildTileFrame(
+          child: Container(
+            color: Colors.black87,
+            child: const Center(
+              child:
+                  Icon(Icons.videocam_rounded, color: Colors.white, size: 30),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          left: 4,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selectedVideo = null;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.close, size: 16, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRemoteTile(String rawUrl, bool isVideo) {
+    final url = rawUrl.startsWith('/') ? "https://sawrly.com$rawUrl" : rawUrl;
+    if (isVideo) {
+      return _buildTileFrame(
+        child: Container(
+          color: Colors.black87,
+          child: const Center(
+            child: Icon(Icons.videocam_rounded, color: Colors.white, size: 30),
+          ),
+        ),
+      );
+    }
+    return _buildTileFrame(
+      child: Image.network(url, fit: BoxFit.cover),
+    );
+  }
+
+  Widget _buildAddTile() {
+    final canAddImage = _selectedImages.length < 3;
+    final canAddVideo = _selectedVideo == null;
+    final enabled = canAddImage || canAddVideo;
+    return InkWell(
+      onTap: enabled ? _pickMedia : null,
+      child: _buildTileFrame(
+        child: Container(
+          color: enabled ? Colors.grey[200] : Colors.grey[300],
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.add, color: Colors.black54),
+                SizedBox(height: 4),
+                Text(
+                  "اضافة",
+                  style: TextStyle(color: Colors.black54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _publishOffer() async {
     if (_titleController.text.isEmpty) {
       ScaffoldMessenger.of(context)
@@ -411,7 +545,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           title: _titleController.text,
           description: description,
           price: finalPrice,
-          image: _selectedImage,
+          images: _selectedImages.isNotEmpty
+              ? List<File>.from(_selectedImages)
+              : null,
+          video: _selectedVideo,
           discountPercent: discountPercent,
           originalPrice: originalPrice,
         );
@@ -420,7 +557,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           _titleController.text,
           description,
           finalPrice,
-          _selectedImage,
+          List<File>.from(_selectedImages),
+          _selectedVideo,
           discountPercent: discountPercent,
           originalPrice: originalPrice,
         );
