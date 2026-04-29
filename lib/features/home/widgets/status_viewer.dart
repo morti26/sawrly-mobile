@@ -6,9 +6,14 @@ import '../../../core/services/status_service.dart';
 import '../../../models/creator_status.dart';
 
 class StatusViewer extends StatefulWidget {
-  final CreatorStatus status;
+  final List<CreatorStatus> statuses;
+  final int initialIndex;
 
-  const StatusViewer({super.key, required this.status});
+  const StatusViewer({
+    super.key,
+    required this.statuses,
+    this.initialIndex = 0,
+  });
 
   @override
   State<StatusViewer> createState() => _StatusViewerState();
@@ -16,28 +21,19 @@ class StatusViewer extends StatefulWidget {
 
 class _StatusViewerState extends State<StatusViewer> {
   VideoPlayerController? _controller;
-  bool _isInitialized = false;
+  Future<void>? _videoInitFuture;
   bool _isLikeLoading = false;
+  late int _index;
   late int _likeCount;
   late bool _likedByMe;
+
+  CreatorStatus get _status => widget.statuses[_index];
 
   @override
   void initState() {
     super.initState();
-    _likeCount = widget.status.likeCount;
-    _likedByMe = widget.status.likedByMe;
-
-    if (widget.status.mediaType == 'video') {
-       final url = widget.status.imageUrl ?? "";
-       if (url.isNotEmpty) {
-         _controller = VideoPlayerController.networkUrl(Uri.parse(url))
-           ..initialize().then((_) {
-             setState(() => _isInitialized = true);
-             _controller?.play();
-             _controller?.setLooping(true);
-           });
-       }
-    }
+    _index = widget.initialIndex.clamp(0, widget.statuses.length - 1);
+    _loadForIndex(_index);
   }
 
   @override
@@ -46,10 +42,51 @@ class _StatusViewerState extends State<StatusViewer> {
     super.dispose();
   }
 
+  void _loadForIndex(int index) {
+    _controller?.dispose();
+    _controller = null;
+    _videoInitFuture = null;
+
+    _likeCount = widget.statuses[index].likeCount;
+    _likedByMe = widget.statuses[index].likedByMe;
+
+    final status = widget.statuses[index];
+    if (status.mediaType == 'video') {
+      final url = status.imageUrl ?? '';
+      if (url.isNotEmpty) {
+        final controller = VideoPlayerController.networkUrl(Uri.parse(url))
+          ..setLooping(true);
+        _controller = controller;
+        _videoInitFuture = controller.initialize().then((_) {
+          if (!mounted) return;
+          controller.play();
+          setState(() {});
+        });
+      }
+    }
+
+    setState(() {
+      _index = index;
+    });
+  }
+
+  void _goNext() {
+    if (_index >= widget.statuses.length - 1) {
+      Navigator.pop(context);
+      return;
+    }
+    _loadForIndex(_index + 1);
+  }
+
+  void _goPrev() {
+    if (_index <= 0) return;
+    _loadForIndex(_index - 1);
+  }
+
   Future<void> _toggleLike() async {
     final currentUser = context.read<AuthService>().currentUser;
     final canLike = currentUser != null &&
-        currentUser.id.trim() != widget.status.creatorId.trim();
+        currentUser.id.trim() != _status.creatorId.trim();
     if (!canLike || _isLikeLoading) return;
 
     final bool nextLiked = !_likedByMe;
@@ -57,7 +94,7 @@ class _StatusViewerState extends State<StatusViewer> {
 
     try {
       final result = await context.read<StatusService>().setStoryLike(
-        statusId: widget.status.id,
+        statusId: _status.id,
         liked: nextLiked,
       );
 
@@ -82,16 +119,29 @@ class _StatusViewerState extends State<StatusViewer> {
   Widget build(BuildContext context) {
     final currentUser = context.watch<AuthService>().currentUser;
     final canLike = currentUser != null &&
-        currentUser.id.trim() != widget.status.creatorId.trim();
+        currentUser.id.trim() != _status.creatorId.trim();
 
     return Dialog(
       insetPadding: EdgeInsets.zero,
       backgroundColor: Colors.black,
       child: Stack(
         children: [
-          // Content
-          Center(
-            child: _buildContent(),
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) {
+                final width = MediaQuery.of(context).size.width;
+                final x = details.globalPosition.dx;
+                if (x < width * 0.33) {
+                  _goPrev();
+                } else {
+                  _goNext();
+                }
+              },
+              child: Center(
+                child: _buildContent(),
+              ),
+            ),
           ),
           
           // Progress Bar (Simplified)
@@ -100,25 +150,19 @@ class _StatusViewerState extends State<StatusViewer> {
             left: 10,
             right: 10,
             child: Row(
-              children: [
-                Expanded(
+              children: List.generate(widget.statuses.length, (i) {
+                final active = i == _index;
+                return Expanded(
                   child: Container(
+                    margin: EdgeInsets.only(left: i == 0 ? 0 : 4),
                     height: 2,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: active ? Colors.white : Colors.white24,
                       borderRadius: BorderRadius.circular(1),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(1),
-                      child: LinearProgressIndicator(
-                        value: _isInitialized && widget.status.mediaType == 'video' ? null : 1.0,
-                        backgroundColor: Colors.transparent,
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
                     ),
                   ),
-                ),
-              ],
+                );
+              }),
             ),
           ),
 
@@ -131,12 +175,12 @@ class _StatusViewerState extends State<StatusViewer> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundImage: NetworkImage(widget.status.creatorImage),
+                  backgroundImage: NetworkImage(_status.creatorImage),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    widget.status.creatorName,
+                    _status.creatorName,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -204,21 +248,32 @@ class _StatusViewerState extends State<StatusViewer> {
   }
 
   Widget _buildContent() {
-    if (widget.status.mediaType == 'video') {
-       if (_isInitialized && _controller != null) {
-         return AspectRatio(
-           aspectRatio: _controller!.value.aspectRatio,
-           child: VideoPlayer(_controller!),
-         );
-       } else {
-         return const CircularProgressIndicator(color: Colors.white);
-       }
-    } else {
-       return Image.network(
-         widget.status.imageUrl ?? "",
-         fit: BoxFit.contain,
-         errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.white),
-       );
+    if (_status.mediaType == 'video') {
+      final future = _videoInitFuture;
+      if (_controller == null || future == null) {
+        return const CircularProgressIndicator(color: Colors.white);
+      }
+      return FutureBuilder<void>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done ||
+              _controller == null ||
+              !_controller!.value.isInitialized) {
+            return const CircularProgressIndicator(color: Colors.white);
+          }
+          return AspectRatio(
+            aspectRatio: _controller!.value.aspectRatio,
+            child: VideoPlayer(_controller!),
+          );
+        },
+      );
     }
+
+    return Image.network(
+      _status.imageUrl ?? '',
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) =>
+          const Icon(Icons.error, color: Colors.white),
+    );
   }
 }

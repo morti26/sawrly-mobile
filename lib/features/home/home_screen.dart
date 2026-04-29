@@ -572,7 +572,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (action == 'view') {
       showDialog(
         context: context,
-        builder: (_) => StatusViewer(status: story),
+        builder: (_) => StatusViewer(statuses: [story]),
       );
       return;
     }
@@ -696,10 +696,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           onMyStoryLongPress: myStatus == null
                               ? null
                               : () => _openMyStoryActions(myStatus!),
-                          onStatusPressed: (status) {
+                          onStatusPressed: (statuses) {
                             showDialog(
                               context: context,
-                              builder: (_) => StatusViewer(status: status),
+                              builder: (_) => StatusViewer(statuses: statuses),
                             );
                           },
                         ),

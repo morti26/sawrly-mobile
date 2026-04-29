@@ -6,7 +6,7 @@ class CreatorStatusRow extends StatelessWidget {
   final bool showAddButton;
   final VoidCallback? onAddPressed;
   final VoidCallback? onMyStoryLongPress;
-  final Function(CreatorStatus) onStatusPressed;
+  final void Function(List<CreatorStatus> statuses) onStatusPressed;
   final String? userImage;
   final CreatorStatus? myStatus;
 
@@ -23,8 +23,19 @@ class CreatorStatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleStatuses = statusList;
-    final totalCount = visibleStatuses.length + (showAddButton ? 1 : 0);
+    final Map<String, List<CreatorStatus>> grouped = <String, List<CreatorStatus>>{};
+    for (final status in statusList) {
+      grouped.putIfAbsent(status.creatorId, () => <CreatorStatus>[]).add(status);
+    }
+
+    final List<List<CreatorStatus>> groups = grouped.values.toList()
+      ..sort((a, b) {
+        final aLatest = a.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
+        final bLatest = b.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
+        return bLatest.compareTo(aLatest);
+      });
+
+    final totalCount = groups.length + (showAddButton ? 1 : 0);
 
     return SizedBox(
       height: 100,
@@ -41,11 +52,16 @@ class CreatorStatusRow extends StatelessWidget {
 
           // If we have the add button, the status list is shifted by 1
           final listIndex = showAddButton ? index - 1 : index;
-          final status = visibleStatuses[listIndex];
+          final statuses = List<CreatorStatus>.from(groups[listIndex])
+            ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          final status = statuses.isNotEmpty ? statuses.last : null;
+          if (status == null) {
+            return const SizedBox.shrink();
+          }
 
           return GestureDetector(
-            onTap: () => onStatusPressed(status),
-            onLongPress: myStatus != null && status.id == myStatus!.id
+            onTap: () => onStatusPressed(statuses),
+            onLongPress: myStatus != null && status.creatorId == myStatus!.creatorId
                 ? onMyStoryLongPress
                 : null,
             child: _buildStatusItem(context, status),

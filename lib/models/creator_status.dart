@@ -8,6 +8,7 @@ class CreatorStatus {
   final String? videoUrl;
   final String? imageUrl;
   final String mediaType; // 'image' or 'video'
+  final DateTime createdAt;
   final DateTime expiresAt;
   final int likeCount;
   final bool likedByMe;
@@ -20,6 +21,7 @@ class CreatorStatus {
     required this.isOnline,
     required this.hasStory,
     required this.mediaType,
+    required this.createdAt,
     required this.expiresAt,
     this.likeCount = 0,
     this.likedByMe = false,
@@ -60,6 +62,7 @@ class CreatorStatus {
       isOnline: false,
       hasStory: true,
       mediaType: mediaType,
+      createdAt: DateTime.parse(json['created_at']),
       expiresAt: DateTime.parse(json['expires_at']),
       imageUrl: mediaUrl,
       videoUrl: mediaType == 'video' ? mediaUrl : null,
@@ -79,6 +82,7 @@ class CreatorStatus {
     String? videoUrl,
     String? imageUrl,
     String? mediaType,
+    DateTime? createdAt,
     DateTime? expiresAt,
     int? likeCount,
     bool? likedByMe,
@@ -91,6 +95,7 @@ class CreatorStatus {
       isOnline: isOnline ?? this.isOnline,
       hasStory: hasStory ?? this.hasStory,
       mediaType: mediaType ?? this.mediaType,
+      createdAt: createdAt ?? this.createdAt,
       expiresAt: expiresAt ?? this.expiresAt,
       likeCount: likeCount ?? this.likeCount,
       likedByMe: likedByMe ?? this.likedByMe,

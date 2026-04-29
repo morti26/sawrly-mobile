@@ -32,8 +32,8 @@ class OfferCard extends StatelessWidget {
     final resolvedImageHeight =
         imageHeight ?? (resolvedCardWidth * 0.52).clamp(68.0, 90.0).toDouble();
     final description = offer.displayDescription;
-    final showVideoStats =
-        showEngagementStats && _isVideoUrl(_normalizeUrl(offer.imageUrl));
+    final mediaUrl = _normalizeUrl(offer.primaryMediaUrl);
+    final showVideoStats = showEngagementStats && _isVideoUrl(mediaUrl);
 
     return GestureDetector(
       onTap: () {
@@ -69,7 +69,7 @@ class OfferCard extends StatelessWidget {
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(8)),
                   child: _OfferCardMedia(
-                    mediaUrl: _normalizeUrl(offer.imageUrl),
+                    mediaUrl: mediaUrl,
                     height: resolvedImageHeight,
                   ),
                 ),
@@ -196,8 +196,8 @@ class OfferCard extends StatelessWidget {
       url = 'https://sawrly.com$url';
     } else if (url.startsWith('http://10.0.2.2:') ||
         url.startsWith('http://localhost:')) {
-      url = url.replaceFirst(RegExp(r'http://(10\.0\.2\.2|localhost):\d+'),
-          'https://sawrly.com');
+      url = url.replaceFirst(
+          RegExp(r'http://(10\.0\.2\.2|localhost):\d+'), 'https://sawrly.com');
     } else if (url.startsWith('http://ph.sitely24.com')) {
       url = url.replaceFirst('http://ph.sitely24.com', 'https://sawrly.com');
     } else if (url.startsWith('http://sawrly.com')) {
