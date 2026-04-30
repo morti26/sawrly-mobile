@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Offer> _discountOffers = [];
   bool _isLoadingOffers = true;
   BannerAd? _activeBanner;
+  int _lastStoryDbgCount = -1;
   static const String _tooLargeUploadMessage =
       'حجم الملف كبير جداً. يرجى اختيار ملف أصغر.';
 
@@ -119,8 +120,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     // Fetch statuses and offers
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StatusService>().fetchStatuses();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<StatusService>().fetchStatuses();
       _fetchBanner();
       _fetchOffers();
       _fetchPopularOffers();
@@ -630,6 +631,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final effectiveDiscountOffers = discountOfferMap.values.toList();
 
     // Find my status if I am a creator
+    String myStatusMatch = '';
     if (isCreator &&
         currentUser != null &&
         statusService.statusList.isNotEmpty) {
@@ -637,6 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
       for (final s in statusService.statusList) {
         if (s.creatorId.trim() == myId) {
           myStatus = s;
+          myStatusMatch = 'id';
           break;
         }
       }
@@ -646,11 +649,18 @@ class _HomeScreenState extends State<HomeScreen> {
           for (final s in statusService.statusList) {
             if (s.creatorName.trim().toLowerCase() == myName) {
               myStatus = s;
+              myStatusMatch = 'name';
               break;
             }
           }
         }
       }
+    }
+    if (_lastStoryDbgCount != statusService.statusList.length) {
+      _lastStoryDbgCount = statusService.statusList.length;
+      debugPrint(
+        'STORYDBG home build isCreator=$isCreator userId=${currentUser?.id ?? ''} userName=${currentUser?.name ?? ''} statuses=${statusService.statusList.length} myStatus=${myStatus?.id ?? ''} match=$myStatusMatch',
+      );
     }
 
     return Scaffold(
@@ -714,6 +724,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? null
                               : () => _openMyStoryActions(myStatus!),
                           onStatusPressed: (statuses) {
+                            debugPrint(
+                              'STORYDBG open viewer statuses=${statuses.length} first=${statuses.isNotEmpty ? statuses.first.id : ''} last=${statuses.isNotEmpty ? statuses.last.id : ''} creatorId=${statuses.isNotEmpty ? statuses.first.creatorId : ''}',
+                            );
                             showDialog(
                               context: context,
                               builder: (_) => StatusViewer(

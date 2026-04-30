@@ -4,7 +4,7 @@ import '../../models/creator_status.dart';
 
 class StatusService extends ChangeNotifier {
   final ApiClient _apiClient;
-  
+
   List<CreatorStatus> _statusList = [];
   bool _isLoading = false;
 
@@ -16,17 +16,23 @@ class StatusService extends ChangeNotifier {
   Future<void> fetchStatuses() async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
       final response = await _apiClient.client.get('/status');
       final List<dynamic> data = response.data;
-      
+
       _statusList = data.map((json) {
-         return CreatorStatus.fromJson(json);
+        return CreatorStatus.fromJson(json);
       }).toList();
-      
+      debugPrint('STORYDBG fetchStatuses ok count=${_statusList.length}');
+      for (final s in _statusList.take(5)) {
+        debugPrint(
+          'STORYDBG status id=${s.id} creatorId=${s.creatorId} creatorName=${s.creatorName} mediaType=${s.mediaType} imageUrl=${s.imageUrl ?? ''} videoUrl=${s.videoUrl ?? ''}',
+        );
+      }
     } catch (e) {
       debugPrint('Error fetching statuses: $e');
+      debugPrint('STORYDBG fetchStatuses failed $e');
     } finally {
       _isLoading = false;
       notifyListeners();
