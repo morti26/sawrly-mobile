@@ -52,10 +52,11 @@ class _StatusViewerState extends State<StatusViewer> {
 
     final status = widget.statuses[index];
     if (status.mediaType == 'video') {
-      final url = status.imageUrl ?? '';
+      final url = (status.videoUrl ?? status.imageUrl ?? '').trim();
       if (url.isNotEmpty) {
-        final controller = VideoPlayerController.networkUrl(Uri.parse(url))
-          ..setLooping(true);
+        final controller =
+            VideoPlayerController.networkUrl(Uri.parse(Uri.encodeFull(url)))
+              ..setLooping(true);
         _controller = controller;
         _videoInitFuture = controller.initialize().then((_) {
           if (!mounted) return;
@@ -94,9 +95,9 @@ class _StatusViewerState extends State<StatusViewer> {
 
     try {
       final result = await context.read<StatusService>().setStoryLike(
-        statusId: _status.id,
-        liked: nextLiked,
-      );
+            statusId: _status.id,
+            liked: nextLiked,
+          );
 
       if (!mounted) return;
       setState(() {
@@ -143,7 +144,7 @@ class _StatusViewerState extends State<StatusViewer> {
               ),
             ),
           ),
-          
+
           // Progress Bar (Simplified)
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
@@ -173,9 +174,27 @@ class _StatusViewerState extends State<StatusViewer> {
             right: 8,
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundImage: NetworkImage(_status.creatorImage),
+                SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: ClipOval(
+                    child: Image.network(
+                      Uri.encodeFull(_status.creatorImage),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: const Color(0xFF2A2D38),
+                          child: const Center(
+                            child: Icon(
+                              Icons.person,
+                              color: Colors.white70,
+                              size: 18,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -224,8 +243,11 @@ class _StatusViewerState extends State<StatusViewer> {
                               ),
                             )
                           : Icon(
-                              _likedByMe ? Icons.favorite : Icons.favorite_border,
-                              color: _likedByMe ? Colors.redAccent : Colors.white,
+                              _likedByMe
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color:
+                                  _likedByMe ? Colors.redAccent : Colors.white,
                             ),
                     ),
                     const SizedBox(width: 6),
@@ -269,8 +291,13 @@ class _StatusViewerState extends State<StatusViewer> {
       );
     }
 
+    final url = (_status.imageUrl ?? '').trim();
+    if (url.isEmpty) {
+      return const Icon(Icons.error, color: Colors.white);
+    }
+
     return Image.network(
-      _status.imageUrl ?? '',
+      Uri.encodeFull(url),
       fit: BoxFit.contain,
       errorBuilder: (context, error, stackTrace) =>
           const Icon(Icons.error, color: Colors.white),

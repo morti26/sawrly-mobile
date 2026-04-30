@@ -21,11 +21,46 @@ class CreatorStatusRow extends StatelessWidget {
     this.myStatus,
   });
 
+  Widget _networkCircleImage({
+    required String url,
+    required double radius,
+    required Color backgroundColor,
+    required Widget fallback,
+  }) {
+    final safeUrl = Uri.encodeFull(url);
+    return SizedBox(
+      width: radius * 2,
+      height: radius * 2,
+      child: ClipOval(
+        child: Image.network(
+          safeUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: backgroundColor,
+              child: Center(child: fallback),
+            );
+          },
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              color: backgroundColor,
+              child: Center(child: fallback),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Map<String, List<CreatorStatus>> grouped = <String, List<CreatorStatus>>{};
+    final Map<String, List<CreatorStatus>> grouped =
+        <String, List<CreatorStatus>>{};
     for (final status in statusList) {
-      grouped.putIfAbsent(status.creatorId.trim(), () => <CreatorStatus>[]).add(status);
+      grouped
+          .putIfAbsent(status.creatorId.trim(), () => <CreatorStatus>[])
+          .add(status);
     }
 
     final myCreatorId = myStatus?.creatorId.trim();
@@ -34,8 +69,10 @@ class CreatorStatusRow extends StatelessWidget {
         .map((e) => e.value)
         .toList()
       ..sort((a, b) {
-        final aLatest = a.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
-        final bLatest = b.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
+        final aLatest =
+            a.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
+        final bLatest =
+            b.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
         return bLatest.compareTo(aLatest);
       });
 
@@ -49,10 +86,14 @@ class CreatorStatusRow extends StatelessWidget {
         itemBuilder: (context, index) {
           if (showAddButton && index == 0) {
             final myCreatorId = myStatus?.creatorId.trim();
-            final rawMyStatuses = myCreatorId != null ? grouped[myCreatorId] : null;
-            final myStatuses = (rawMyStatuses != null && rawMyStatuses.isNotEmpty)
-                ? List<CreatorStatus>.from(rawMyStatuses)
-                : (myStatus != null ? <CreatorStatus>[myStatus!] : <CreatorStatus>[]);
+            final rawMyStatuses =
+                myCreatorId != null ? grouped[myCreatorId] : null;
+            final myStatuses =
+                (rawMyStatuses != null && rawMyStatuses.isNotEmpty)
+                    ? List<CreatorStatus>.from(rawMyStatuses)
+                    : (myStatus != null
+                        ? <CreatorStatus>[myStatus!]
+                        : <CreatorStatus>[]);
 
             if (myStatuses.isNotEmpty) {
               myStatuses.sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -81,7 +122,8 @@ class CreatorStatusRow extends StatelessWidget {
 
           return GestureDetector(
             onTap: () => onStatusPressed(statuses),
-            onLongPress: myStatus != null && status.creatorId.trim() == myStatus!.creatorId.trim()
+            onLongPress: myStatus != null &&
+                    status.creatorId.trim() == myStatus!.creatorId.trim()
                 ? onMyStoryLongPress
                 : null,
             child: _buildStatusItem(context, status),
@@ -109,19 +151,26 @@ class CreatorStatusRow extends StatelessWidget {
                 false))
           const _VideoStoryAvatar()
         else
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: const Color(0xFF2A2D38),
-            backgroundImage:
-                imagePreview.isNotEmpty ? NetworkImage(imagePreview) : null,
-            child: imagePreview.isEmpty
-                ? const Icon(
+          imagePreview.isNotEmpty
+              ? _networkCircleImage(
+                  url: imagePreview,
+                  radius: 28,
+                  backgroundColor: const Color(0xFF2A2D38),
+                  fallback: const Icon(
+                    Icons.image_outlined,
+                    color: Colors.white70,
+                    size: 24,
+                  ),
+                )
+              : const CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Color(0xFF2A2D38),
+                  child: Icon(
                     Icons.play_circle_fill_rounded,
                     color: Colors.white,
                     size: 28,
-                  )
-                : null,
-          ),
+                  ),
+                ),
         if (status.mediaType == 'video')
           Positioned(
             bottom: -1,
@@ -149,6 +198,7 @@ class CreatorStatusRow extends StatelessWidget {
   }
 
   Widget _buildAddStatusItem(BuildContext context) {
+    final url = (userImage ?? "https://via.placeholder.com/150").trim();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Column(
@@ -169,10 +219,14 @@ class CreatorStatusRow extends StatelessWidget {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  CircleAvatar(
+                  _networkCircleImage(
+                    url: url,
                     radius: 28,
-                    backgroundImage: NetworkImage(
-                      userImage ?? "https://via.placeholder.com/150",
+                    backgroundColor: const Color(0xFF2A2D38),
+                    fallback: const Icon(
+                      Icons.person,
+                      color: Colors.white70,
+                      size: 26,
                     ),
                   ),
                   Positioned(
@@ -203,6 +257,7 @@ class CreatorStatusRow extends StatelessWidget {
   }
 
   Widget _buildMyStoryItem(BuildContext context, CreatorStatus status) {
+    final url = (userImage ?? status.creatorImage).trim();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Column(
@@ -226,10 +281,14 @@ class CreatorStatusRow extends StatelessWidget {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  CircleAvatar(
+                  _networkCircleImage(
+                    url: url,
                     radius: 28,
-                    backgroundImage: NetworkImage(
-                      userImage ?? status.creatorImage,
+                    backgroundColor: const Color(0xFF2A2D38),
+                    fallback: const Icon(
+                      Icons.person,
+                      color: Colors.white70,
+                      size: 26,
                     ),
                   ),
                   if (onAddPressed != null)

@@ -570,9 +570,18 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || action == null) return;
 
     if (action == 'view') {
+      final allMyStatuses = context
+          .read<StatusService>()
+          .statusList
+          .where((s) => s.creatorId.trim() == story.creatorId.trim())
+          .toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
       showDialog(
         context: context,
-        builder: (_) => StatusViewer(statuses: [story]),
+        builder: (_) => StatusViewer(
+          statuses: allMyStatuses.isNotEmpty ? allMyStatuses : [story],
+          initialIndex: allMyStatuses.isNotEmpty ? allMyStatuses.length - 1 : 0,
+        ),
       );
       return;
     }
@@ -596,6 +605,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // final offers = [ ... ];
 
     final currentUser = authService.currentUser;
+    final showStories = currentUser != null;
     final currentUserImage =
         currentUser?.avatarUrl == null || currentUser!.avatarUrl!.trim().isEmpty
             ? "https://picsum.photos/seed/avatar/200/200"
@@ -667,7 +677,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
-                  await context.read<StatusService>().fetchStatuses();
+                  if (showStories) {
+                    await context.read<StatusService>().fetchStatuses();
+                  }
                   await _fetchBanner();
                   await _fetchOffers();
                   await _fetchPopularOffers();
@@ -678,30 +690,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 16),
-                      // Status Row with dynamic data
-                      if (statusService.isLoading &&
-                          statusService.statusList.isEmpty)
-                        const SizedBox(
-                            height: 100,
-                            child: Center(child: CircularProgressIndicator()))
-                      else
-                        CreatorStatusRow(
-                          statusList: statusService.statusList,
-                          showAddButton: isCreator,
-                          userImage: currentUserImage,
-                          myStatus: myStatus, // Pass matched status
-                          onAddPressed: isCreator ? _createStory : null,
-                          onMyStoryLongPress: myStatus == null
-                              ? null
-                              : () => _openMyStoryActions(myStatus!),
-                          onStatusPressed: (statuses) {
-                            showDialog(
-                              context: context,
-                              builder: (_) => StatusViewer(statuses: statuses),
-                            );
-                          },
-                        ),
-                      const SizedBox(height: 24),
+                      if (showStories) ...[
+                        if (statusService.isLoading &&
+                            statusService.statusList.isEmpty)
+                          const SizedBox(
+                              height: 100,
+                              child: Center(child: CircularProgressIndicator()))
+                        else
+                          CreatorStatusRow(
+                            statusList: statusService.statusList,
+                            showAddButton: isCreator,
+                            userImage: currentUserImage,
+                            myStatus: myStatus,
+                            onAddPressed: isCreator ? _createStory : null,
+                            onMyStoryLongPress: myStatus == null
+                                ? null
+                                : () => _openMyStoryActions(myStatus!),
+                            onStatusPressed: (statuses) {
+                              showDialog(
+                                context: context,
+                                builder: (_) => StatusViewer(
+                                  statuses: statuses,
+                                  initialIndex: statuses.isNotEmpty
+                                      ? statuses.length - 1
+                                      : 0,
+                                ),
+                              );
+                            },
+                          ),
+                        const SizedBox(height: 24),
+                      ],
                       if (_activeBanner != null)
                         BannerAnnouncement(banner: _activeBanner!)
                       else
