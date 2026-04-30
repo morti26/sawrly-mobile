@@ -25,10 +25,14 @@ class CreatorStatusRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final Map<String, List<CreatorStatus>> grouped = <String, List<CreatorStatus>>{};
     for (final status in statusList) {
-      grouped.putIfAbsent(status.creatorId, () => <CreatorStatus>[]).add(status);
+      grouped.putIfAbsent(status.creatorId.trim(), () => <CreatorStatus>[]).add(status);
     }
 
-    final List<List<CreatorStatus>> groups = grouped.values.toList()
+    final myCreatorId = myStatus?.creatorId.trim();
+    final List<List<CreatorStatus>> groups = grouped.entries
+        .where((e) => myCreatorId == null || e.key != myCreatorId)
+        .map((e) => e.value)
+        .toList()
       ..sort((a, b) {
         final aLatest = a.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
         final bLatest = b.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
@@ -44,6 +48,22 @@ class CreatorStatusRow extends StatelessWidget {
         itemCount: totalCount,
         itemBuilder: (context, index) {
           if (showAddButton && index == 0) {
+            final myCreatorId = myStatus?.creatorId.trim();
+            final rawMyStatuses = myCreatorId != null ? grouped[myCreatorId] : null;
+            final myStatuses = (rawMyStatuses != null && rawMyStatuses.isNotEmpty)
+                ? List<CreatorStatus>.from(rawMyStatuses)
+                : (myStatus != null ? <CreatorStatus>[myStatus!] : <CreatorStatus>[]);
+
+            if (myStatuses.isNotEmpty) {
+              myStatuses.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+              final latest = myStatuses.last;
+              return GestureDetector(
+                onTap: () => onStatusPressed(myStatuses),
+                onLongPress: onMyStoryLongPress,
+                child: _buildMyStoryItem(context, latest),
+              );
+            }
+
             return GestureDetector(
               onTap: onAddPressed,
               child: _buildAddStatusItem(context),
@@ -61,7 +81,7 @@ class CreatorStatusRow extends StatelessWidget {
 
           return GestureDetector(
             onTap: () => onStatusPressed(statuses),
-            onLongPress: myStatus != null && status.creatorId == myStatus!.creatorId
+            onLongPress: myStatus != null && status.creatorId.trim() == myStatus!.creatorId.trim()
                 ? onMyStoryLongPress
                 : null,
             child: _buildStatusItem(context, status),
@@ -172,6 +192,71 @@ class CreatorStatusRow extends StatelessWidget {
                           const Icon(Icons.add, size: 16, color: Colors.white),
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMyStoryItem(BuildContext context, CreatorStatus status) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: status.hasStory
+                  ? const LinearGradient(colors: [Colors.purple, Colors.orange])
+                  : null,
+              color: status.hasStory ? null : Colors.grey.shade300,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).scaffoldBackgroundColor,
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundImage: NetworkImage(
+                      userImage ?? status.creatorImage,
+                    ),
+                  ),
+                  if (onAddPressed != null)
+                    Positioned(
+                      bottom: -1,
+                      right: -1,
+                      child: GestureDetector(
+                        onTap: onAddPressed,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
