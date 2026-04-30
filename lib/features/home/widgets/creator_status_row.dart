@@ -80,19 +80,31 @@ class CreatorStatusRow extends StatelessWidget {
       }
     }
 
-    final List<List<CreatorStatus>> groups = grouped.entries
-        .where((e) => myCreatorId == null || e.key != myCreatorId)
-        .map((e) => e.value)
-        .toList()
-      ..sort((a, b) {
-        final aLatest =
-            a.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
-        final bLatest =
-            b.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
-        return bLatest.compareTo(aLatest);
-      });
+    final rawMyStatuses = myCreatorId != null ? grouped[myCreatorId] : null;
+    final myStatuses = (rawMyStatuses != null && rawMyStatuses.isNotEmpty)
+        ? List<CreatorStatus>.from(rawMyStatuses)
+        : (myStatus != null ? <CreatorStatus>[myStatus!] : <CreatorStatus>[]);
+    myStatuses.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-    final totalCount = groups.length + (showAddButton ? 1 : 0);
+    final List<List<CreatorStatus>> groups =
+        grouped.entries
+            .where((e) => myCreatorId == null || e.key != myCreatorId)
+            .map((e) => e.value)
+            .toList()
+          ..sort((a, b) {
+            final aLatest = a
+                .map((e) => e.createdAt)
+                .reduce((x, y) => x.isAfter(y) ? x : y);
+            final bLatest = b
+                .map((e) => e.createdAt)
+                .reduce((x, y) => x.isAfter(y) ? x : y);
+            return bLatest.compareTo(aLatest);
+          });
+
+    final ownStoryCount = showAddButton && myStatuses.isNotEmpty ? 1 : 0;
+    final addButtonCount = showAddButton ? 1 : 0;
+    final leadingCount = ownStoryCount + addButtonCount;
+    final totalCount = groups.length + leadingCount;
 
     return SizedBox(
       height: 100,
@@ -100,34 +112,23 @@ class CreatorStatusRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: totalCount,
         itemBuilder: (context, index) {
-          if (showAddButton && index == 0) {
-            final rawMyStatuses =
-                myCreatorId != null ? grouped[myCreatorId] : null;
-            final myStatuses =
-                (rawMyStatuses != null && rawMyStatuses.isNotEmpty)
-                    ? List<CreatorStatus>.from(rawMyStatuses)
-                    : (myStatus != null
-                        ? <CreatorStatus>[myStatus!]
-                        : <CreatorStatus>[]);
+          if (showAddButton && myStatuses.isNotEmpty && index == 0) {
+            final latest = myStatuses.last;
+            return GestureDetector(
+              onTap: () => onStatusPressed(myStatuses),
+              onLongPress: onMyStoryLongPress,
+              child: _buildMyStoryItem(context, latest),
+            );
+          }
 
-            if (myStatuses.isNotEmpty) {
-              myStatuses.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-              final latest = myStatuses.last;
-              return GestureDetector(
-                onTap: () => onStatusPressed(myStatuses),
-                onLongPress: onMyStoryLongPress,
-                child: _buildMyStoryItem(context, latest),
-              );
-            }
-
+          if (showAddButton && index == ownStoryCount) {
             return GestureDetector(
               onTap: onAddPressed,
               child: _buildAddStatusItem(context),
             );
           }
 
-          // If we have the add button, the status list is shifted by 1
-          final listIndex = showAddButton ? index - 1 : index;
+          final listIndex = index - leadingCount;
           final statuses = List<CreatorStatus>.from(groups[listIndex])
             ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
           final status = statuses.isNotEmpty ? statuses.last : null;
@@ -137,7 +138,8 @@ class CreatorStatusRow extends StatelessWidget {
 
           return GestureDetector(
             onTap: () => onStatusPressed(statuses),
-            onLongPress: myCreatorId != null &&
+            onLongPress:
+                myCreatorId != null &&
                     myCreatorId.isNotEmpty &&
                     status.creatorId.trim() == myCreatorId
                 ? onMyStoryLongPress
@@ -149,14 +151,11 @@ class CreatorStatusRow extends StatelessWidget {
     );
   }
 
-  Widget _buildStoryAvatar(
-    BuildContext context,
-    CreatorStatus status,
-  ) {
+  Widget _buildStoryAvatar(BuildContext context, CreatorStatus status) {
     final imagePreview =
         status.mediaType == 'image' && (status.imageUrl?.isNotEmpty ?? false)
-            ? status.imageUrl!
-            : '';
+        ? status.imageUrl!
+        : '';
 
     return Stack(
       clipBehavior: Clip.none,
@@ -255,11 +254,15 @@ class CreatorStatusRow extends StatelessWidget {
                         color: Colors.blue,
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: Theme.of(context).scaffoldBackgroundColor,
-                            width: 2),
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          width: 2,
+                        ),
                       ),
-                      child:
-                          const Icon(Icons.add, size: 16, color: Colors.white),
+                      child: const Icon(
+                        Icons.add,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -273,7 +276,6 @@ class CreatorStatusRow extends StatelessWidget {
   }
 
   Widget _buildMyStoryItem(BuildContext context, CreatorStatus status) {
-    final url = (userImage ?? status.creatorImage).trim();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Column(
@@ -294,46 +296,7 @@ class CreatorStatusRow extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Theme.of(context).scaffoldBackgroundColor,
               ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  _networkCircleImage(
-                    url: url,
-                    radius: 28,
-                    backgroundColor: const Color(0xFF2A2D38),
-                    fallback: const Icon(
-                      Icons.person,
-                      color: Colors.white70,
-                      size: 26,
-                    ),
-                  ),
-                  if (onAddPressed != null)
-                    Positioned(
-                      bottom: -1,
-                      right: -1,
-                      child: GestureDetector(
-                        onTap: onAddPressed,
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).scaffoldBackgroundColor,
-                              width: 2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              child: _buildStoryAvatar(context, status),
             ),
           ),
           const SizedBox(height: 4),
@@ -362,7 +325,8 @@ class CreatorStatusRow extends StatelessWidget {
             ),
             child: Container(
               padding: const EdgeInsets.all(
-                  2), // White space between boarder and image
+                2,
+              ), // White space between boarder and image
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Theme.of(context).scaffoldBackgroundColor,
@@ -381,8 +345,9 @@ class CreatorStatusRow extends StatelessWidget {
                           color: Colors.green,
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: Theme.of(context).scaffoldBackgroundColor,
-                              width: 2),
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),
