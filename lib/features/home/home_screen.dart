@@ -625,14 +625,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isCreator &&
         currentUser != null &&
         statusService.statusList.isNotEmpty) {
-      try {
-        myStatus = statusService.statusList.firstWhere(
-            (s) => s.creatorId == currentUser.id,
-            orElse: () => throw Exception(
-                "Not found") // Hack to trigger catch, or just exclude orElse?
-            );
-      } catch (e) {
-        myStatus = null;
+      final myId = currentUser.id.trim();
+      for (final s in statusService.statusList) {
+        if (s.creatorId.trim() == myId) {
+          myStatus = s;
+          break;
+        }
       }
     }
 
