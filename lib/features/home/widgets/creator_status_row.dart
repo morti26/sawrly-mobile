@@ -86,24 +86,21 @@ class CreatorStatusRow extends StatelessWidget {
         : (myStatus != null ? <CreatorStatus>[myStatus!] : <CreatorStatus>[]);
     myStatuses.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-    final List<List<CreatorStatus>> groups =
-        grouped.entries
-            .where((e) => myCreatorId == null || e.key != myCreatorId)
-            .map((e) => e.value)
-            .toList()
-          ..sort((a, b) {
-            final aLatest = a
-                .map((e) => e.createdAt)
-                .reduce((x, y) => x.isAfter(y) ? x : y);
-            final bLatest = b
-                .map((e) => e.createdAt)
-                .reduce((x, y) => x.isAfter(y) ? x : y);
-            return bLatest.compareTo(aLatest);
-          });
+    final List<List<CreatorStatus>> groups = grouped.entries
+        .where((e) => myCreatorId == null || e.key != myCreatorId)
+        .map((e) => e.value)
+        .toList()
+      ..sort((a, b) {
+        final aLatest =
+            a.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
+        final bLatest =
+            b.map((e) => e.createdAt).reduce((x, y) => x.isAfter(y) ? x : y);
+        return bLatest.compareTo(aLatest);
+      });
 
-    final ownStoryCount = showAddButton && myStatuses.isNotEmpty ? 1 : 0;
-    final addButtonCount = showAddButton ? 1 : 0;
-    final leadingCount = ownStoryCount + addButtonCount;
+    final hasOwnStorySlot = showAddButton && myStatuses.isNotEmpty;
+    final hasAddButtonSlot = showAddButton;
+    final leadingCount = (hasOwnStorySlot ? 1 : 0) + (hasAddButtonSlot ? 1 : 0);
     final totalCount = groups.length + leadingCount;
 
     return SizedBox(
@@ -112,7 +109,13 @@ class CreatorStatusRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: totalCount,
         itemBuilder: (context, index) {
-          if (showAddButton && myStatuses.isNotEmpty && index == 0) {
+          final isRtl = Directionality.of(context) == TextDirection.rtl;
+          final ownStoryIndex =
+              hasOwnStorySlot ? (hasAddButtonSlot && !isRtl ? 1 : 0) : -1;
+          final addButtonIndex =
+              hasAddButtonSlot ? (hasOwnStorySlot && isRtl ? 1 : 0) : -1;
+
+          if (hasOwnStorySlot && index == ownStoryIndex) {
             final latest = myStatuses.last;
             return GestureDetector(
               onTap: () => onStatusPressed(myStatuses),
@@ -121,7 +124,7 @@ class CreatorStatusRow extends StatelessWidget {
             );
           }
 
-          if (showAddButton && index == ownStoryCount) {
+          if (hasAddButtonSlot && index == addButtonIndex) {
             return GestureDetector(
               onTap: onAddPressed,
               child: _buildAddStatusItem(context),
@@ -138,8 +141,7 @@ class CreatorStatusRow extends StatelessWidget {
 
           return GestureDetector(
             onTap: () => onStatusPressed(statuses),
-            onLongPress:
-                myCreatorId != null &&
+            onLongPress: myCreatorId != null &&
                     myCreatorId.isNotEmpty &&
                     status.creatorId.trim() == myCreatorId
                 ? onMyStoryLongPress
@@ -154,8 +156,8 @@ class CreatorStatusRow extends StatelessWidget {
   Widget _buildStoryAvatar(BuildContext context, CreatorStatus status) {
     final imagePreview =
         status.mediaType == 'image' && (status.imageUrl?.isNotEmpty ?? false)
-        ? status.imageUrl!
-        : '';
+            ? status.imageUrl!
+            : '';
 
     return Stack(
       clipBehavior: Clip.none,
