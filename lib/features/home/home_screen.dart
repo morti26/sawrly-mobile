@@ -707,6 +707,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           statusList: statusService.statusList,
                           showAddButton: isCreator,
                           userImage: currentUserImage,
+                          myUserName: currentUser?.name,
                           myStatus: myStatus,
                           onAddPressed: isCreator ? _createStory : null,
                           onMyStoryLongPress: myStatus == null

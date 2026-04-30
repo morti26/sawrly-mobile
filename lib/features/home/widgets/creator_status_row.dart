@@ -8,6 +8,7 @@ class CreatorStatusRow extends StatelessWidget {
   final VoidCallback? onMyStoryLongPress;
   final void Function(List<CreatorStatus> statuses) onStatusPressed;
   final String? userImage;
+  final String? myUserName;
   final CreatorStatus? myStatus;
 
   const CreatorStatusRow({
@@ -18,6 +19,7 @@ class CreatorStatusRow extends StatelessWidget {
     this.onMyStoryLongPress,
     required this.onStatusPressed,
     this.userImage,
+    this.myUserName,
     this.myStatus,
   });
 
@@ -63,7 +65,21 @@ class CreatorStatusRow extends StatelessWidget {
           .add(status);
     }
 
-    final myCreatorId = myStatus?.creatorId.trim();
+    String? myCreatorId = myStatus?.creatorId.trim();
+    if ((myCreatorId == null || myCreatorId.isEmpty) &&
+        myUserName != null &&
+        myUserName!.trim().isNotEmpty) {
+      final targetName = myUserName!.trim().toLowerCase();
+      for (final entry in grouped.entries) {
+        final first = entry.value.isNotEmpty ? entry.value.first : null;
+        if (first != null &&
+            first.creatorName.trim().toLowerCase() == targetName) {
+          myCreatorId = entry.key.trim();
+          break;
+        }
+      }
+    }
+
     final List<List<CreatorStatus>> groups = grouped.entries
         .where((e) => myCreatorId == null || e.key != myCreatorId)
         .map((e) => e.value)
@@ -85,7 +101,6 @@ class CreatorStatusRow extends StatelessWidget {
         itemCount: totalCount,
         itemBuilder: (context, index) {
           if (showAddButton && index == 0) {
-            final myCreatorId = myStatus?.creatorId.trim();
             final rawMyStatuses =
                 myCreatorId != null ? grouped[myCreatorId] : null;
             final myStatuses =
@@ -122,8 +137,9 @@ class CreatorStatusRow extends StatelessWidget {
 
           return GestureDetector(
             onTap: () => onStatusPressed(statuses),
-            onLongPress: myStatus != null &&
-                    status.creatorId.trim() == myStatus!.creatorId.trim()
+            onLongPress: myCreatorId != null &&
+                    myCreatorId.isNotEmpty &&
+                    status.creatorId.trim() == myCreatorId
                 ? onMyStoryLongPress
                 : null,
             child: _buildStatusItem(context, status),
