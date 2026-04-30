@@ -35,6 +35,9 @@ class CreatorStatus {
     if (value.startsWith('/')) {
       return "https://sawrly.com$value";
     }
+    if (!value.startsWith('http://') && !value.startsWith('https://')) {
+      return "https://sawrly.com/$value";
+    }
     if (value.startsWith('http://ph.sitely24.com')) {
       return value.replaceFirst('http://ph.sitely24.com', 'https://sawrly.com');
     }
