@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import '../network/api_client.dart';
 import '../../models/creator_status.dart';
 
@@ -19,7 +20,20 @@ class StatusService extends ChangeNotifier {
 
     try {
       final response = await _apiClient.client.get('/status');
-      final List<dynamic> data = response.data;
+      final raw = response.data;
+      List<dynamic> data;
+      if (raw is List) {
+        data = raw;
+      } else if (raw is String) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          data = decoded;
+        } else {
+          throw FormatException('Expected List but got ${decoded.runtimeType}');
+        }
+      } else {
+        throw FormatException('Expected List but got ${raw.runtimeType}');
+      }
 
       _statusList = data.map((json) {
         return CreatorStatus.fromJson(json);
