@@ -640,6 +640,17 @@ class _HomeScreenState extends State<HomeScreen> {
           break;
         }
       }
+      if (myStatus == null) {
+        final myName = currentUser.name.trim().toLowerCase();
+        if (myName.isNotEmpty) {
+          for (final s in statusService.statusList) {
+            if (s.creatorName.trim().toLowerCase() == myName) {
+              myStatus = s;
+              break;
+            }
+          }
+        }
+      }
     }
 
     return Scaffold(
