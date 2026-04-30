@@ -580,7 +580,6 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         builder: (_) => StatusViewer(
           statuses: allMyStatuses.isNotEmpty ? allMyStatuses : [story],
-          initialIndex: allMyStatuses.isNotEmpty ? allMyStatuses.length - 1 : 0,
         ),
       );
       return;
@@ -707,8 +706,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               context: context,
                               builder: (_) => StatusViewer(
                                 statuses: statuses,
-                                initialIndex:
-                                    statuses.isNotEmpty ? statuses.length - 1 : 0,
                               ),
                             );
                           },

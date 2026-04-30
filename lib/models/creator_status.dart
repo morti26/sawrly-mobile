@@ -32,6 +32,10 @@ class CreatorStatus {
   static String _normalizeUrl(String? raw) {
     if (raw == null || raw.trim().isEmpty) return '';
     final value = raw.trim();
+    if (value.startsWith('/uploads/')) {
+      final rest = value.substring('/uploads/'.length);
+      return "https://sawrly.com/api/uploads/$rest";
+    }
     if (value.startsWith('/')) {
       return "https://sawrly.com$value";
     }
