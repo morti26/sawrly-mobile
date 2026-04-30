@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
@@ -17,16 +18,17 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
   late PageController _pageController;
   int _currentPage = 0;
   Timer? _autoScrollTimer;
+  final Random _random = Random();
+  List<BannerSlide> _slides = [];
 
   // Map of slide-index → VideoPlayerController (only for video slides)
   final Map<int, VideoPlayerController> _videoControllers = {};
-
-  List<BannerSlide> get _slides => widget.banner?.slides ?? [];
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _setRandomSlides(widget.banner);
     _initVideoControllers();
     _startAutoScroll();
   }
@@ -36,7 +38,12 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.banner != widget.banner) {
       _disposeVideoControllers();
+      _currentPage = 0;
+      _setRandomSlides(widget.banner);
       _initVideoControllers();
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
       // Restart auto-scroll with updated slides
       _autoScrollTimer?.cancel();
       _startAutoScroll();
@@ -49,6 +56,13 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
     _pageController.dispose();
     _disposeVideoControllers();
     super.dispose();
+  }
+
+  void _setRandomSlides(BannerAd? banner) {
+    _slides = List<BannerSlide>.from(banner?.slides ?? []);
+    if (_slides.length > 1) {
+      _slides.shuffle(_random);
+    }
   }
 
   void _disposeVideoControllers() {
@@ -105,12 +119,15 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
   }
 
   String _normalizeUrl(String url) {
-    if (url.startsWith('/')) return 'https://ph.sitely24.com$url';
+    if (url.startsWith('/')) return 'https://sawrly.com$url';
     if (url.startsWith('http://10.0.2.2:3000')) {
-      return url.replaceFirst('http://10.0.2.2:3000', 'https://ph.sitely24.com');
+      return url.replaceFirst('http://10.0.2.2:3000', 'https://sawrly.com');
     }
     if (url.startsWith('http://localhost:3000')) {
-      return url.replaceFirst('http://localhost:3000', 'https://ph.sitely24.com');
+      return url.replaceFirst('http://localhost:3000', 'https://sawrly.com');
+    }
+    if (url.startsWith('http://sawrly.com')) {
+      return url.replaceFirst('http://', 'https://');
     }
     if (url.startsWith('http://ph.sitely24.com')) {
       return url.replaceFirst('http://', 'https://');
