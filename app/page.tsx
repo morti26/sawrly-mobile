@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LandingPreviewSlider } from '@/components/landing-preview-slider';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -40,10 +41,7 @@ export default function Home() {
 
                 <section dir="ltr" className="mt-10 grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
                     <div dir="rtl" className="relative">
-                        <div
-                            aria-hidden="true"
-                            className="mx-auto aspect-[4/3] w-full max-w-[38rem] rounded-[2rem] border border-white/10 bg-[#151923]/80 shadow-[0_18px_65px_rgba(255,86,170,0.16),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur"
-                        />
+                        <LandingPreviewSlider />
                     </div>
 
                     <div dir="rtl" className="flex flex-col gap-6">
