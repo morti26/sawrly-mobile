@@ -1,6 +1,82 @@
-# Fotgraf Web Backend
+# Sawrly Web
 
-Next.js + PostgreSQL backend for the Fotgraf platform.
+Next.js + PostgreSQL backend for Sawrly.
+
+The repository layout mirrors the production server:
+
+```text
+public/ on the server == this repository root
+mobile/              == Flutter mobile app
+```
+
+## Local development
+
+Run the Next.js app locally:
+
+```powershell
+npm install
+npm run dev -- -H 127.0.0.1 -p 3001
+```
+
+Open:
+
+```text
+http://127.0.0.1:3001
+```
+
+Work on the Flutter app from:
+
+```powershell
+cd mobile
+flutter pub get
+flutter run
+```
+
+Before deployment:
+
+```powershell
+npm run test
+npm run build
+```
+
+## Production sync
+
+Production path:
+
+```text
+/mnt/disk-extra/hostingdata/cmnp2kdic001a4hr2yofnyk76/sawrly.com/public
+```
+
+Download a safe server snapshot into a new local folder:
+
+```powershell
+.\scripts\sync_from_server.ps1 -User serveruser
+```
+
+Deploy this local repository to production:
+
+```powershell
+.\scripts\deploy_sawrly.ps1 -User serveruser
+```
+
+Optional SSH flags:
+
+```powershell
+.\scripts\deploy_sawrly.ps1 -User serveruser -Port 2222 -IdentityFile C:\Users\mon24\.ssh\id_ed25519
+```
+
+The deploy script creates a `/tmp/sawrly-public-backup-*.tar.gz` backup on the server before extracting the new files.
+
+## GitHub backup
+
+After local changes are tested:
+
+```powershell
+git status
+git add .
+git commit -m "Update Sawrly web and mobile"
+git push origin main
+```
 
 ## Deployment on Ubuntu
 
