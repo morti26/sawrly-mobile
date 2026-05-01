@@ -1,0 +1,8 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/db';
+
+// Combined Search or Split? User asked for GET /api/search/creators and /api/search/offers
+// Let's do a single file for /api/search/creators first.
+
+// NOTE: Since I can't easily make multiple files in one tool usage without complexity, 
+// I'll make /api/search/creators/route.ts and /api/search/offers/route.ts
