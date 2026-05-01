@@ -491,10 +491,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       child: _buildTileFrame(
         child: Container(
           color: enabled ? Colors.grey[200] : Colors.grey[300],
-          child: Center(
+          child: const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 Icon(Icons.add, color: Colors.black54),
                 SizedBox(height: 4),
                 Text(

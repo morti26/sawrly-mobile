@@ -62,7 +62,8 @@ Deploy this local repository to production:
 Optional SSH flags:
 
 ```powershell
-.\scripts\deploy_sawrly.ps1 -User serveruser -Port 2222 -IdentityFile C:\Users\mon24\.ssh\id_ed25519
+.\scripts\deploy_sawrly.ps1 -User morti
+.\scripts\deploy_sawrly.ps1 -User morti -Server 192.168.50.150 -Port 22 -IdentityFile C:\Users\mon24\.ssh\id_ed25519
 ```
 
 The deploy script creates a `/tmp/sawrly-public-backup-*.tar.gz` backup on the server before extracting the new files.

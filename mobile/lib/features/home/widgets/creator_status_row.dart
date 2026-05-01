@@ -153,7 +153,10 @@ class CreatorStatusRow extends StatelessWidget {
     );
   }
 
-  Widget _buildStoryAvatar(BuildContext context, CreatorStatus status) {
+  Widget _buildStoryAvatar(
+    BuildContext context,
+    CreatorStatus status,
+  ) {
     final imagePreview =
         status.mediaType == 'image' && (status.imageUrl?.isNotEmpty ?? false)
             ? status.imageUrl!
@@ -256,15 +259,11 @@ class CreatorStatusRow extends StatelessWidget {
                         color: Colors.blue,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Theme.of(context).scaffoldBackgroundColor,
-                          width: 2,
-                        ),
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            width: 2),
                       ),
-                      child: const Icon(
-                        Icons.add,
-                        size: 16,
-                        color: Colors.white,
-                      ),
+                      child:
+                          const Icon(Icons.add, size: 16, color: Colors.white),
                     ),
                   ),
                 ],
@@ -327,8 +326,7 @@ class CreatorStatusRow extends StatelessWidget {
             ),
             child: Container(
               padding: const EdgeInsets.all(
-                2,
-              ), // White space between boarder and image
+                  2), // White space between boarder and image
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Theme.of(context).scaffoldBackgroundColor,
@@ -347,9 +345,8 @@ class CreatorStatusRow extends StatelessWidget {
                           color: Colors.green,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Theme.of(context).scaffoldBackgroundColor,
-                            width: 2,
-                          ),
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              width: 2),
                         ),
                       ),
                     ),

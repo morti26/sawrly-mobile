@@ -1,5 +1,5 @@
 param(
-    [string]$Server = "sawrly.com",
+    [string]$Server = "192.168.50.150",
     [Parameter(Mandatory = $true)]
     [string]$User,
     [int]$Port = 22,
@@ -61,13 +61,30 @@ tar \
   --exclude='./dist' \
   --exclude='./build' \
   --exclude='./backups' \
+  --exclude='./.env' \
+  --exclude='./.env.*' \
   --exclude='./public/uploads' \
   --exclude='./public/legacy_wwwroot' \
+  --exclude='./wwwroot' \
+  --exclude='./wwwroot.zip' \
+  --exclude='./mobile/.trae' \
+  --exclude='./mobile/*.iml' \
   --exclude='./mobile/.dart_tool' \
   --exclude='./mobile/build' \
   --exclude='./mobile/.idea' \
   --exclude='./mobile/run.log' \
   --exclude='./mobile/.flutter-plugins-dependencies' \
+  --exclude='./mobile/android/.gradle' \
+  --exclude='./mobile/android/.kotlin' \
+  --exclude='./mobile/android/key.properties' \
+  --exclude='./mobile/android/local.properties' \
+  --exclude='./mobile/android/keystore' \
+  --exclude='./mobile/ios/Flutter/ephemeral' \
+  --exclude='./mobile/ios/Flutter/Generated.xcconfig' \
+  --exclude='./mobile/ios/Flutter/flutter_export_environment.sh' \
+  --exclude='./mobile/linux/flutter/ephemeral' \
+  --exclude='./mobile/macos/Flutter/ephemeral' \
+  --exclude='./mobile/windows/flutter/ephemeral' \
   -czf "`$ARCHIVE" -C "`$REMOTE_PATH" .
 
 echo "`$ARCHIVE"

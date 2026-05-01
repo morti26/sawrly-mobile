@@ -1,11 +1,12 @@
 param(
-    [string]$Server = "sawrly.com",
+    [string]$Server = "192.168.50.150",
     [Parameter(Mandatory = $true)]
     [string]$User,
     [int]$Port = 22,
     [string]$RemotePath = "/mnt/disk-extra/hostingdata/cmnp2kdic001a4hr2yofnyk76/sawrly.com/public",
     [string]$IdentityFile = "",
     [string]$Pm2Name = "sawrly-web",
+    [int]$AppPort = 3001,
     [switch]$SkipLocalChecks,
     [switch]$SkipRemoteInstall,
     [switch]$SkipRemoteBuild,
@@ -75,12 +76,27 @@ $excludeArgs = @(
     "--exclude=.env.*.local",
     "--exclude=public/uploads",
     "--exclude=public/legacy_wwwroot",
+    "--exclude=wwwroot",
+    "--exclude=wwwroot.zip",
     "--exclude=NUL",
+    "--exclude=mobile/.trae",
+    "--exclude=mobile/*.iml",
     "--exclude=mobile/.dart_tool",
     "--exclude=mobile/build",
     "--exclude=mobile/.idea",
     "--exclude=mobile/run.log",
-    "--exclude=mobile/.flutter-plugins-dependencies"
+    "--exclude=mobile/.flutter-plugins-dependencies",
+    "--exclude=mobile/android/.gradle",
+    "--exclude=mobile/android/.kotlin",
+    "--exclude=mobile/android/key.properties",
+    "--exclude=mobile/android/local.properties",
+    "--exclude=mobile/android/keystore",
+    "--exclude=mobile/ios/Flutter/ephemeral",
+    "--exclude=mobile/ios/Flutter/Generated.xcconfig",
+    "--exclude=mobile/ios/Flutter/flutter_export_environment.sh",
+    "--exclude=mobile/linux/flutter/ephemeral",
+    "--exclude=mobile/macos/Flutter/ephemeral",
+    "--exclude=mobile/windows/flutter/ephemeral"
 )
 
 Invoke-LoggedStep "Creating deploy archive" {
@@ -113,7 +129,37 @@ NO_RESTART="$skipRestart"
 mkdir -p "`$REMOTE_PATH"
 
 if [ -d "`$REMOTE_PATH" ]; then
-  tar -czf "`$BACKUP" -C "`$REMOTE_PATH" .
+  tar \
+    --exclude='./.git' \
+    --exclude='./node_modules' \
+    --exclude='./.next' \
+    --exclude='./out' \
+    --exclude='./dist' \
+    --exclude='./build' \
+    --exclude='./backups' \
+    --exclude='./public/uploads' \
+    --exclude='./public/legacy_wwwroot' \
+    --exclude='./wwwroot' \
+    --exclude='./wwwroot.zip' \
+    --exclude='./mobile/.trae' \
+    --exclude='./mobile/*.iml' \
+    --exclude='./mobile/.dart_tool' \
+    --exclude='./mobile/build' \
+    --exclude='./mobile/.idea' \
+    --exclude='./mobile/run.log' \
+    --exclude='./mobile/.flutter-plugins-dependencies' \
+    --exclude='./mobile/android/.gradle' \
+    --exclude='./mobile/android/.kotlin' \
+    --exclude='./mobile/android/key.properties' \
+    --exclude='./mobile/android/local.properties' \
+    --exclude='./mobile/android/keystore' \
+    --exclude='./mobile/ios/Flutter/ephemeral' \
+    --exclude='./mobile/ios/Flutter/Generated.xcconfig' \
+    --exclude='./mobile/ios/Flutter/flutter_export_environment.sh' \
+    --exclude='./mobile/linux/flutter/ephemeral' \
+    --exclude='./mobile/macos/Flutter/ephemeral' \
+    --exclude='./mobile/windows/flutter/ephemeral' \
+    -czf "`$BACKUP" -C "`$REMOTE_PATH" .
   echo "Backup created: `$BACKUP"
 fi
 
@@ -135,7 +181,16 @@ if [ "`$NO_RESTART" != "1" ]; then
     pm2 restart "`$PM2_NAME" || pm2 start npm --name "`$PM2_NAME" -- start
     pm2 save || true
   else
-    echo "pm2 not found; restart the app manually."
+    if command -v fuser >/dev/null 2>&1; then
+      fuser -k "$AppPort/tcp" || true
+    fi
+
+    if [ -x /usr/bin/nohup ] || command -v nohup >/dev/null 2>&1; then
+      nohup npm run start -- -H 127.0.0.1 -p $AppPort > next-start.log 2>&1 &
+      echo "Started Next.js with nohup on 127.0.0.1:$AppPort"
+    else
+      echo "pm2 and nohup not found; restart the app manually."
+    fi
   fi
 fi
 

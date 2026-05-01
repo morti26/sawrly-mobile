@@ -18,8 +18,6 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   Future<void>? _videoInitFuture;
   late final List<OfferMediaItem> _mediaItems;
   int _activeIndex = 0;
-  String _activeUrl = '';
-  bool _activeIsVideo = false;
 
   @override
   void initState() {
@@ -47,8 +45,6 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     if (_mediaItems.isEmpty) {
       setState(() {
         _activeIndex = 0;
-        _activeUrl = '';
-        _activeIsVideo = false;
       });
       return;
     }
@@ -65,8 +61,6 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
 
     setState(() {
       _activeIndex = boundedIndex;
-      _activeUrl = url;
-      _activeIsVideo = isVideo;
     });
 
     if (isVideo && url.isNotEmpty) {
