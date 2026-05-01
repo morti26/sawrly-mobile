@@ -22,7 +22,7 @@ export default function Home() {
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/45 via-black/0 to-black/0" />
 
-            <div className="relative mx-auto w-full max-w-6xl">
+            <div className="relative mx-auto w-full max-w-7xl">
                 <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <nav className="flex w-fit items-center gap-2 rounded-full border border-white/10 bg-black/20 p-1 text-sm font-bold text-white/75 shadow-[0_12px_35px_rgba(0,0,0,0.22)] backdrop-blur">
                         <Link href="#home" className="rounded-full bg-white/10 px-4 py-2 text-white shadow-[0_8px_24px_rgba(255,74,151,0.18)] hover:bg-white/[0.15]">
@@ -38,11 +38,11 @@ export default function Home() {
                     </div>
                 </header>
 
-                <section dir="ltr" className="mt-10 grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+                <section dir="ltr" className="mt-10 grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
                     <div dir="rtl" className="relative">
                         <div
                             aria-hidden="true"
-                            className="mx-auto aspect-square w-full max-w-[26rem] rounded-[2rem] border border-white/10 bg-[#151923]/80 shadow-[0_18px_65px_rgba(255,86,170,0.16),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur"
+                            className="mx-auto aspect-[4/3] w-full max-w-[38rem] rounded-[2rem] border border-white/10 bg-[#151923]/80 shadow-[0_18px_65px_rgba(255,86,170,0.16),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur"
                         />
                     </div>
 
