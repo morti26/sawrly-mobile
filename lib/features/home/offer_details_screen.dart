@@ -16,6 +16,10 @@ class OfferDetailsScreen extends StatefulWidget {
 }
 
 class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
+  static const Color _bg = Color(0xFF161921);
+  static const Color _accentPink = Color(0xFFFF4DA6);
+  static const Color _accentPurple = Color(0xFF7A3EED);
+
   VideoPlayerController? _videoController;
   Future<void>? _videoInitFuture;
   late final List<OfferMediaItem> _mediaItems;
@@ -189,7 +193,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('تفاصيل العرض'),
-        backgroundColor: const Color(0xFF161921),
+        backgroundColor: _bg,
         elevation: 0,
         foregroundColor: Colors.white,
         systemOverlayStyle: const SystemUiOverlayStyle(
@@ -198,6 +202,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
           statusBarBrightness: Brightness.dark,
         ),
       ),
+      backgroundColor: _bg,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,15 +224,37 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
                     _mediaItems.length,
-                    (index) => Container(
-                      width: 8,
-                      height: 8,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: index == _activeIndex ? 18 : 7,
+                      height: 7,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(999),
+                        gradient: index == _activeIndex
+                            ? const LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [_accentPink, _accentPurple],
+                              )
+                            : null,
                         color: index == _activeIndex
-                            ? Colors.black
-                            : Colors.black26,
+                            ? null
+                            : Colors.white.withValues(alpha: 0.18),
+                        boxShadow: index == _activeIndex
+                            ? [
+                                BoxShadow(
+                                  color: _accentPink.withValues(alpha: 0.28),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 8),
+                                ),
+                                BoxShadow(
+                                  color: _accentPurple.withValues(alpha: 0.22),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ]
+                            : null,
                       ),
                     ),
                   ),
@@ -262,41 +289,68 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (isInCart) {
-                          cart.remove(widget.offer.id);
-                        } else {
-                          cart.add(widget.offer);
-                        }
-
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => const MainNavigation(
-                              initialIndex: 3,
-                            ),
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [_accentPink, _accentPurple],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _accentPink.withValues(alpha: 0.35),
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
                           ),
-                          (route) => false,
-                        );
-                      },
-                      icon: Icon(
-                        isInCart
-                            ? Icons.remove_shopping_cart
-                            : Icons.add_shopping_cart,
+                          BoxShadow(
+                            color: _accentPurple.withValues(alpha: 0.25),
+                            blurRadius: 24,
+                            offset: const Offset(0, 14),
+                          ),
+                        ],
                       ),
-                      label: Text(
-                        isInCart ? 'إزالة من الطلب' : 'إضافة إلى الطلب',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52),
-                        backgroundColor: const Color(0xFFFF4DA6),
-                        foregroundColor: Colors.white,
-                        elevation: 12,
-                        shadowColor:
-                            const Color(0xFFFF4DA6).withValues(alpha: 0.55),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            if (isInCart) {
+                              cart.remove(widget.offer.id);
+                            } else {
+                              cart.add(widget.offer);
+                            }
+
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => const MainNavigation(
+                                  initialIndex: 3,
+                                ),
+                              ),
+                              (route) => false,
+                            );
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isInCart
+                                    ? Icons.remove_shopping_cart
+                                    : Icons.add_shopping_cart,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                isInCart ? 'إزالة من الطلب' : 'إضافة إلى الطلب',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

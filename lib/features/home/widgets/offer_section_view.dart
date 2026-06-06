@@ -54,10 +54,11 @@ class OfferSectionView extends StatelessWidget {
         // List
         SizedBox(
           height: sectionHeight,
-          child: ListView.builder(
-            padding: const EdgeInsets.only(left: 16, bottom: 8),
+          child: ListView.separated(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 6, 16, 8),
             scrollDirection: Axis.horizontal,
             itemCount: offers.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               return OfferCard(
                 offer: offers[index],
@@ -69,6 +70,7 @@ class OfferSectionView extends StatelessWidget {
             },
           ),
         ),
+        const SizedBox(height: 14),
       ],
     );
   }

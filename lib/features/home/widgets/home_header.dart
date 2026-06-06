@@ -117,13 +117,26 @@ class CameraLogoWidget extends StatelessWidget {
   }
 }
 
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends StatefulWidget {
   const HomeHeader({super.key});
+
+  @override
+  State<HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<HomeHeader> {
+  Future<String?>? _logoFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _logoFuture ??= context.read<MediaService>().fetchHomeLogoUrl();
+  }
 
   @override
   Widget build(BuildContext context) {
     final iconColor = Colors.white.withValues(alpha: 0.85);
-    final logoFuture = context.read<MediaService>().fetchHomeLogoUrl();
+    final logoFuture = _logoFuture;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),

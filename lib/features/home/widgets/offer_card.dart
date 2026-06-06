@@ -33,33 +33,33 @@ class OfferCard extends StatelessWidget {
     final mediaUrl = _normalizeUrl(offer.primaryMediaUrl);
     final showVideoStats = showEngagementStats && _isVideoUrl(mediaUrl);
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => OfferDetailsScreen(offer: offer)),
-        );
-      },
-      child: Container(
-        width: resolvedCardWidth,
-        margin: const EdgeInsets.only(right: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x26000000),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-          border: isInCart
-              ? Border.all(color: Colors.green, width: 2)
-              : null, // Visual feedback
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => OfferDetailsScreen(offer: offer)),
+          );
+        },
+        child: Ink(
+          width: resolvedCardWidth,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26000000),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+            border: isInCart ? Border.all(color: Colors.green, width: 2) : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Image
             Stack(
               children: [
@@ -182,7 +182,8 @@ class OfferCard extends StatelessWidget {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
