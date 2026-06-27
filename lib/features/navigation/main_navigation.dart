@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/design/design_tokens.dart';
 import '../home/home_screen.dart';
 import '../search/global_search_screen.dart';
 import '../categories/categories_screen.dart';
@@ -69,27 +70,27 @@ class _MainNavigationState extends State<MainNavigation> {
             height: 64,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x8C000000),
+                  color: Colors.black.withValues(alpha: 0.55),
                   blurRadius: 16,
-                  offset: Offset(0, 8),
+                  offset: const Offset(0, 8),
                 ),
                 BoxShadow(
-                  color: Color(0x0F7A3EED),
+                  color: AppColors.primary.withValues(alpha: 0.10),
                   blurRadius: 12,
-                  offset: Offset(0, -2),
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
             child: Material(
-              color: const Color(0xF71A1D27),
+              color: AppColors.background.withValues(alpha: 0.97),
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: const Color(0x12FFFFFF),
+                    color: AppColors.textPrimary.withValues(alpha: 0.10),
                     width: 1,
                   ),
                 ),
@@ -130,30 +131,17 @@ class _MainNavigationState extends State<MainNavigation> {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        // Very subtle purple fill
-        color: const Color(0x1A7A3EED),
+        color: AppColors.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(13),
-        // Purple border
         border: Border.all(
-          color: const Color(0x8C9B59F5),
+          color: AppColors.primaryLight.withValues(alpha: 0.55),
           width: 1.3,
         ),
-        // Neon purple glow (inner tight + outer wide)
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x8C7A3EED),
-            blurRadius: 10,
-          ),
-          BoxShadow(
-            color: Color(0x339B59F5),
-            blurRadius: 18,
-            spreadRadius: 3,
-          ),
-        ],
+        boxShadow: AppShadows.glowPrimary,
       ),
       child: Icon(
         _icons[index],
-        color: const Color(0xFFBC83FF), // bright purple icon
+        color: AppColors.primaryLight,
         size: 21,
       ),
     );
@@ -162,7 +150,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget _buildInactiveIcon(int index) {
     return Icon(
       _icons[index],
-      color: const Color(0x8CFFFFFF),
+      color: AppColors.textPrimary.withValues(alpha: 0.55),
       size: 22,
     );
   }

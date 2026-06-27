@@ -10,6 +10,7 @@ import 'package:fotgraf_mobile/models/creator_status.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
 import 'package:fotgraf_mobile/models/banner_ad.dart';
 import 'package:dio/dio.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/services/status_service.dart';
 import '../../core/services/media_service.dart';
 import '../../core/auth/auth_service.dart';
@@ -663,27 +664,16 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             const HomeHeader(),
-            const Padding(
-              padding: EdgeInsets.only(top: 10),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
               child: SizedBox(
                 width: double.infinity,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Color(0xFF9B59F5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x8C7A3EED),
-                        blurRadius: 16,
-                        spreadRadius: 1,
-                      ),
-                      BoxShadow(
-                        color: Color(0x339B59F5),
-                        blurRadius: 18,
-                        spreadRadius: 3,
-                      ),
-                    ],
+                    color: AppColors.primaryLight,
+                    boxShadow: AppShadows.glowPrimary,
                   ),
-                  child: SizedBox(height: 2),
+                  child: const SizedBox(height: 2),
                 ),
               ),
             ),

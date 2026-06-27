@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/design/design_tokens.dart';
 import 'register_sheet.dart';
 
 class LoginSheet extends StatefulWidget {
@@ -65,7 +66,7 @@ class _LoginSheetState extends State<LoginSheet> {
               const SizedBox(height: 16),
               Text(
                 auth.error!,
-                style: const TextStyle(color: Colors.red),
+                style: const TextStyle(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),
             ],

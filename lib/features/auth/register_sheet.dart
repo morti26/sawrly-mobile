@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/design/design_tokens.dart';
 import '../../core/auth/auth_service.dart';
 
 class RegisterSheet extends StatefulWidget {
@@ -89,7 +90,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
                 const SizedBox(height: 16),
                 Text(
                   auth.error!,
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(color: AppColors.error),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -141,7 +142,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('الرجاء التحقق من الحقول المطلوبة'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -185,7 +186,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(authService.error ?? 'فشل إنشاء الحساب'),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.error,
         duration: const Duration(seconds: 4),
       ),
     );

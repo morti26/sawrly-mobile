@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
 import 'package:video_player/video_player.dart';
+import '../../core/design/design_tokens.dart';
+import '../../core/services/media_service.dart';
 import '../../core/services/cart_service.dart';
 import '../navigation/main_navigation.dart';
 
@@ -16,12 +18,9 @@ class OfferDetailsScreen extends StatefulWidget {
 }
 
 class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
-  static const Color _bg = Color(0xFF161921);
-  static const Color _accentPink = Color(0xFFFF4DA6);
-  static const Color _accentPurple = Color(0xFF7A3EED);
-
   VideoPlayerController? _videoController;
   Future<void>? _videoInitFuture;
+  Future<List<dynamic>>? _availabilityFuture;
   late final List<OfferMediaItem> _mediaItems;
   int _activeIndex = 0;
 
@@ -37,6 +36,10 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
       ];
     } else {
       _mediaItems = const [];
+    }
+    if (widget.offer.creatorId.trim().isNotEmpty) {
+      _availabilityFuture =
+          context.read<MediaService>().fetchEvents(widget.offer.creatorId);
     }
     _setActiveMedia(0);
   }
@@ -109,6 +112,192 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     final videoExt = ['.mp4', '.mov', '.webm', '.mkv', '.m3u8'];
     return videoExt
         .any((ext) => lower.contains('$ext?') || lower.endsWith(ext));
+  }
+
+  DateTime? _parseEventDate(dynamic raw) {
+    if (raw == null) return null;
+    return DateTime.tryParse(raw.toString())?.toLocal();
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  String? _statusForDay(DateTime day, List<dynamic> events) {
+    bool hasBusy = false;
+    for (final raw in events) {
+      if (raw is! Map) continue;
+      final eventDate = _parseEventDate(raw['date_time']);
+      if (eventDate == null || !_isSameDay(eventDate, day)) continue;
+
+      final status = raw['calendar_status']?.toString().toLowerCase();
+      if (status == 'booked') return 'booked';
+      if (status == 'busy') hasBusy = true;
+    }
+    return hasBusy ? 'busy' : null;
+  }
+
+  String _weekdayLabel(DateTime day) {
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return labels[day.weekday - 1];
+  }
+
+  String _dateLabel(DateTime day) {
+    final month = day.month.toString().padLeft(2, '0');
+    final date = day.day.toString().padLeft(2, '0');
+    return '$date/$month';
+  }
+
+  String _availabilityLabel(String? status) {
+    if (status == 'booked') return 'محجوز';
+    if (status == 'busy') return 'مشغول';
+    return 'متاح';
+  }
+
+  Color _availabilityColor(String? status) {
+    if (status == 'booked') return AppColors.accentPink;
+    if (status == 'busy') return AppColors.warning;
+    return AppColors.success;
+  }
+
+  Color _availabilityBackground(String? status) {
+    if (status == 'booked') return AppColors.errorBg;
+    if (status == 'busy') return AppColors.warningBg;
+    return AppColors.successBg;
+  }
+
+  Widget _buildAvailabilityCard(DateTime day, String? status) {
+    final color = _availabilityColor(status);
+    return Container(
+      width: 92,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _weekdayLabel(day),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _dateLabel(day),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _availabilityBackground(status),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: color.withValues(alpha: 0.35)),
+            ),
+            child: Text(
+              _availabilityLabel(status),
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvailabilitySection() {
+    if (_availabilityFuture == null) {
+      return const SizedBox.shrink();
+    }
+
+    return FutureBuilder<List<dynamic>>(
+      future: _availabilityFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppColors.borderLight,
+              ),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final events = snapshot.data ?? const [];
+        final start = DateTime.now();
+        final days = List.generate(
+          7,
+          (index) => DateTime(start.year, start.month, start.day + index),
+        );
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'التوفر القادم',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'الأيام غير المحددة في الجدول تظهر كمتاحة للحجز.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 14),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (int i = 0; i < days.length; i++) ...[
+                      _buildAvailabilityCard(
+                        days[i],
+                        _statusForDay(days[i], events),
+                      ),
+                      if (i != days.length - 1) const SizedBox(width: 10),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildMediaFor(int index) {
@@ -193,7 +382,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('تفاصيل العرض'),
-        backgroundColor: _bg,
+        backgroundColor: AppColors.background,
         elevation: 0,
         foregroundColor: Colors.white,
         systemOverlayStyle: const SystemUiOverlayStyle(
@@ -202,7 +391,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
           statusBarBrightness: Brightness.dark,
         ),
       ),
-      backgroundColor: _bg,
+      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,25 +424,14 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                             ? const LinearGradient(
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
-                                colors: [_accentPink, _accentPurple],
+                                colors: AppColors.accentGradient,
                               )
                             : null,
                         color: index == _activeIndex
                             ? null
                             : Colors.white.withValues(alpha: 0.18),
                         boxShadow: index == _activeIndex
-                            ? [
-                                BoxShadow(
-                                  color: _accentPink.withValues(alpha: 0.28),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 8),
-                                ),
-                                BoxShadow(
-                                  color: _accentPurple.withValues(alpha: 0.22),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ]
+                            ? AppShadows.glowAccent
                             : null,
                       ),
                     ),
@@ -276,7 +454,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Colors.green,
+                      color: AppColors.success,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -286,6 +464,10 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                         : widget.offer.displayDescription,
                     style: const TextStyle(fontSize: 15, height: 1.6),
                   ),
+                  if (_availabilityFuture != null) ...[
+                    const SizedBox(height: 20),
+                    _buildAvailabilitySection(),
+                  ],
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -296,20 +478,9 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                         gradient: const LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
-                          colors: [_accentPink, _accentPurple],
+                          colors: AppColors.accentGradient,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _accentPink.withValues(alpha: 0.35),
-                            blurRadius: 18,
-                            offset: const Offset(0, 10),
-                          ),
-                          BoxShadow(
-                            color: _accentPurple.withValues(alpha: 0.25),
-                            blurRadius: 24,
-                            offset: const Offset(0, 14),
-                          ),
-                        ],
+                        boxShadow: AppShadows.glowAccent,
                       ),
                       child: Material(
                         color: Colors.transparent,

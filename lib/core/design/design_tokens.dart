@@ -9,6 +9,7 @@ class AppColors {
   static const Color primary = Color(0xFF7A3EED);
   static const Color primaryLight = Color(0xFF9B6AFF);
   static const Color primaryDark = Color(0xFF5A2EAD);
+  static const Color accentPink = Color(0xFFFF4DA6);
 
   // Background colors
   static const Color background = Color(0xFF161921);
@@ -40,6 +41,11 @@ class AppColors {
   static const List<Color> primaryGradient = [
     Color(0xFF7A3EED),
     Color(0xFF5A2EAD),
+  ];
+
+  static const List<Color> accentGradient = [
+    Color(0xFFFF4DA6),
+    Color(0xFF7A3EED),
   ];
 
   static const List<Color> darkGradient = [
@@ -196,6 +202,34 @@ class AppShadows {
           color: Colors.black.withValues(alpha: 0.4),
           blurRadius: 16,
           offset: const Offset(0, 4),
+        ),
+      ];
+
+  static List<BoxShadow> get glowPrimary => [
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: 0.55),
+          blurRadius: 14,
+          offset: const Offset(0, 8),
+        ),
+        BoxShadow(
+          color: AppColors.primaryLight.withValues(alpha: 0.22),
+          blurRadius: 22,
+          spreadRadius: 2,
+          offset: const Offset(0, 10),
+        ),
+      ];
+
+  static List<BoxShadow> get glowAccent => [
+        BoxShadow(
+          color: AppColors.accentPink.withValues(alpha: 0.30),
+          blurRadius: 16,
+          offset: const Offset(0, 10),
+        ),
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: 0.22),
+          blurRadius: 22,
+          spreadRadius: 2,
+          offset: const Offset(0, 12),
         ),
       ];
 }

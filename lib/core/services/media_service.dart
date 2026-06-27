@@ -226,7 +226,13 @@ class MediaService {
   }
 
   Future<String?> createEvent(
-      String title, String dateTime, String location, File? coverImage) async {
+    String title,
+    String dateTime,
+    String location,
+    File? coverImage, {
+    String calendarStatus = 'event',
+    String? notes,
+  }) async {
     _lastUploadError = null;
     try {
       String? coverImageUrl;
@@ -240,7 +246,9 @@ class MediaService {
       await _apiClient.client.post('/events', data: {
         'title': title,
         'dateTime': dateTime,
+        'calendarStatus': calendarStatus,
         'location': location,
+        if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
         if (coverImageUrl != null) 'coverImageUrl': coverImageUrl,
       });
       return null;

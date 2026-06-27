@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../../models/offer.dart';
 import '../../models/user.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/services/media_service.dart';
 import 'edit_profile_screen.dart';
 import 'create_offer_screen.dart';
@@ -237,8 +237,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.event, color: Colors.purple),
-                  title: const Text("إنشاء فعالية"),
+                  leading:
+                      const Icon(Icons.calendar_month, color: Colors.purple),
+                  title: const Text("إضافة إلى الجدول"),
                   onTap: () {
                     Navigator.pop(context);
                     _showCreateEventDialog();
@@ -253,78 +254,143 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }
 
   void _showCreateEventDialog() {
-    // ... (Existing event logic) ...
-    final titleController = TextEditingController();
     final locationController = TextEditingController();
-    // DateTime picking is complex, simplify for now or use text
-    final dateController = TextEditingController(text: "2024-05-20 18:00");
-    File? selectedMedia;
-    bool selectedMediaIsVideo = false;
+    final notesController = TextEditingController();
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay selectedTime = const TimeOfDay(hour: 12, minute: 0);
+    String selectedStatus = 'booked';
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text("إنشاء فعالية"),
+          title: const Text("إضافة إلى الجدول"),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(labelText: "العنوان")),
-                TextField(
-                    controller: locationController,
-                    decoration: const InputDecoration(labelText: "الموقع")),
-                TextField(
-                    controller: dateController,
-                    decoration:
-                        const InputDecoration(labelText: "التاريخ/الوقت")),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final mediaService = this.context.read<MediaService>();
-                    final selection = await showModalBottomSheet<String>(
-                      context: context,
-                      builder: (context) => SafeArea(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              leading:
-                                  const Icon(Icons.image, color: Colors.blue),
-                              title: const Text("رفع صورة"),
-                              onTap: () => Navigator.pop(context, "image"),
-                            ),
-                            ListTile(
-                              leading:
-                                  const Icon(Icons.videocam, color: Colors.red),
-                              title: const Text("رفع فيديو"),
-                              onTap: () => Navigator.pop(context, "video"),
-                            ),
-                          ],
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.borderLight,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "الحالة",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    );
-                    if (selection == null) return;
-                    final file = selection == "video"
-                        ? await mediaService.pickVideo()
-                        : await mediaService.pickImage();
-                    if (file != null) {
-                      setState(() {
-                        selectedMedia = file;
-                        selectedMediaIsVideo = selection == "video";
-                      });
-                    }
-                  },
-                  icon:
-                      Icon(selectedMediaIsVideo ? Icons.videocam : Icons.image),
-                  label: Text(
-                    selectedMedia == null
-                        ? "اختر صورة أو فيديو"
-                        : (selectedMediaIsVideo
-                            ? "تم اختيار الفيديو"
-                            : "تم اختيار الغلاف"),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _buildCalendarStatusChip(
+                            label: "محجوز",
+                            icon: Icons.event_busy,
+                            status: 'booked',
+                            currentStatus: selectedStatus,
+                            onTap: () {
+                              setState(() => selectedStatus = 'booked');
+                            },
+                          ),
+                          _buildCalendarStatusChip(
+                            label: "مشغول",
+                            icon: Icons.block,
+                            status: 'busy',
+                            currentStatus: selectedStatus,
+                            onTap: () {
+                              setState(() => selectedStatus = 'busy');
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now()
+                                .subtract(const Duration(days: 1)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (pickedDate == null) return;
+                          setState(() {
+                            selectedDate = DateTime(
+                              pickedDate.year,
+                              pickedDate.month,
+                              pickedDate.day,
+                              selectedDate.hour,
+                              selectedDate.minute,
+                            );
+                          });
+                        },
+                        icon: const Icon(Icons.calendar_today),
+                        label: Text(_formatDateLabel(selectedDate)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: selectedTime,
+                          );
+                          if (pickedTime == null) return;
+                          setState(() => selectedTime = pickedTime);
+                        },
+                        icon: const Icon(Icons.access_time),
+                        label: Text(selectedTime.format(context)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: locationController,
+                    decoration:
+                        const InputDecoration(labelText: "الموقع (اختياري)")),
+                TextField(
+                    controller: notesController,
+                    maxLines: 3,
+                    decoration:
+                        const InputDecoration(labelText: "ملاحظات (اختياري)")),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: _calendarStatusCardColor(selectedStatus),
+                    border: Border.all(
+                      color: _calendarStatusBorderColor(selectedStatus),
+                    ),
+                  ),
+                  child: Text(
+                    selectedStatus == 'booked'
+                        ? "سيظهر هذا اليوم للعميل كـ محجوز"
+                        : "سيظهر هذا اليوم للعميل كـ مشغول",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -337,11 +403,13 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             TextButton(
                 onPressed: () async {
                   final messenger = ScaffoldMessenger.of(this.context);
-                  if (titleController.text.trim().isEmpty) {
-                    messenger.showSnackBar(
-                        const SnackBar(content: Text("العنوان مطلوب")));
-                    return;
-                  }
+                  final scheduledAt = DateTime(
+                    selectedDate.year,
+                    selectedDate.month,
+                    selectedDate.day,
+                    selectedTime.hour,
+                    selectedTime.minute,
+                  );
 
                   showDialog(
                     context: context,
@@ -352,10 +420,12 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
                   final error =
                       await this.context.read<MediaService>().createEvent(
-                            titleController.text.trim(),
-                            dateController.text.trim(),
+                            _calendarStatusTitle(selectedStatus),
+                            scheduledAt.toIso8601String(),
                             locationController.text.trim(),
-                            selectedMedia,
+                            null,
+                            calendarStatus: selectedStatus,
+                            notes: notesController.text.trim(),
                           );
 
                   if (context.mounted) {
@@ -370,7 +440,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       _mediaReloadTick++;
                     });
                     messenger.showSnackBar(
-                        const SnackBar(content: Text("تم إنشاء الفعالية!")));
+                        const SnackBar(content: Text("تم تحديث الجدول!")));
                   } else {
                     messenger.showSnackBar(SnackBar(content: Text(error)));
                   }
@@ -380,6 +450,77 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildCalendarStatusChip({
+    required String label,
+    required IconData icon,
+    required String status,
+    required String currentStatus,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = status == currentStatus;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: isSelected
+              ? const LinearGradient(colors: AppColors.accentGradient)
+              : null,
+          color: isSelected ? null : AppColors.surfaceLight,
+          boxShadow: isSelected ? AppShadows.glowAccent : null,
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : AppColors.border.withValues(alpha: 0.7),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _calendarStatusTitle(String status) {
+    if (status == 'busy') return 'مشغول';
+    return 'محجوز';
+  }
+
+  String _formatDateLabel(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final year = value.year.toString();
+    return '$day/$month/$year';
+  }
+
+  Color _calendarStatusCardColor(String status) {
+    if (status == 'busy') {
+      return AppColors.warningBg;
+    }
+    return AppColors.errorBg;
+  }
+
+  Color _calendarStatusBorderColor(String status) {
+    if (status == 'busy') {
+      return AppColors.warning.withValues(alpha: 0.45);
+    }
+    return AppColors.accentPink.withValues(alpha: 0.45);
   }
 
   @override
@@ -412,7 +553,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         Tab(text: "عروضي"),
         Tab(text: "صور"),
         Tab(text: "فيديوهات"),
-        Tab(text: "فعاليات"),
+        Tab(text: "الجدول"),
       ];
       tabViews = [
         ProfileMediaGrid(
@@ -910,6 +1051,230 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     );
   }
 
+  DateTime? _parseEventDate(dynamic raw) {
+    if (raw == null) return null;
+    return DateTime.tryParse(raw.toString())?.toLocal();
+  }
+
+  String _formatEventDate(dynamic raw) {
+    final parsed = _parseEventDate(raw);
+    if (parsed == null) return '';
+    final day = parsed.day.toString().padLeft(2, '0');
+    final month = parsed.month.toString().padLeft(2, '0');
+    final year = parsed.year.toString();
+    final hour = parsed.hour.toString().padLeft(2, '0');
+    final minute = parsed.minute.toString().padLeft(2, '0');
+    return '$day/$month/$year - $hour:$minute';
+  }
+
+  String _calendarStatusLabel(dynamic raw) {
+    final status = raw?.toString().toLowerCase();
+    if (status == 'busy') return 'مشغول';
+    if (status == 'booked') return 'محجوز';
+    return 'فعالية';
+  }
+
+  IconData _calendarStatusIcon(dynamic raw) {
+    final status = raw?.toString().toLowerCase();
+    if (status == 'busy') return Icons.block;
+    if (status == 'booked') return Icons.event_busy;
+    return Icons.event;
+  }
+
+  Color _calendarStatusColor(dynamic raw) {
+    final status = raw?.toString().toLowerCase();
+    if (status == 'busy') return AppColors.warning;
+    if (status == 'booked') return AppColors.accentPink;
+    return AppColors.primaryLight;
+  }
+
+  Color _calendarStatusBackground(dynamic raw) {
+    final status = raw?.toString().toLowerCase();
+    if (status == 'busy') return AppColors.warningBg;
+    if (status == 'booked') return AppColors.errorBg;
+    return AppColors.infoBg;
+  }
+
+  Widget _buildEventGridCard(dynamic rawItem) {
+    final item = Map<String, dynamic>.from(rawItem as Map);
+    final title = (item['title']?.toString().trim().isNotEmpty ?? false)
+        ? item['title'].toString().trim()
+        : _calendarStatusLabel(item['calendar_status']);
+    final formattedDate = _formatEventDate(item['date_time']);
+    final location = item['location']?.toString().trim() ?? '';
+    final notes = item['notes']?.toString().trim() ?? '';
+    final previewUrl =
+        _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
+    final hasPreview = previewUrl.isNotEmpty;
+    final isVideo = _isVideoUrl(previewUrl);
+    final badgeColor = _calendarStatusColor(item['calendar_status']);
+    final badgeBackground = _calendarStatusBackground(item['calendar_status']);
+
+    return Card(
+      color: AppColors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: InkWell(
+        onTap: hasPreview
+            ? () => _openMediaPreview(
+                  mediaUrl: previewUrl,
+                  title: title,
+                  isVideo: isVideo,
+                )
+            : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 118,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: AppColors.darkGradient,
+                ),
+              ),
+              child: Stack(
+                children: [
+                  if (hasPreview)
+                    Positioned.fill(
+                      child: isVideo
+                          ? _buildVideoTile()
+                          : Image.network(
+                              previewUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const SizedBox(),
+                            ),
+                    )
+                  else
+                    Center(
+                      child: Icon(
+                        _calendarStatusIcon(item['calendar_status']),
+                        color: badgeColor,
+                        size: 42,
+                      ),
+                    ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: badgeBackground,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: badgeColor.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _calendarStatusIcon(item['calendar_status']),
+                            size: 13,
+                            color: badgeColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _calendarStatusLabel(item['calendar_status']),
+                            style: TextStyle(
+                              color: badgeColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (formattedDate.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              formattedDate,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          if (location.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              location,
+                              style: const TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          if (notes.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              notes,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                                height: 1.35,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (widget.isOwner)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          size: 20,
+                          color: Colors.white70,
+                        ),
+                        onPressed: () => _showItemOptions(context, item),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -986,19 +1351,25 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
           padding: const EdgeInsets.all(8),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: widget.type == "Offer" ? 0.95 : 0.75,
+            childAspectRatio: widget.type == "Offer"
+                ? 0.95
+                : widget.type == "Event"
+                    ? 0.86
+                    : 0.75,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
+            if (widget.type == "Event") {
+              return _buildEventGridCard(item);
+            }
             // Normalize data fields
             String imageUrl = "";
             String previewUrl = "";
             String title = "";
             String subtitle = "";
-            bool isEventVideo = false;
             bool isPreviewVideo = false;
             bool isGridVideo = false;
 
@@ -1053,23 +1424,10 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
               }
               title = item['caption'] ??
                   (widget.type == "Video" ? "Video" : "Photo");
-            } else if (widget.type == "Event") {
-              String path = item['cover_image_url'] ?? "";
-              previewUrl = _normalizeMediaUrl(path);
-              imageUrl = previewUrl.isEmpty
-                  ? "https://via.placeholder.com/300"
-                  : previewUrl;
-              isEventVideo = _isVideoUrl(previewUrl);
-              isPreviewVideo = isEventVideo;
-              isGridVideo = isEventVideo;
-              title = item['title'] ?? "Event";
-              subtitle = item['date_time'] ?? "";
             }
 
             final canPreview = previewUrl.isNotEmpty &&
-                (widget.type == "Photo" ||
-                    widget.type == "Video" ||
-                    widget.type == "Event");
+                (widget.type == "Photo" || widget.type == "Video");
 
             return Card(
               clipBehavior: Clip.antiAlias,

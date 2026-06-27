@@ -18,6 +18,7 @@ class OfferMediaItem {
 
 class Offer {
   final String id;
+  final String creatorId;
   final String title;
   final String description;
   final double price; // Current price in IQD (after discount if any)
@@ -32,6 +33,7 @@ class Offer {
 
   Offer({
     required this.id,
+    this.creatorId = '',
     required this.title,
     required this.description,
     required this.price,
@@ -128,6 +130,7 @@ class Offer {
 
     return Offer(
       id: json['id']?.toString() ?? '',
+      creatorId: json['creator_id']?.toString() ?? '',
       title: json['title'] ?? '',
       description: rawDescription,
       price: _parseDouble(json['price_iqd']),
