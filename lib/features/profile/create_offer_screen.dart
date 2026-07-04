@@ -13,6 +13,7 @@ class CreateOfferScreen extends StatefulWidget {
 }
 
 class _CreateOfferScreenState extends State<CreateOfferScreen> {
+  static const double _minimumOfferPrice = 1200;
   static const Color _bg = Color(0xFF161921);
   static const Color _surface = Color(0xFF222734);
   static const Color _surfaceAlt = Color(0xFF1B1F2A);
@@ -22,6 +23,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _priceController;
+  late final TextEditingController _partialPaymentController;
+  late final TextEditingController _fullPaymentController;
 
   String? _offerType;
   final List<String> _offerTypes = [
@@ -47,6 +50,14 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         TextEditingController(text: widget.initialItem?['description']);
     _priceController = TextEditingController(
         text: widget.initialItem?['price_iqd']?.toString());
+    _partialPaymentController = TextEditingController(
+      text: _formatAmountText(widget.initialItem?['partial_payment_iqd']),
+    );
+    _fullPaymentController = TextEditingController(
+      text: _formatAmountText(
+        widget.initialItem?['full_payment_iqd'] ?? widget.initialItem?['price_iqd'],
+      ),
+    );
     _initialImageUrl = widget.initialItem?['image_url'];
     final rawMediaItems = widget.initialItem?['media_items'];
     if (rawMediaItems is List) {
@@ -71,6 +82,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
+    _partialPaymentController.dispose();
+    _fullPaymentController.dispose();
     super.dispose();
   }
 
@@ -163,10 +176,63 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     return double.tryParse(normalized) ?? 0.0;
   }
 
+  String _formatAmountText(dynamic value) {
+    if (value == null) return '';
+    final parsed = _parsePriceValue(value.toString());
+    if (parsed <= 0) return '';
+    if (parsed == parsed.roundToDouble()) {
+      return parsed.toStringAsFixed(0);
+    }
+    return parsed.toStringAsFixed(2);
+  }
+
   int? _parseDiscountPercent() {
     if (_offerType != "عرض خصم" || _discountPercentage == null) return null;
     final raw = _discountPercentage!.replaceAll('%', '').trim();
     return int.tryParse(raw);
+  }
+
+  Widget _buildSaveButton(bool isEditing) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [_accentPink, _accentPurple],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: _accentPink.withValues(alpha: 0.30),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: _accentPurple.withValues(alpha: 0.18),
+              blurRadius: 24,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: _publishOffer,
+          child: Center(
+            child: Text(
+              isEditing ? "حفظ" : "نشر",
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -176,49 +242,20 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: _bg,
         elevation: 0,
         centerTitle: true,
         title: Text(isEditing ? "تعديل العرض" : "قائمة العروض",
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
-        leading: Container(
-          margin: const EdgeInsets.only(left: 10),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [_accentPink, _accentPurple],
-            ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: _accentPink.withValues(alpha: 0.30),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: _accentPurple.withValues(alpha: 0.18),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
-              ),
-            ],
-          ),
-          child: TextButton(
-            onPressed: _publishOffer,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: Text(isEditing ? "حفظ" : "نشر",
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 10, top: 6, bottom: 6),
+          child: SizedBox.expand(
+            child: _buildSaveButton(isEditing),
           ),
         ),
-        leadingWidth: 92,
+        leadingWidth: 98,
         actions: [
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
@@ -283,6 +320,38 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
               hint: "السعر (د.ع)", // Price
               controller: _priceController,
               keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 20),
+
+            _buildTextField(
+              hint: "مبلغ الدفعة الجزئية للعميل (د.ع)",
+              controller: _partialPaymentController,
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              hint: "مبلغ الدفع الكامل للعميل (د.ع)",
+              controller: _fullPaymentController,
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: _surfaceAlt,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: const Text(
+                "يمكنك تحديد مبلغ الدفعة الجزئية ومبلغ الدفع الكامل كما يظهر للعميل. إذا تركت الحقول فارغة سيتم اعتماد 30% للدفعة الجزئية وسعر العرض الحالي للدفع الكامل.",
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  height: 1.55,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -584,6 +653,63 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           .showSnackBar(const SnackBar(content: Text("العنوان مطلوب")));
       return;
     }
+    final parsedPrice = _parsePriceValue(_priceController.text);
+    if (parsedPrice < _minimumOfferPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("أقل سعر للعرض هو 1200 دينار عراقي"),
+        ),
+      );
+      return;
+    }
+
+    final discountPercent = _parseDiscountPercent();
+    final originalPrice =
+        (discountPercent != null && discountPercent > 0) ? parsedPrice : null;
+    final finalPrice = (discountPercent != null && discountPercent > 0)
+        ? double.parse(
+            (parsedPrice * (1 - (discountPercent / 100))).toStringAsFixed(2),
+          )
+        : parsedPrice;
+    if (finalPrice < _minimumOfferPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("السعر النهائي بعد الخصم يجب أن يكون 1200 دينار عراقي أو أكثر"),
+        ),
+      );
+      return;
+    }
+    final typedFullPayment = _parsePriceValue(_fullPaymentController.text);
+    final fullPaymentAmount =
+        typedFullPayment > 0 ? typedFullPayment : finalPrice;
+    if (fullPaymentAmount < _minimumOfferPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("مبلغ الدفع الكامل يجب أن يكون 1200 دينار عراقي أو أكثر"),
+        ),
+      );
+      return;
+    }
+    final typedPartialPayment = _parsePriceValue(_partialPaymentController.text);
+    final partialPaymentAmount = typedPartialPayment > 0
+        ? typedPartialPayment
+        : (fullPaymentAmount * 0.30).ceilToDouble();
+    if (partialPaymentAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("مبلغ الدفعة الجزئية يجب أن يكون أكبر من صفر"),
+        ),
+      );
+      return;
+    }
+    if (partialPaymentAmount >= fullPaymentAmount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("مبلغ الدفعة الجزئية يجب أن يكون أقل من مبلغ الدفع الكامل"),
+        ),
+      );
+      return;
+    }
 
     showDialog(
       context: context,
@@ -593,15 +719,6 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
 
     final mediaService = context.read<MediaService>();
     final bool isEditing = widget.initialItem != null;
-    final parsedPrice = _parsePriceValue(_priceController.text);
-    final discountPercent = _parseDiscountPercent();
-    final originalPrice =
-        (discountPercent != null && discountPercent > 0) ? parsedPrice : null;
-    final finalPrice = (discountPercent != null && discountPercent > 0)
-        ? double.parse(
-            (parsedPrice * (1 - (discountPercent / 100))).toStringAsFixed(2),
-          )
-        : parsedPrice;
 
     try {
       String description = _descriptionController.text;
@@ -620,6 +737,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           video: _selectedVideo,
           discountPercent: discountPercent,
           originalPrice: originalPrice,
+          partialPaymentAmount: partialPaymentAmount,
+          fullPaymentAmount: fullPaymentAmount,
         );
       } else {
         error = await mediaService.createOffer(
@@ -630,6 +749,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           _selectedVideo,
           discountPercent: discountPercent,
           originalPrice: originalPrice,
+          partialPaymentAmount: partialPaymentAmount,
+          fullPaymentAmount: fullPaymentAmount,
         );
       }
 

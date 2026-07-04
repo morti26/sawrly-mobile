@@ -269,6 +269,8 @@ class MediaService {
     File? video, {
     int? discountPercent,
     double? originalPrice,
+    double? partialPaymentAmount,
+    double? fullPaymentAmount,
   }) async {
     _lastUploadError = null;
 
@@ -297,6 +299,8 @@ class MediaService {
         'title': title,
         'description': description,
         'priceIqd': price > 0 ? price : 0.0,
+        if (partialPaymentAmount != null) 'partialPaymentIqd': partialPaymentAmount,
+        if (fullPaymentAmount != null) 'fullPaymentIqd': fullPaymentAmount,
         if (imageUrl != null) 'imageUrl': imageUrl,
         if (mediaItems.isNotEmpty) 'mediaItems': mediaItems,
         if (discountPercent != null) 'discountPercent': discountPercent,
@@ -605,6 +609,8 @@ class MediaService {
     File? video,
     int? discountPercent,
     double? originalPrice,
+    double? partialPaymentAmount,
+    double? fullPaymentAmount,
   }) async {
     _lastUploadError = null;
     List<Map<String, dynamic>>? mediaItems;
@@ -635,6 +641,8 @@ class MediaService {
         if (title != null) 'title': title,
         if (description != null) 'description': description,
         if (price != null) 'priceIqd': price,
+        if (partialPaymentAmount != null) 'partialPaymentIqd': partialPaymentAmount,
+        if (fullPaymentAmount != null) 'fullPaymentIqd': fullPaymentAmount,
         if (imageUrl != null) 'imageUrl': imageUrl,
         if (mediaItems != null) 'mediaItems': mediaItems,
         if (discountPercent != null) 'discountPercent': discountPercent,
@@ -653,6 +661,9 @@ class MediaService {
           if (title != null) 'title': title,
           if (description != null) 'description': description,
           if (price != null) 'priceIqd': price,
+          if (partialPaymentAmount != null)
+            'partialPaymentIqd': partialPaymentAmount,
+          if (fullPaymentAmount != null) 'fullPaymentIqd': fullPaymentAmount,
           if (imageUrl != null) 'imageUrl': imageUrl,
           if (mediaItems != null) 'mediaItems': mediaItems,
           if (discountPercent != null) 'discountPercent': discountPercent,

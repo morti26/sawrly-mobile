@@ -151,9 +151,12 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               return Offer(
                 id: offer.id,
+                creatorId: offer.creatorId,
                 title: offer.title,
                 description: offer.description,
                 price: offer.price,
+                partialPaymentAmount: offer.partialPaymentAmount,
+                fullPaymentAmount: offer.fullPaymentAmount,
                 imageUrl: img,
                 mediaItems: offer.mediaItems,
                 isPopular: true,
@@ -193,9 +196,12 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               return Offer(
                 id: offer.id,
+                creatorId: offer.creatorId,
                 title: offer.title,
                 description: offer.description,
                 price: offer.price,
+                partialPaymentAmount: offer.partialPaymentAmount,
+                fullPaymentAmount: offer.fullPaymentAmount,
                 imageUrl: img,
                 mediaItems: offer.mediaItems,
                 hasDiscount: offer.hasDiscount,
@@ -252,9 +258,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
                 return Offer(
                   id: offer.id,
+                  creatorId: offer.creatorId,
                   title: offer.title,
                   description: offer.description,
                   price: offer.price,
+                  partialPaymentAmount: offer.partialPaymentAmount,
+                  fullPaymentAmount: offer.fullPaymentAmount,
                   imageUrl: img,
                   mediaItems: offer.mediaItems,
                   isPopular: offer.isPopular,

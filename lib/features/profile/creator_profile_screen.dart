@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -240,9 +242,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                   leading:
                       const Icon(Icons.calendar_month, color: Colors.purple),
                   title: const Text("إضافة إلى الجدول"),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    _showCreateEventDialog();
+                    await _openCalendarScreen();
                   },
                 ),
               ],
@@ -253,274 +255,21 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     );
   }
 
-  void _showCreateEventDialog() {
-    final locationController = TextEditingController();
-    final notesController = TextEditingController();
-    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
-    TimeOfDay selectedTime = const TimeOfDay(hour: 12, minute: 0);
-    String selectedStatus = 'booked';
+  Future<void> _openCalendarScreen() async {
+    final user = widget.user ?? context.read<AuthService>().currentUser;
+    if (user == null) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text("إضافة إلى الجدول"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.borderLight,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "الحالة",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _buildCalendarStatusChip(
-                            label: "محجوز",
-                            icon: Icons.event_busy,
-                            status: 'booked',
-                            currentStatus: selectedStatus,
-                            onTap: () {
-                              setState(() => selectedStatus = 'booked');
-                            },
-                          ),
-                          _buildCalendarStatusChip(
-                            label: "مشغول",
-                            icon: Icons.block,
-                            status: 'busy',
-                            currentStatus: selectedStatus,
-                            onTap: () {
-                              setState(() => selectedStatus = 'busy');
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: selectedDate,
-                            firstDate: DateTime.now()
-                                .subtract(const Duration(days: 1)),
-                            lastDate:
-                                DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (pickedDate == null) return;
-                          setState(() {
-                            selectedDate = DateTime(
-                              pickedDate.year,
-                              pickedDate.month,
-                              pickedDate.day,
-                              selectedDate.hour,
-                              selectedDate.minute,
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(_formatDateLabel(selectedDate)),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final pickedTime = await showTimePicker(
-                            context: context,
-                            initialTime: selectedTime,
-                          );
-                          if (pickedTime == null) return;
-                          setState(() => selectedTime = pickedTime);
-                        },
-                        icon: const Icon(Icons.access_time),
-                        label: Text(selectedTime.format(context)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                    controller: locationController,
-                    decoration:
-                        const InputDecoration(labelText: "الموقع (اختياري)")),
-                TextField(
-                    controller: notesController,
-                    maxLines: 3,
-                    decoration:
-                        const InputDecoration(labelText: "ملاحظات (اختياري)")),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    color: _calendarStatusCardColor(selectedStatus),
-                    border: Border.all(
-                      color: _calendarStatusBorderColor(selectedStatus),
-                    ),
-                  ),
-                  child: Text(
-                    selectedStatus == 'booked'
-                        ? "سيظهر هذا اليوم للعميل كـ محجوز"
-                        : "سيظهر هذا اليوم للعميل كـ مشغول",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("إلغاء")),
-            TextButton(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(this.context);
-                  final scheduledAt = DateTime(
-                    selectedDate.year,
-                    selectedDate.month,
-                    selectedDate.day,
-                    selectedTime.hour,
-                    selectedTime.minute,
-                  );
-
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (context) =>
-                        const Center(child: CircularProgressIndicator()),
-                  );
-
-                  final error =
-                      await this.context.read<MediaService>().createEvent(
-                            _calendarStatusTitle(selectedStatus),
-                            scheduledAt.toIso8601String(),
-                            locationController.text.trim(),
-                            null,
-                            calendarStatus: selectedStatus,
-                            notes: notesController.text.trim(),
-                          );
-
-                  if (context.mounted) {
-                    Navigator.of(context, rootNavigator: true).pop();
-                  }
-
-                  if (!mounted || !context.mounted) return;
-
-                  if (error == null) {
-                    Navigator.pop(context);
-                    setState(() {
-                      _mediaReloadTick++;
-                    });
-                    messenger.showSnackBar(
-                        const SnackBar(content: Text("تم تحديث الجدول!")));
-                  } else {
-                    messenger.showSnackBar(SnackBar(content: Text(error)));
-                  }
-                },
-                child: const Text("إنشاء")),
-          ],
-        ),
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreatorCalendarScreen(userId: user.id),
       ),
     );
-  }
 
-  Widget _buildCalendarStatusChip({
-    required String label,
-    required IconData icon,
-    required String status,
-    required String currentStatus,
-    required VoidCallback onTap,
-  }) {
-    final isSelected = status == currentStatus;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          gradient: isSelected
-              ? const LinearGradient(colors: AppColors.accentGradient)
-              : null,
-          color: isSelected ? null : AppColors.surfaceLight,
-          boxShadow: isSelected ? AppShadows.glowAccent : null,
-          border: Border.all(
-            color: isSelected
-                ? Colors.transparent
-                : AppColors.border.withValues(alpha: 0.7),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: Colors.white),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _calendarStatusTitle(String status) {
-    if (status == 'busy') return 'مشغول';
-    return 'محجوز';
-  }
-
-  String _formatDateLabel(DateTime value) {
-    final day = value.day.toString().padLeft(2, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    final year = value.year.toString();
-    return '$day/$month/$year';
-  }
-
-  Color _calendarStatusCardColor(String status) {
-    if (status == 'busy') {
-      return AppColors.warningBg;
-    }
-    return AppColors.errorBg;
-  }
-
-  Color _calendarStatusBorderColor(String status) {
-    if (status == 'busy') {
-      return AppColors.warning.withValues(alpha: 0.45);
-    }
-    return AppColors.accentPink.withValues(alpha: 0.45);
+    if (!mounted) return;
+    setState(() {
+      _mediaReloadTick++;
+    });
   }
 
   @override
@@ -864,6 +613,991 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
           ],
         ),
       ],
+    );
+  }
+}
+
+class CreatorCalendarScreen extends StatefulWidget {
+  final String userId;
+
+  const CreatorCalendarScreen({super.key, required this.userId});
+
+  @override
+  State<CreatorCalendarScreen> createState() => _CreatorCalendarScreenState();
+}
+
+class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
+  late Future<List<dynamic>> _loadFuture;
+  late DateTime _visibleWeekStart;
+  DateTime? _selectedDay;
+  bool _didChange = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedDay = DateTime(now.year, now.month, now.day);
+    _visibleWeekStart = _startOfWeek(_selectedDay!);
+    _loadFuture = _loadData();
+  }
+
+  Future<List<dynamic>> _loadData() {
+    return context.read<MediaService>().fetchEvents(widget.userId);
+  }
+
+  DateTime _dayOnly(DateTime value) =>
+      DateTime.utc(value.year, value.month, value.day);
+
+  DateTime _startOfWeek(DateTime value) {
+    final normalized = _dayOnly(value);
+    return normalized.subtract(Duration(days: normalized.weekday - DateTime.monday));
+  }
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  int _isoWeekNumber(DateTime date) {
+    final normalized = _dayOnly(date);
+    final thursday = normalized.add(Duration(days: 4 - normalized.weekday));
+    final firstDayOfYear = DateTime.utc(thursday.year, 1, 1);
+    final firstThursday = firstDayOfYear.add(
+      Duration(days: (DateTime.thursday - firstDayOfYear.weekday + 7) % 7),
+    );
+    return 1 + (thursday.difference(firstThursday).inDays ~/ 7);
+  }
+
+  Map<DateTime, List<Map<String, dynamic>>> _groupEventsByDay(List<dynamic> items) {
+    final grouped = <DateTime, List<Map<String, dynamic>>>{};
+    for (final raw in items) {
+      if (raw is! Map) continue;
+      final item = Map<String, dynamic>.from(raw);
+      final parsed = _parseEventDate(item['date_time']);
+      if (parsed == null) continue;
+      final key = _dayOnly(parsed);
+      grouped.putIfAbsent(key, () => []).add(item);
+    }
+
+    for (final entry in grouped.entries) {
+      entry.value.sort((a, b) {
+        final first = _parseEventDate(a['date_time']);
+        final second = _parseEventDate(b['date_time']);
+        if (first == null || second == null) return 0;
+        return first.compareTo(second);
+      });
+    }
+    return grouped;
+  }
+
+  DateTime? _parseEventDate(dynamic raw) {
+    final value = raw?.toString().trim() ?? '';
+    if (value.isEmpty) return null;
+    return DateTime.tryParse(value)?.toLocal();
+  }
+
+  String _monthLabel(DateTime month) {
+    const labels = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
+    ];
+    return '${labels[month.month - 1]} ${month.year}';
+  }
+
+  String _weekRangeLabel(DateTime weekStart) {
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    final startDay = weekStart.day.toString().padLeft(2, '0');
+    final endDay = weekEnd.day.toString().padLeft(2, '0');
+    final startMonth = _monthLabel(DateTime(weekStart.year, weekStart.month));
+    final endMonth = _monthLabel(DateTime(weekEnd.year, weekEnd.month));
+
+    if (weekStart.month == weekEnd.month && weekStart.year == weekEnd.year) {
+      return '$startDay - $endDay $startMonth';
+    }
+    return '$startDay $startMonth - $endDay $endMonth';
+  }
+
+  String _weekdayShortLabel(int weekday) {
+    const labels = ['اث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
+    return labels[weekday - 1];
+  }
+
+  String _fullDateLabel(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final year = value.year.toString();
+    return '$day/$month/$year';
+  }
+
+  String _eventTimeLabel(dynamic raw) {
+    final parsed = _parseEventDate(raw);
+    if (parsed == null) return '';
+    final hour = parsed.hour.toString().padLeft(2, '0');
+    final minute = parsed.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _normalizeMediaUrl(String raw) {
+    if (raw.trim().isEmpty) return '';
+    String url = raw.trim();
+    if (url.startsWith('/')) {
+      url = 'https://sawrly.com$url';
+    } else if (url.startsWith('http://10.0.2.2:') ||
+        url.startsWith('http://localhost:')) {
+      url = url.replaceFirst(
+        RegExp(r'http://(10\.0\.2\.2|localhost):\d+'),
+        'https://sawrly.com',
+      );
+    } else if (url.startsWith('http://sawrly.com')) {
+      url = url.replaceFirst('http://', 'https://');
+    }
+
+    try {
+      Uri.parse(url);
+      return url;
+    } catch (_) {
+      return Uri.encodeFull(url);
+    }
+  }
+
+  bool _isVideoUrl(String url) {
+    if (url.isEmpty) return false;
+    final lower = url.toLowerCase();
+    if (lower.contains('/videos/')) return true;
+    const videoExt = ['.mp4', '.mov', '.webm', '.mkv', '.m3u8'];
+    return videoExt.any((ext) => lower.contains('$ext?') || lower.endsWith(ext));
+  }
+
+  String _calendarStatusLabel(dynamic raw) {
+    final status = raw?.toString().toLowerCase();
+    if (status == 'busy') return 'مشغول';
+    if (status == 'booked') return 'محجوز';
+    return 'فعالية';
+  }
+
+  IconData _calendarStatusIcon(dynamic raw) {
+    final status = raw?.toString().toLowerCase();
+    if (status == 'busy') return Icons.block_rounded;
+    if (status == 'booked') return Icons.event_busy_rounded;
+    return Icons.event_available_rounded;
+  }
+
+  Color _calendarStatusColor(dynamic raw) {
+    final status = raw?.toString().toLowerCase();
+    if (status == 'busy') return AppColors.warning;
+    if (status == 'booked') return AppColors.accentPink;
+    return AppColors.primaryLight;
+  }
+
+  Color _calendarStatusBackground(dynamic raw) {
+    final status = raw?.toString().toLowerCase();
+    if (status == 'busy') return AppColors.warningBg;
+    if (status == 'booked') return AppColors.errorBg;
+    return AppColors.infoBg;
+  }
+
+  Widget _buildCalendarStatusChip({
+    required String label,
+    required IconData icon,
+    required String status,
+    required String currentStatus,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = status == currentStatus;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: isSelected ? const LinearGradient(colors: AppColors.accentGradient) : null,
+          color: isSelected ? null : AppColors.surfaceLight,
+          boxShadow: isSelected ? AppShadows.glowAccent : null,
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : AppColors.border.withValues(alpha: 0.7),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _calendarStatusTitle(String status) {
+    if (status == 'busy') return 'مشغول';
+    return 'محجوز';
+  }
+
+  String _formatDateLabel(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final year = value.year.toString();
+    return '$day/$month/$year';
+  }
+
+  Color _calendarStatusCardColor(String status) {
+    if (status == 'busy') return AppColors.warningBg;
+    return AppColors.errorBg;
+  }
+
+  Color _calendarStatusBorderColor(String status) {
+    if (status == 'busy') return AppColors.warning.withValues(alpha: 0.45);
+    return AppColors.accentPink.withValues(alpha: 0.45);
+  }
+
+  List<Map<String, dynamic>> _eventsForDay(
+    DateTime day,
+    Map<DateTime, List<Map<String, dynamic>>> grouped,
+  ) {
+    return grouped[_dayOnly(day)] ?? const [];
+  }
+
+  Widget _buildEventPreviewThumb(Map<String, dynamic> item, {double size = 18}) {
+    final previewUrl = _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
+    final isVideo = _isVideoUrl(previewUrl);
+    if (previewUrl.isEmpty) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: _calendarStatusBackground(item['calendar_status']),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(
+          _calendarStatusIcon(item['calendar_status']),
+          size: size * 0.65,
+          color: _calendarStatusColor(item['calendar_status']),
+        ),
+      );
+    }
+
+    if (isVideo) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: AppColors.darkGradient),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Icon(
+          Icons.play_circle_fill_rounded,
+          color: Colors.white,
+          size: 14,
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Image.network(
+        previewUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          color: AppColors.surfaceLight,
+          child: const Icon(Icons.image, color: Colors.white70, size: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarDayCell({
+    required DateTime day,
+    required bool isSelected,
+    required bool isToday,
+    required List<Map<String, dynamic>> events,
+    required VoidCallback onTap,
+  }) {
+    final primaryEvent = events.isNotEmpty ? events.first : null;
+    final statusColor = primaryEvent == null
+        ? Colors.transparent
+        : _calendarStatusColor(primaryEvent['calendar_status']);
+    final hasEvent = primaryEvent != null;
+
+    return Expanded(
+      child: AspectRatio(
+        aspectRatio: 0.86,
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: onTap,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.surfaceLight : AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.accentPink.withValues(alpha: 0.85)
+                        : hasEvent
+                            ? statusColor.withValues(alpha: 0.45)
+                            : AppColors.borderLight,
+                    width: isSelected ? 1.4 : 1,
+                  ),
+                  boxShadow: isSelected ? AppShadows.glowAccent : null,
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        alignment: Alignment.center,
+                        decoration: isToday
+                            ? BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: AppColors.accentGradient,
+                                ),
+                                boxShadow: AppShadows.glowAccent,
+                              )
+                            : null,
+                        child: Text(
+                          '${day.day}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: hasEvent
+                              ? statusColor
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedDayPanel(List<Map<String, dynamic>> events) {
+    final selectedDay = _selectedDay ?? _dayOnly(DateTime.now());
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'تفاصيل اليوم',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _fullDateLabel(selectedDay),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: () => _showCreateEventDialog(initialDate: selectedDay),
+                icon: const Icon(Icons.add),
+                label: const Text('إضافة'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (events.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: const Text(
+                'لا توجد عناصر في هذا اليوم',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            )
+          else
+            ...events.map(
+              (item) {
+                final previewUrl =
+                    _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
+                final isVideo = _isVideoUrl(previewUrl);
+                final statusColor = _calendarStatusColor(item['calendar_status']);
+                final statusBg = _calendarStatusBackground(item['calendar_status']);
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildEventPreviewThumb(item, size: 54),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: statusBg,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    _calendarStatusLabel(item['calendar_status']),
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  _eventTimeLabel(item['date_time']),
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (isVideo)
+                                  const Icon(
+                                    Icons.videocam_rounded,
+                                    size: 16,
+                                    color: Colors.white70,
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item['title']?.toString().trim().isNotEmpty == true
+                                  ? item['title'].toString().trim()
+                                  : _calendarStatusLabel(item['calendar_status']),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if ((item['location']?.toString().trim().isNotEmpty ??
+                                false)) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                item['location'].toString().trim(),
+                                style: const TextStyle(
+                                  color: AppColors.primaryLight,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                            if ((item['notes']?.toString().trim().isNotEmpty ??
+                                false)) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                item['notes'].toString().trim(),
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showCreateEventDialog({DateTime? initialDate}) async {
+    final locationController = TextEditingController();
+    final notesController = TextEditingController();
+    DateTime selectedDate = initialDate ?? DateTime.now().add(const Duration(days: 1));
+    TimeOfDay selectedTime = const TimeOfDay(hour: 12, minute: 0);
+    String selectedStatus = 'booked';
+    File? selectedMedia;
+    bool selectedMediaIsVideo = false;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text("إضافة إلى الجدول"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "الحالة",
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _buildCalendarStatusChip(
+                            label: "محجوز",
+                            icon: Icons.event_busy,
+                            status: 'booked',
+                            currentStatus: selectedStatus,
+                            onTap: () => setDialogState(() => selectedStatus = 'booked'),
+                          ),
+                          _buildCalendarStatusChip(
+                            label: "مشغول",
+                            icon: Icons.block,
+                            status: 'busy',
+                            currentStatus: selectedStatus,
+                            onTap: () => setDialogState(() => selectedStatus = 'busy'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final pickedDate = await showDatePicker(
+                            context: dialogContext,
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (pickedDate == null) return;
+                          setDialogState(() {
+                            selectedDate = DateTime(
+                              pickedDate.year,
+                              pickedDate.month,
+                              pickedDate.day,
+                              selectedDate.hour,
+                              selectedDate.minute,
+                            );
+                          });
+                        },
+                        icon: const Icon(Icons.calendar_today),
+                        label: Text(_formatDateLabel(selectedDate)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final pickedTime = await showTimePicker(
+                            context: dialogContext,
+                            initialTime: selectedTime,
+                          );
+                          if (pickedTime == null) return;
+                          setDialogState(() => selectedTime = pickedTime);
+                        },
+                        icon: const Icon(Icons.access_time),
+                        label: Text(selectedTime.format(dialogContext)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final mediaService = context.read<MediaService>();
+                    final selection = await showModalBottomSheet<String>(
+                      context: dialogContext,
+                      builder: (sheetContext) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.image, color: Colors.blue),
+                              title: const Text("رفع صورة"),
+                              onTap: () => Navigator.pop(sheetContext, "image"),
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.videocam, color: Colors.red),
+                              title: const Text("رفع فيديو"),
+                              onTap: () => Navigator.pop(sheetContext, "video"),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                    if (selection == null) return;
+                    final file = selection == "video"
+                        ? await mediaService.pickVideo()
+                        : await mediaService.pickImage();
+                    if (file == null) return;
+                    setDialogState(() {
+                      selectedMedia = file;
+                      selectedMediaIsVideo = selection == "video";
+                    });
+                  },
+                  icon: Icon(
+                    selectedMediaIsVideo ? Icons.videocam : Icons.perm_media_rounded,
+                  ),
+                  label: Text(
+                    selectedMedia == null
+                        ? "إضافة صورة أو فيديو للحدث"
+                        : selectedMedia!.path.split(Platform.pathSeparator).last,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: locationController,
+                  decoration: const InputDecoration(labelText: "الموقع (اختياري)"),
+                ),
+                TextField(
+                  controller: notesController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: "ملاحظات (اختياري)"),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: _calendarStatusCardColor(selectedStatus),
+                    border: Border.all(
+                      color: _calendarStatusBorderColor(selectedStatus),
+                    ),
+                  ),
+                  child: Text(
+                    selectedStatus == 'booked'
+                        ? "سيظهر هذا اليوم للعميل كـ محجوز"
+                        : "سيظهر هذا اليوم للعميل كـ مشغول",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("إلغاء"),
+            ),
+            TextButton(
+              onPressed: () async {
+                final scheduledAt = DateTime(
+                  selectedDate.year,
+                  selectedDate.month,
+                  selectedDate.day,
+                  selectedTime.hour,
+                  selectedTime.minute,
+                );
+
+                showDialog(
+                  context: dialogContext,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator()),
+                );
+
+                final error = await context.read<MediaService>().createEvent(
+                      _calendarStatusTitle(selectedStatus),
+                      scheduledAt.toIso8601String(),
+                      locationController.text.trim(),
+                      selectedMedia,
+                      calendarStatus: selectedStatus,
+                      notes: notesController.text.trim(),
+                    );
+
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext, rootNavigator: true).pop();
+                }
+
+                if (!mounted || !dialogContext.mounted) return;
+
+                if (error == null) {
+                  Navigator.pop(dialogContext);
+                  setState(() {
+                    _didChange = true;
+                    _selectedDay = _dayOnly(selectedDate);
+                    _visibleWeekStart = _startOfWeek(selectedDate);
+                    _loadFuture = _loadData();
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("تم تحديث الجدول!")),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(error)));
+                }
+              },
+              child: const Text("إنشاء"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope<bool>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _didChange);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          foregroundColor: Colors.white,
+          title: const Text('الجدول'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            onPressed: () => Navigator.pop(context, _didChange),
+          ),
+          actions: [
+            IconButton(
+              onPressed: () => _showCreateEventDialog(initialDate: _selectedDay),
+              icon: const Icon(Icons.add_circle_outline_rounded),
+            ),
+          ],
+        ),
+        body: FutureBuilder<List<dynamic>>(
+          future: _loadFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  snapshot.error.toString(),
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              );
+            }
+
+            final items = snapshot.data ?? [];
+            final grouped = _groupEventsByDay(items);
+            final selectedDay = _selectedDay ?? _dayOnly(DateTime.now());
+            final selectedDayEvents = _eventsForDay(selectedDay, grouped);
+            final today = _dayOnly(DateTime.now());
+            final weekDays = List.generate(
+              7,
+              (index) => _visibleWeekStart.add(Duration(days: index)),
+            );
+            final weekNumber = _isoWeekNumber(_visibleWeekStart);
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              final newWeek =
+                                  _visibleWeekStart.subtract(const Duration(days: 7));
+                              setState(() {
+                                _visibleWeekStart = newWeek;
+                                _selectedDay = newWeek;
+                              });
+                            },
+                            icon: const Icon(Icons.chevron_left, color: Colors.white),
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Text(
+                                  'الأسبوع $weekNumber',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  _weekRangeLabel(_visibleWeekStart),
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              final newWeek =
+                                  _visibleWeekStart.add(const Duration(days: 7));
+                              setState(() {
+                                _visibleWeekStart = newWeek;
+                                _selectedDay = newWeek;
+                              });
+                            },
+                            icon: const Icon(Icons.chevron_right, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            alignment: Alignment.center,
+                            child: Text(
+                              '$weekNumber',
+                              style: const TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          for (final day in weekDays)
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  _weekdayShortLabel(day.weekday),
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(width: 34),
+                          for (final day in weekDays)
+                            _buildCalendarDayCell(
+                              day: day,
+                              isSelected: _sameDay(day, selectedDay),
+                              isToday: _sameDay(day, today),
+                              events: _eventsForDay(day, grouped),
+                              onTap: () {
+                                setState(() {
+                                  _selectedDay = _dayOnly(day);
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _buildSelectedDayPanel(selectedDayEvents),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -1304,8 +2038,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     } else if (widget.type == "Event") {
       return mediaService.fetchEvents(widget.userId);
     } else {
-      // Client types: Purchased, Saved
-      return Future.value([]); // Return empty list for now until implemented
+      return Future.value([]);
     }
   }
 

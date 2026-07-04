@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/cart_service.dart';
+import '../../core/services/media_service.dart';
+import '../../models/offer.dart';
 
 enum _OrdersTab { cart, quotes, payments, projects }
 
@@ -21,6 +23,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool _isLoadingHistory = true;
   String? _historyError;
   String _paymentMethod = 'online';
+  String _paymentPortion = 'full';
   List<_PaymentMethodOption> _paymentMethods = const [
     _PaymentMethodOption.onlineDefault,
   ];
@@ -29,6 +32,1171 @@ class _OrdersScreenState extends State<OrdersScreen> {
   List<_PaymentHistoryItem> _payments = const [];
   List<_ProjectHistoryItem> _projects = const [];
   String? _onlineActionPaymentId;
+
+  DateTime? _parseEventDate(dynamic raw) {
+    if (raw == null) return null;
+    return DateTime.tryParse(raw.toString())?.toLocal();
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  String? _statusForDay(DateTime day, List<dynamic> events) {
+    bool hasBusy = false;
+    for (final raw in events) {
+      if (raw is! Map) continue;
+      final eventDate = _parseEventDate(raw['date_time']);
+      if (eventDate == null || !_isSameDay(day, eventDate)) continue;
+      final status = raw['calendar_status']?.toString().toLowerCase();
+      if (status == 'booked') return 'booked';
+      if (status == 'busy') hasBusy = true;
+    }
+    return hasBusy ? 'busy' : null;
+  }
+
+  String _availabilityLabel(String? status) {
+    if (status == 'booked') return 'محجوز';
+    if (status == 'busy') return 'مشغول';
+    return 'متاح';
+  }
+
+  Color _availabilityColor(String? status) {
+    if (status == 'booked') return const Color(0xFFFF4DA6);
+    if (status == 'busy') return Colors.orangeAccent;
+    return Colors.greenAccent;
+  }
+
+  Color _availabilityBackground(String? status) {
+    if (status == 'booked') return const Color(0x33FF4DA6);
+    if (status == 'busy') return const Color(0x33FFB547);
+    return const Color(0x3323D18B);
+  }
+
+  String _timeLabel(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _bookingDateTimeLabel(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final year = value.year.toString();
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$day/$month/$year - $hour:$minute';
+  }
+
+  DateTime _dayOnly(DateTime value) =>
+      DateTime.utc(value.year, value.month, value.day);
+
+  DateTime _startOfWeek(DateTime value) {
+    final normalized = _dayOnly(value);
+    return normalized.subtract(
+      Duration(days: normalized.weekday - DateTime.monday),
+    );
+  }
+
+  int _isoWeekNumber(DateTime date) {
+    final normalized = _dayOnly(date);
+    final thursday = normalized.add(Duration(days: 4 - normalized.weekday));
+    final firstDayOfYear = DateTime.utc(thursday.year, 1, 1);
+    final firstThursday = firstDayOfYear.add(
+      Duration(days: (DateTime.thursday - firstDayOfYear.weekday + 7) % 7),
+    );
+    return 1 + (thursday.difference(firstThursday).inDays ~/ 7);
+  }
+
+  String _monthLabel(DateTime month) {
+    const labels = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
+    ];
+    return '${labels[month.month - 1]} ${month.year}';
+  }
+
+  String _weekRangeLabel(DateTime weekStart) {
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    final startDay = weekStart.day.toString().padLeft(2, '0');
+    final endDay = weekEnd.day.toString().padLeft(2, '0');
+    final startMonth = _monthLabel(DateTime(weekStart.year, weekStart.month));
+    final endMonth = _monthLabel(DateTime(weekEnd.year, weekEnd.month));
+
+    if (weekStart.month == weekEnd.month && weekStart.year == weekEnd.year) {
+      return '$startDay - $endDay $startMonth';
+    }
+    return '$startDay $startMonth - $endDay $endMonth';
+  }
+
+  String _weekdayShortLabel(int weekday) {
+    const labels = ['اث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
+    return labels[weekday - 1];
+  }
+
+  String _fullDateLabel(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final year = value.year.toString();
+    return '$day/$month/$year';
+  }
+
+  List<Map<String, dynamic>> _eventsForDay(DateTime day, List<dynamic> events) {
+    final normalized = _dayOnly(day);
+    final matches = <Map<String, dynamic>>[];
+    for (final raw in events) {
+      if (raw is! Map) continue;
+      final eventDate = _parseEventDate(raw['date_time']);
+      if (eventDate == null) continue;
+      if (_dayOnly(eventDate) == normalized) {
+        matches.add(Map<String, dynamic>.from(raw));
+      }
+    }
+    matches.sort((a, b) {
+      final first = _parseEventDate(a['date_time']);
+      final second = _parseEventDate(b['date_time']);
+      if (first == null || second == null) return 0;
+      return first.compareTo(second);
+    });
+    return matches;
+  }
+
+  Widget _buildCustomerCalendarDayCell({
+    required DateTime day,
+    required bool isSelected,
+    required bool isToday,
+    required String? status,
+    required bool isPast,
+    required VoidCallback onTap,
+  }) {
+    final color = isPast ? Colors.white30 : _availabilityColor(status);
+    final hasStatus = status != null;
+    final isAvailable = !isPast && status == null;
+
+    return Expanded(
+      child: AspectRatio(
+        aspectRatio: 0.86,
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF2A2039)
+                      : const Color(0xFF161B27),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFFFF4DA6)
+                        : hasStatus
+                            ? color.withValues(alpha: 0.45)
+                            : Colors.white10,
+                    width: isSelected ? 1.4 : 1,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color:
+                                const Color(0xFFFF4DA6).withValues(alpha: 0.24),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        alignment: Alignment.center,
+                        decoration: isToday
+                            ? BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFF4DA6), Color(0xFF7A3EED)],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFF4DA6)
+                                        .withValues(alpha: 0.24),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              )
+                            : null,
+                        child: Text(
+                          '${day.day}',
+                          style: TextStyle(
+                            color: isPast ? Colors.white54 : Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: isPast
+                              ? Colors.white10
+                              : isAvailable
+                                  ? Colors.greenAccent
+                                  : color,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomerSelectedDayPanel({
+    required Offer item,
+    required DateTime selectedDay,
+    required DateTime? selectedDateTime,
+    required List<Map<String, dynamic>> dayEvents,
+    required VoidCallback onPickTime,
+  }) {
+    final status = _statusForDay(selectedDay, dayEvents);
+    final isAvailable = status == null;
+    final selectedTime = selectedDateTime != null &&
+            _dayOnly(selectedDateTime) == _dayOnly(selectedDay)
+        ? selectedDateTime
+        : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141A26),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'تفاصيل اليوم',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _fullDateLabel(selectedDay),
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _availabilityBackground(status),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: _availabilityColor(status).withValues(alpha: 0.34),
+                  ),
+                ),
+                child: Text(
+                  _availabilityLabel(status),
+                  style: TextStyle(
+                    color: _availabilityColor(status),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (dayEvents.isNotEmpty) ...[
+            for (final event in dayEvents.take(2))
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B2030),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color:
+                        _availabilityColor(event['calendar_status']?.toString())
+                            .withValues(alpha: 0.28),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      event['calendar_status']?.toString().toLowerCase() ==
+                              'busy'
+                          ? Icons.block_rounded
+                          : Icons.event_busy_rounded,
+                      color:
+                          _availabilityColor(event['calendar_status']?.toString()),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${_availabilityLabel(event['calendar_status']?.toString())} ${_timeLabel(TimeOfDay.fromDateTime(_parseEventDate(event['date_time']) ?? selectedDay.toLocal()))}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ] else
+            const Text(
+              'هذا اليوم متاح حالياً للحجز.',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 12,
+              ),
+            ),
+          const SizedBox(height: 12),
+          if (isAvailable)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onPickTime,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF4DA6),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: const Icon(Icons.schedule_rounded),
+                label: Text(
+                  selectedTime == null
+                      ? 'اختر الوقت لهذا اليوم'
+                      : 'الوقت المختار: ${_timeLabel(TimeOfDay.fromDateTime(selectedTime))}',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            )
+          else
+            const Text(
+              'هذا اليوم غير متاح. اختر يوماً آخر من الجدول.',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+              ),
+            ),
+          if (selectedTime != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'موعد الحجز: ${_bookingDateTimeLabel(selectedTime)}',
+              style: const TextStyle(
+                color: Colors.greenAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  double _calculatePaymentAmountForOffer(Offer offer, String portion) {
+    return offer.paymentAmountFor(portion);
+  }
+
+  double _calculatePaymentAmountForItems(List<Offer> items, String portion) {
+    return items.fold<double>(
+      0,
+      (sum, offer) => sum + _calculatePaymentAmountForOffer(offer, portion),
+    );
+  }
+
+  String _paymentPortionLabel(String portion) {
+    switch (portion) {
+      case 'partial':
+        return 'جزء من المبلغ';
+      case 'full':
+      default:
+        return 'المبلغ الكامل';
+    }
+  }
+
+  String _paymentPortionHint(String portion) {
+    switch (portion) {
+      case 'partial':
+        return 'يتم الآن دفع مبلغ الدفعة الجزئية الذي حدده صاحب العرض، ثم يُستكمل الباقي لاحقاً.';
+      case 'full':
+      default:
+        return 'يتم الآن دفع مبلغ العمل الكامل المحدد لهذا العرض ثم المتابعة إلى بوابة الدفع.';
+    }
+  }
+
+  Future<String?> _showPaymentPortionSheet(List<Offer> items) async {
+    String selected = _paymentPortion;
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF141824),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: StatefulBuilder(
+            builder: (sheetContext, setSheetState) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'اختر طريقة دفع المبلغ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'بعد اختيار الجزء المطلوب من المبلغ، سيتم تحويلك إلى بوابة الدفع الإلكترونية.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    for (final portion in const ['partial', 'full']) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setSheetState(() {
+                                selected = portion;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(18),
+                            child: Ink(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: selected == portion
+                                    ? const Color(0xFF2A2039)
+                                    : const Color(0xFF1B2030),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: selected == portion
+                                      ? const Color(0xFFFF4DA6)
+                                      : Colors.white12,
+                                ),
+                                boxShadow: selected == portion
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFFFF4DA6)
+                                              .withValues(alpha: 0.24),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    selected == portion
+                                        ? Icons.radio_button_checked
+                                        : Icons.radio_button_off,
+                                    color: selected == portion
+                                        ? const Color(0xFFFF4DA6)
+                                        : Colors.white38,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _paymentPortionLabel(portion),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          _paymentPortionHint(portion),
+                                          style: const TextStyle(
+                                            color: Colors.white60,
+                                            fontSize: 12,
+                                            height: 1.45,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    '${_calculatePaymentAmountForItems(items, portion).toStringAsFixed(0)} IQD',
+                                    style: const TextStyle(
+                                      color: Color(0xFFBC83FF),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.white24),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              'رجوع',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                Navigator.of(sheetContext).pop(selected),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: const Color(0xFFFF4DA6),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              'المتابعة إلى الدفع',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<Map<String, List<dynamic>>> _loadAvailabilityForOffers(
+      List<Offer> items) async {
+    final mediaService = context.read<MediaService>();
+    final creatorIds = items
+        .map((item) => item.creatorId.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    final entries = await Future.wait(
+      creatorIds.map((creatorId) async {
+        final events = await mediaService.fetchEvents(creatorId);
+        return MapEntry(creatorId, events);
+      }),
+    );
+
+    return Map<String, List<dynamic>>.fromEntries(entries);
+  }
+
+  Future<Map<String, DateTime>?> _showCalendarReviewBeforeSubmit(
+      List<Offer> items) async {
+    if (items.isEmpty) return null;
+
+    final offersWithCreator =
+        items.where((item) => item.creatorId.trim().isNotEmpty).toList();
+    final offersWithoutCreator =
+        items.where((item) => item.creatorId.trim().isEmpty).toList();
+
+    final selectedByOfferId = <String, DateTime>{};
+    final selectedDayByOfferId = <String, DateTime>{};
+    final visibleWeekStartByOfferId = <String, DateTime>{};
+    final today = _dayOnly(DateTime.now());
+
+    final result = await showModalBottomSheet<Map<String, DateTime>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF141824),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: StatefulBuilder(
+            builder: (sheetContext, setSheetState) {
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  18,
+                  18,
+                  18,
+                  18 + MediaQuery.of(sheetContext).viewInsets.bottom,
+                ),
+                child: FutureBuilder<Map<String, List<dynamic>>>(
+                  future: _loadAvailabilityForOffers(offersWithCreator),
+                  builder: (context, snapshot) {
+                    final availability =
+                        snapshot.data ?? const <String, List<dynamic>>{};
+                    final allSelected = offersWithCreator.every(
+                      (item) => selectedByOfferId.containsKey(item.id),
+                    );
+
+                    Future<void> pickDateTimeForOffer(
+                        Offer item, DateTime day) async {
+                      final pickedTime = await showTimePicker(
+                        context: sheetContext,
+                        initialTime: const TimeOfDay(hour: 12, minute: 0),
+                        helpText: 'اختر وقت الحجز',
+                      );
+                      if (pickedTime == null) return;
+                      setSheetState(() {
+                        selectedDayByOfferId[item.id] = _dayOnly(day);
+                        selectedByOfferId[item.id] = DateTime(
+                          day.year,
+                          day.month,
+                          day.day,
+                          pickedTime.hour,
+                          pickedTime.minute,
+                        );
+                      });
+                    }
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 44,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'اختر موعد الحجز أولاً',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'راجع جدول صاحب العرض، اختر يوماً متاحاً، ثم حدّد الوقت قبل متابعة الدفع.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            height: 1.45,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (snapshot.connectionState == ConnectionState.waiting)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 28),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else
+                          Flexible(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  for (final item in offersWithCreator) ...[
+                                    Builder(
+                                      builder: (_) {
+                                        final selected =
+                                            selectedByOfferId[item.id];
+                                        final creatorEvents =
+                                            availability[item.creatorId] ??
+                                                const [];
+                                        final initialSelectedDay = selected !=
+                                                null
+                                            ? _dayOnly(selected)
+                                            : today;
+                                        final selectedDay =
+                                            selectedDayByOfferId.putIfAbsent(
+                                          item.id,
+                                          () => initialSelectedDay,
+                                        );
+                                        final visibleWeekStart =
+                                            visibleWeekStartByOfferId
+                                                .putIfAbsent(
+                                          item.id,
+                                          () => _startOfWeek(selectedDay),
+                                        );
+                                        final weekDays = List.generate(
+                                          7,
+                                          (index) => visibleWeekStart.add(
+                                            Duration(days: index),
+                                          ),
+                                        );
+                                        final weekNumber =
+                                            _isoWeekNumber(visibleWeekStart);
+                                        final selectedDayEvents = _eventsForDay(
+                                          selectedDay,
+                                          creatorEvents,
+                                        );
+
+                                        return Container(
+                                          width: double.infinity,
+                                          margin:
+                                              const EdgeInsets.only(bottom: 12),
+                                          padding: const EdgeInsets.all(14),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1B2030),
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                            border: Border.all(
+                                              color: Colors.white12,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                item.title,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              const Text(
+                                                'اختر يوماً متاحاً من جدول المبدع',
+                                                style: TextStyle(
+                                                  color: Colors.white60,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.all(14),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      const Color(0xFF141A26),
+                                                  borderRadius:
+                                                      BorderRadius.circular(18),
+                                                  border: Border.all(
+                                                    color: Colors.white12,
+                                                  ),
+                                                ),
+                                                child: Column(
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        IconButton(
+                                                          onPressed: () {
+                                                            final newWeek =
+                                                                visibleWeekStart
+                                                                    .subtract(
+                                                              const Duration(
+                                                                  days: 7),
+                                                            );
+                                                            setSheetState(() {
+                                                              visibleWeekStartByOfferId[
+                                                                      item.id] =
+                                                                  newWeek;
+                                                              selectedDayByOfferId[
+                                                                      item.id] =
+                                                                  newWeek;
+                                                              if (selected !=
+                                                                      null &&
+                                                                  !_isSameDay(
+                                                                    selected,
+                                                                    newWeek,
+                                                                  )) {
+                                                                selectedByOfferId
+                                                                    .remove(
+                                                                  item.id,
+                                                                );
+                                                              }
+                                                            });
+                                                          },
+                                                          icon: const Icon(
+                                                            Icons.chevron_left,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                        Expanded(
+                                                          child: Column(
+                                                            children: [
+                                                              Text(
+                                                                'الأسبوع $weekNumber',
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 17,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w800,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  height: 3),
+                                                              Text(
+                                                                _weekRangeLabel(
+                                                                  visibleWeekStart,
+                                                                ),
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .white60,
+                                                                  fontSize: 12,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        IconButton(
+                                                          onPressed: () {
+                                                            final newWeek =
+                                                                visibleWeekStart
+                                                                    .add(
+                                                              const Duration(
+                                                                  days: 7),
+                                                            );
+                                                            setSheetState(() {
+                                                              visibleWeekStartByOfferId[
+                                                                      item.id] =
+                                                                  newWeek;
+                                                              selectedDayByOfferId[
+                                                                      item.id] =
+                                                                  newWeek;
+                                                              if (selected !=
+                                                                      null &&
+                                                                  !_isSameDay(
+                                                                    selected,
+                                                                    newWeek,
+                                                                  )) {
+                                                                selectedByOfferId
+                                                                    .remove(
+                                                                  item.id,
+                                                                );
+                                                              }
+                                                            });
+                                                          },
+                                                          icon: const Icon(
+                                                            Icons.chevron_right,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    Row(
+                                                      children: [
+                                                        Container(
+                                                          width: 34,
+                                                          alignment:
+                                                              Alignment.center,
+                                                          child: Text(
+                                                            '$weekNumber',
+                                                            style:
+                                                                const TextStyle(
+                                                              color: Color(
+                                                                  0xFFBC83FF),
+                                                              fontSize: 11,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        for (final day
+                                                            in weekDays)
+                                                          Expanded(
+                                                            child: Center(
+                                                              child: Text(
+                                                                _weekdayShortLabel(
+                                                                  day.weekday,
+                                                                ),
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .white54,
+                                                                  fontSize: 11,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w700,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 10),
+                                                    Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        const SizedBox(
+                                                            width: 34),
+                                                        for (final day
+                                                            in weekDays)
+                                                          _buildCustomerCalendarDayCell(
+                                                            day: day,
+                                                            isSelected:
+                                                                _isSameDay(
+                                                              day,
+                                                              selectedDay,
+                                                            ),
+                                                            isToday:
+                                                                _isSameDay(
+                                                              day,
+                                                              today,
+                                                            ),
+                                                            status:
+                                                                _statusForDay(
+                                                              day,
+                                                              creatorEvents,
+                                                            ),
+                                                            isPast: _dayOnly(
+                                                              day,
+                                                            ).isBefore(today),
+                                                            onTap: () {
+                                                              setSheetState(() {
+                                                                selectedDayByOfferId[
+                                                                        item.id] =
+                                                                    _dayOnly(
+                                                                  day,
+                                                                );
+                                                                if (selected !=
+                                                                        null &&
+                                                                    !_isSameDay(
+                                                                      selected,
+                                                                      day,
+                                                                    )) {
+                                                                  selectedByOfferId
+                                                                      .remove(
+                                                                    item.id,
+                                                                  );
+                                                                }
+                                                              });
+                                                            },
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              _buildCustomerSelectedDayPanel(
+                                                item: item,
+                                                selectedDay: selectedDay,
+                                                selectedDateTime: selected,
+                                                dayEvents: selectedDayEvents,
+                                                onPickTime: () =>
+                                                    pickDateTimeForOffer(
+                                                  item,
+                                                  selectedDay,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                  for (final item in offersWithoutCreator) ...[
+                                    Container(
+                                      width: double.infinity,
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1B2030),
+                                        borderRadius: BorderRadius.circular(18),
+                                        border:
+                                            Border.all(color: Colors.white12),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.title,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          const Text(
+                                            'لا توجد بيانات جدول مرتبطة بهذا العرض حالياً.',
+                                            style: TextStyle(
+                                              color: Colors.white60,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    Navigator.of(sheetContext).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  side:
+                                      const BorderSide(color: Colors.white24),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'رجوع',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: snapshot.connectionState ==
+                                            ConnectionState.waiting ||
+                                        !allSelected
+                                    ? null
+                                    : () => Navigator.of(sheetContext).pop(
+                                          Map<String, DateTime>.from(
+                                            selectedByOfferId,
+                                          ),
+                                        ),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 14),
+                                  backgroundColor:
+                                      const Color(0xFFFF4DA6),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'تأكيد الموعد ثم الدفع',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    return result;
+  }
 
   @override
   void initState() {
@@ -179,17 +1347,29 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return value;
   }
 
+  Map<String, dynamic>? _asJsonMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return null;
+  }
+
   String? _extractGatewayCheckoutUrl(dynamic payload) {
-    if (payload is! Map<String, dynamic>) {
+    final parsedPayload = _asJsonMap(payload);
+    if (parsedPayload == null) {
       return null;
     }
 
-    final directUrl = _normalizeOptionalText(payload['gatewayCheckoutUrl']);
+    final directUrl =
+        _normalizeOptionalText(parsedPayload['gatewayCheckoutUrl']);
     if (directUrl != null) {
       return directUrl;
     }
 
-    final rawItems = payload['items'];
+    final rawItems = parsedPayload['items'];
     if (rawItems is! List) {
       return null;
     }
@@ -199,6 +1379,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
       final itemUrl = _normalizeOptionalText(parsed['checkoutUrl']);
       if (itemUrl != null) {
         return itemUrl;
+      }
+    }
+
+    return null;
+  }
+
+  String? _extractFirstPaymentId(dynamic payload) {
+    final parsedPayload = _asJsonMap(payload);
+    if (parsedPayload == null) {
+      return null;
+    }
+
+    final rawItems = parsedPayload['items'];
+    if (rawItems is! List) {
+      return null;
+    }
+
+    for (final item in rawItems.whereType<Map>()) {
+      final parsed = Map<String, dynamic>.from(item);
+      final paymentId = _normalizeOptionalText(parsed['paymentId']);
+      if (paymentId != null) {
+        return paymentId;
       }
     }
 
@@ -266,27 +1468,31 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Future<String?> _createOnlineCheckoutUrl(_PaymentHistoryItem item) async {
+    return _createOnlineCheckoutUrlByPaymentId(item.id);
+  }
+
+  Future<String?> _createOnlineCheckoutUrlByPaymentId(String paymentId) async {
     if (!mounted) {
       return null;
     }
 
     setState(() {
-      _onlineActionPaymentId = item.id;
+      _onlineActionPaymentId = paymentId;
     });
 
     try {
       final apiClient = context.read<ApiClient>();
       final response =
-          await apiClient.client.post('/payments/${item.id}/online-checkout');
-      final payload = response.data;
+          await apiClient.client.post('/payments/$paymentId/online-checkout');
+      final payload = _asJsonMap(response.data);
 
-      final checkoutUrl = payload is Map<String, dynamic>
-          ? _normalizeOptionalText(
-              payload['gatewayCheckoutUrl'] ?? payload['checkoutUrl'])
-          : null;
-      final gatewayStatus = payload is Map<String, dynamic>
-          ? _normalizeOptionalText(payload['gatewayStatus']) ?? 'pending'
-          : 'pending';
+      final checkoutUrl = payload == null
+          ? null
+          : _normalizeOptionalText(
+              payload['gatewayCheckoutUrl'] ?? payload['checkoutUrl']);
+      final gatewayStatus = payload == null
+          ? 'pending'
+          : _normalizeOptionalText(payload['gatewayStatus']) ?? 'pending';
 
       if (checkoutUrl == null || checkoutUrl.isEmpty) {
         return null;
@@ -299,7 +1505,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       setState(() {
         _payments = _payments
             .map(
-              (payment) => payment.id == item.id
+              (payment) => payment.id == paymentId
                   ? payment.copyWith(
                       gatewayCheckoutUrl: checkoutUrl,
                       gatewayStatus: gatewayStatus,
@@ -316,9 +1522,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       }
 
       final responseData = e.response?.data;
-      final errorMessage = responseData is Map<String, dynamic>
-          ? responseData['error']?.toString()
-          : null;
+      final errorMessage = _asJsonMap(responseData)?['error']?.toString();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -430,7 +1634,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  Future<void> _submitOrders(BuildContext context) async {
+  Future<void> _submitOrders(
+    BuildContext context, {
+    required Map<String, DateTime> bookingSelections,
+    required String paymentPortion,
+  }) async {
     final auth = context.read<AuthService>();
     final cart = context.read<CartService>();
     final apiClient = context.read<ApiClient>();
@@ -463,20 +1671,32 @@ class _OrdersScreenState extends State<OrdersScreen> {
       final response = await apiClient.client.post('/checkout', data: {
         'offerIds': items.map((item) => item.id).toList(),
         'paymentMethod': _paymentMethod,
+        'paymentPortion': paymentPortion,
+        'scheduledForByOfferId': bookingSelections.map(
+          (key, value) => MapEntry(key, value.toUtc().toIso8601String()),
+        ),
       });
 
       final data = response.data;
-      final createdCount = data is Map<String, dynamic>
-          ? (data['quotesCount'] as num?)?.toInt() ?? items.length
-          : items.length;
-      final nextStep =
-          data is Map<String, dynamic> ? data['nextStep']?.toString() : null;
-      final gatewayCheckoutUrl = _extractGatewayCheckoutUrl(data);
+      final parsedData = _asJsonMap(data);
+      final createdCount =
+          (parsedData?['quotesCount'] as num?)?.toInt() ?? items.length;
+      final nextStep = parsedData?['nextStep']?.toString();
+      String? gatewayCheckoutUrl = _extractGatewayCheckoutUrl(parsedData);
+      final firstPaymentId = _extractFirstPaymentId(parsedData);
 
       cart.clear();
       await _refreshHistory();
       if (!mounted) {
         return;
+      }
+
+      if (_paymentMethod == 'online' &&
+          (gatewayCheckoutUrl == null || gatewayCheckoutUrl.isEmpty) &&
+          firstPaymentId != null &&
+          firstPaymentId.isNotEmpty) {
+        gatewayCheckoutUrl =
+            await _createOnlineCheckoutUrlByPaymentId(firstPaymentId);
       }
 
       if (_paymentMethod == 'online' &&
@@ -507,9 +1727,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       );
     } on DioException catch (e) {
       final responseData = e.response?.data;
-      final errorMessage = responseData is Map<String, dynamic>
-          ? responseData['error']?.toString()
-          : null;
+      final errorMessage = _asJsonMap(responseData)?['error']?.toString();
 
       if (!mounted) {
         return;
@@ -891,7 +2109,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'الإجمالي:',
+                      'المبلغ المطلوب الآن:',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -899,7 +2117,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       ),
                     ),
                     Text(
-                      '${cart.totalAmount.toStringAsFixed(0)} IQD',
+                      '${_calculatePaymentAmountForItems(List.of(cart.items), _paymentPortion).toStringAsFixed(0)} IQD',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -957,6 +2175,50 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   style: const TextStyle(color: Colors.white54, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1F2432),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'نوع المبلغ',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            _paymentPortionLabel(_paymentPortion),
+                            style: const TextStyle(
+                              color: Color(0xFFFF8AD4),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _paymentPortionHint(_paymentPortion),
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -988,8 +2250,33 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       ],
                     ),
                     child: ElevatedButton(
-                      onPressed:
-                          _isSubmitting ? null : () => _submitOrders(context),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () async {
+                              final cart = context.read<CartService>();
+                              final bookingSelections =
+                                  await _showCalendarReviewBeforeSubmit(
+                                List.of(cart.items),
+                              );
+                              if (!mounted || bookingSelections == null) {
+                                return;
+                              }
+                              final paymentPortion =
+                                  await _showPaymentPortionSheet(
+                                List.of(cart.items),
+                              );
+                              if (!mounted || paymentPortion == null) {
+                                return;
+                              }
+                              setState(() {
+                                _paymentPortion = paymentPortion;
+                              });
+                              await _submitOrders(
+                                context,
+                                bookingSelections: bookingSelections,
+                                paymentPortion: paymentPortion,
+                              );
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -1000,7 +2287,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       child: Text(
                         _isSubmitting
                             ? 'جاري إرسال الطلب...'
-                            : 'إرسال الطلب والدفع',
+                            : 'اختيار الموعد ثم نوع الدفع',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -1071,6 +2358,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
       lines: [
         'السعر المثبت: ${item.price.toStringAsFixed(0)} IQD',
         'المبدع: ${item.creatorName}',
+        if (item.scheduledFor != null)
+          'موعد الحجز: ${_formatDate(item.scheduledFor!)}',
         'حالة الدفع: ${_paymentStatusLabel(item.latestPaymentStatus ?? 'pending')}',
         if (item.projectStatus != null)
           'حالة المشروع: ${_projectStatusLabel(item.projectStatus!)}',
@@ -1130,6 +2419,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       title: item.offerTitle,
       lines: [
         'المبلغ: ${item.amount.toStringAsFixed(0)} IQD',
+        'نوع الدفع: ${_paymentPortionLabel(item.paymentPortion)}',
         'طريقة الدفع: ${_paymentMethodLabel(item.method)}',
         if (item.method == 'online')
           'حالة البوابة: ${_gatewayStatusLabel(item.gatewayStatus ?? 'pending')}',
@@ -1398,6 +2688,7 @@ class _QuoteHistoryItem {
   final String creatorName;
   final double price;
   final DateTime createdAt;
+  final DateTime? scheduledFor;
   final String? latestPaymentStatus;
   final String? projectStatus;
 
@@ -1408,6 +2699,7 @@ class _QuoteHistoryItem {
     required this.creatorName,
     required this.price,
     required this.createdAt,
+    required this.scheduledFor,
     required this.latestPaymentStatus,
     required this.projectStatus,
   });
@@ -1421,6 +2713,8 @@ class _QuoteHistoryItem {
       price: _parseDouble(json['price_snapshot']),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
+      scheduledFor:
+          DateTime.tryParse(json['scheduled_for']?.toString() ?? '')?.toLocal(),
       latestPaymentStatus: json['latest_payment_status']?.toString(),
       projectStatus: json['project_status']?.toString(),
     );
@@ -1437,6 +2731,7 @@ class _PaymentHistoryItem {
   final String? gatewayStatus;
   final String creatorName;
   final double amount;
+  final String paymentPortion;
   final String method;
   final String status;
   final String? projectStatus;
@@ -1452,6 +2747,7 @@ class _PaymentHistoryItem {
     required this.gatewayStatus,
     required this.creatorName,
     required this.amount,
+    required this.paymentPortion,
     required this.method,
     required this.status,
     required this.projectStatus,
@@ -1469,6 +2765,7 @@ class _PaymentHistoryItem {
       gatewayStatus: _normalizeOptionalText(json['gateway_status']),
       creatorName: json['creator_name']?.toString() ?? '-',
       amount: _parseDouble(json['amount']),
+      paymentPortion: json['payment_portion']?.toString() ?? 'full',
       method: json['method']?.toString() ?? 'cash',
       status: json['status']?.toString() ?? 'pending',
       projectStatus: json['project_status']?.toString(),
@@ -1491,6 +2788,7 @@ class _PaymentHistoryItem {
       gatewayStatus: gatewayStatus ?? this.gatewayStatus,
       creatorName: creatorName,
       amount: amount,
+      paymentPortion: paymentPortion,
       method: method,
       status: status,
       projectStatus: projectStatus,

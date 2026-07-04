@@ -22,6 +22,8 @@ class Offer {
   final String title;
   final String description;
   final double price; // Current price in IQD (after discount if any)
+  final double? partialPaymentAmount;
+  final double? fullPaymentAmount;
   final String imageUrl;
   final List<OfferMediaItem> mediaItems;
   final bool isPopular;
@@ -37,6 +39,8 @@ class Offer {
     required this.title,
     required this.description,
     required this.price,
+    this.partialPaymentAmount,
+    this.fullPaymentAmount,
     required this.imageUrl,
     this.mediaItems = const [],
     this.isPopular = false,
@@ -56,6 +60,25 @@ class Offer {
       if (firstImage.url.trim().isNotEmpty) return firstImage.url;
     }
     return imageUrl;
+  }
+
+  double get effectiveFullPaymentAmount {
+    final configured = fullPaymentAmount;
+    if (configured != null && configured > 0) return configured;
+    return price;
+  }
+
+  double get effectivePartialPaymentAmount {
+    final configured = partialPaymentAmount;
+    if (configured != null && configured > 0) return configured;
+    return (effectiveFullPaymentAmount * 0.30).ceilToDouble();
+  }
+
+  double paymentAmountFor(String portion) {
+    if (portion == 'partial') {
+      return effectivePartialPaymentAmount;
+    }
+    return effectiveFullPaymentAmount;
   }
 
   String get displayDescription {
@@ -134,6 +157,12 @@ class Offer {
       title: json['title'] ?? '',
       description: rawDescription,
       price: _parseDouble(json['price_iqd']),
+      partialPaymentAmount: json['partial_payment_iqd'] == null
+          ? null
+          : _parseDouble(json['partial_payment_iqd']),
+      fullPaymentAmount: json['full_payment_iqd'] == null
+          ? null
+          : _parseDouble(json['full_payment_iqd']),
       imageUrl: effectiveImageUrl,
       mediaItems: parsedMediaItems,
       discountPercent: discount,
