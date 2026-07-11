@@ -753,32 +753,62 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildCountryTile() {
-    return _buildDropdownTile<String>(
-      label: "الدولة",
-      icon: Icons.public_rounded,
-      value: _selectedCountry,
-      hint: "اختر الدولة",
-      items: _countryOptionsForUi
-          .map(
-            (country) => DropdownMenuItem<String>(
-              value: country,
-              child: Text(
-                country,
-                overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.public_rounded,
+              color: Colors.white70,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton(
+                  onPressed: _showCountryPicker,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.18),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    (_selectedCountry?.isNotEmpty ?? false)
+                        ? _selectedCountry!
+                        : "اختر الدولة",
+                    style: const TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
             ),
-          )
-          .toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedCountry = value;
-          _countryController.text = value ?? '';
-          if (!_isIraqValue(value)) {
-            _selectedCities.clear();
-            _cityController.clear();
-          }
-        });
-      },
+            const SizedBox(width: 12),
+            const SizedBox(
+              width: 78,
+              child: Text(
+                "الدولة",
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -871,6 +901,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _showIraqiCitiesPicker() async {
     final tempSelectedCities = {..._selectedCities};
+    final searchController = TextEditingController();
+    String searchQuery = '';
 
     await showModalBottomSheet<void>(
       context: context,
@@ -920,12 +952,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ],
                       ),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: TextField(
+                        controller: searchController,
+                        onChanged: (value) {
+                          setSheetState(() {
+                            searchQuery = value.trim().toLowerCase();
+                          });
+                        },
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: "ابحث عن مدينة",
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          prefixIcon:
+                              const Icon(Icons.search, color: Colors.white54),
+                          filled: true,
+                          fillColor: Colors.white.withValues(alpha: 0.06),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
                     const Divider(height: 1),
                     Expanded(
                       child: ListView.builder(
-                        itemCount: _iraqiCitiesForUi.length,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        itemCount: _iraqiCitiesForUi
+                            .where(
+                              (city) => city.toLowerCase().contains(searchQuery),
+                            )
+                            .length,
                         itemBuilder: (context, index) {
-                          final city = _iraqiCitiesForUi[index];
+                          final filteredCities = _iraqiCitiesForUi
+                              .where(
+                                (city) =>
+                                    city.toLowerCase().contains(searchQuery),
+                              )
+                              .toList();
+                          final city = filteredCities[index];
                           final isSelected = tempSelectedCities.contains(city);
                           return CheckboxListTile(
                             value: isSelected,
@@ -958,6 +1026,130 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         );
       },
     );
+    searchController.dispose();
+  }
+
+  Future<void> _showCountryPicker() async {
+    final searchController = TextEditingController();
+    String searchQuery = '';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1B1F2A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.78,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Row(
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            child: const Text("إلغاء"),
+                          ),
+                          const Spacer(),
+                          const Text(
+                            "اختر الدولة",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          const SizedBox(width: 48),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: TextField(
+                        controller: searchController,
+                        onChanged: (value) {
+                          setSheetState(() {
+                            searchQuery = value.trim().toLowerCase();
+                          });
+                        },
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: "ابحث عن دولة",
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          prefixIcon:
+                              const Icon(Icons.search, color: Colors.white54),
+                          filled: true,
+                          fillColor: Colors.white.withValues(alpha: 0.06),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView.builder(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        itemCount: _countryOptionsForUi
+                            .where(
+                              (country) =>
+                                  country.toLowerCase().contains(searchQuery),
+                            )
+                            .length,
+                        itemBuilder: (context, index) {
+                          final filteredCountries = _countryOptionsForUi
+                              .where(
+                                (country) => country
+                                    .toLowerCase()
+                                    .contains(searchQuery),
+                              )
+                              .toList();
+                          final country = filteredCountries[index];
+                          final isSelected = country == _selectedCountry;
+                          return ListTile(
+                            title: Text(
+                              country,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            trailing: isSelected
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    color: Color(0xFF8E6BFF),
+                                  )
+                                : null,
+                            onTap: () {
+                              setState(() {
+                                _selectedCountry = country;
+                                _countryController.text = country;
+                                if (!_isIraqValue(country)) {
+                                  _selectedCities.clear();
+                                  _cityController.clear();
+                                }
+                              });
+                              Navigator.pop(sheetContext);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    searchController.dispose();
   }
 
   Widget _buildCityInfoTile() {
@@ -996,62 +1188,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 "المدن",
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdownTile<T>({
-    required String label,
-    required IconData icon,
-    required T? value,
-    required String hint,
-    required List<DropdownMenuItem<T>> items,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white70, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<T>(
-                  value: value,
-                  isExpanded: true,
-                  dropdownColor: const Color(0xFF232938),
-                  hint: Text(
-                    hint,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(color: Colors.white38, fontSize: 14),
-                  ),
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  items: items,
-                  onChanged: onChanged,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            SizedBox(
-              width: 78,
-              child: Text(
-                label,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
