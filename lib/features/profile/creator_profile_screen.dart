@@ -81,6 +81,21 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     }
   }
 
+  void _showProfileReportDialog(User user) {
+    showReportDialog(
+      context: context,
+      title: 'الإبلاغ عن الحساب',
+      onSubmit: (reason, details) {
+        return context.read<MediaService>().reportContent(
+              targetType: 'profile',
+              targetId: user.id,
+              reason: reason,
+              details: details,
+            );
+      },
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -2429,21 +2444,6 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
         return context.read<MediaService>().reportContent(
               targetType: 'offer',
               targetId: offerId,
-              reason: reason,
-              details: details,
-            );
-      },
-    );
-  }
-
-  void _showProfileReportDialog(User user) {
-    showReportDialog(
-      context: context,
-      title: 'الإبلاغ عن الحساب',
-      onSubmit: (reason, details) {
-        return context.read<MediaService>().reportContent(
-              targetType: 'profile',
-              targetId: user.id,
               reason: reason,
               details: details,
             );
