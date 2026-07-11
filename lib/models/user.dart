@@ -9,6 +9,8 @@ class User {
   final String? gender;
   final String? avatarUrl;
   final String? coverImageUrl;
+  final String? country;
+  final String? city;
   final int followersCount;
   final int followingCount;
   final bool isFollowing;
@@ -22,6 +24,8 @@ class User {
     this.gender,
     this.avatarUrl,
     this.coverImageUrl,
+    this.country,
+    this.city,
     this.followersCount = 0,
     this.followingCount = 0,
     this.isFollowing = false,
@@ -39,6 +43,8 @@ class User {
       gender: json['gender'],
       avatarUrl: json['avatar_url'],
       coverImageUrl: json['cover_image_url'],
+      country: json['country'],
+      city: json['city'],
       followersCount: json['followers_count'] ?? 0,
       followingCount: json['following_count'] ?? 0,
       isFollowing: json['is_following'] ?? false,
@@ -55,6 +61,8 @@ class User {
       'gender': gender,
       'avatar_url': avatarUrl,
       'cover_image_url': coverImageUrl,
+      'country': country,
+      'city': city,
     };
   }
 }

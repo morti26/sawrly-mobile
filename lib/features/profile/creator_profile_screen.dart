@@ -375,6 +375,12 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         (isCreator
             ? "مصور ومخرج سينمائي مقيم في بغداد. متخصص في حفلات الزفاف والإعلانات التجارية."
             : "عاشق للتصوير الفوتوغرافي.");
+    final locationParts = [
+      if ((displayUser.city ?? '').trim().isNotEmpty) displayUser.city!.trim(),
+      if ((displayUser.country ?? '').trim().isNotEmpty)
+        displayUser.country!.trim(),
+    ];
+    final locationLabel = locationParts.join(" - ");
 
     // Hide stats for client if desired, or keep them if they can follow others
     // For now, allow clients to follow/be followed (social feature)
@@ -520,6 +526,14 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                       ),
                                     ),
                                     const SizedBox(width: 8),
+                                    if (_genderIcon(displayUser.gender) != null)
+                                      Icon(
+                                        _genderIcon(displayUser.gender),
+                                        color: Colors.white70,
+                                        size: 18,
+                                      ),
+                                    if (_genderIcon(displayUser.gender) != null)
+                                      const SizedBox(width: 6),
                                     if (displayUser.role == UserRole.creator)
                                       const Icon(Icons.verified,
                                           color: Colors.blue, size: 20),
@@ -529,6 +543,36 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                   "@${displayUser.email.split('@')[0]}",
                                   style: const TextStyle(color: Colors.white70),
                                 ),
+                                if (locationLabel.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _buildProfileMetaChip(
+                                        icon: Icons.location_on_outlined,
+                                        label: locationLabel,
+                                      ),
+                                      if ((displayUser.gender ?? '')
+                                          .trim()
+                                          .isNotEmpty)
+                                        _buildProfileMetaChip(
+                                          icon: _genderIcon(displayUser.gender) ??
+                                              Icons.wc_rounded,
+                                          label: _genderLabel(displayUser.gender),
+                                        ),
+                                    ],
+                                  ),
+                                ] else if ((displayUser.gender ?? '')
+                                    .trim()
+                                    .isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildProfileMetaChip(
+                                    icon: _genderIcon(displayUser.gender) ??
+                                        Icons.wc_rounded,
+                                    label: _genderLabel(displayUser.gender),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -566,6 +610,25 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     Text(bio,
                         style:
                             const TextStyle(color: Colors.grey, height: 1.4)),
+                    if (locationLabel.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined,
+                              size: 18, color: Colors.white70),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              locationLabel,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -611,6 +674,49 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     } catch (_) {
       return Uri.encodeFull(url);
     }
+  }
+
+  IconData? _genderIcon(String? gender) {
+    final normalized = gender?.trim().toLowerCase();
+    if (normalized == 'male') return Icons.male_rounded;
+    if (normalized == 'female') return Icons.female_rounded;
+    return null;
+  }
+
+  String _genderLabel(String? gender) {
+    final normalized = gender?.trim().toLowerCase();
+    if (normalized == 'male') return 'ذكر';
+    if (normalized == 'female') return 'أنثى';
+    return gender?.trim().isNotEmpty == true ? gender!.trim() : '';
+  }
+
+  Widget _buildProfileMetaChip({
+    required IconData icon,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.26),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white70),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStatItem(String label, String value,

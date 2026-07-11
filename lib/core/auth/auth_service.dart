@@ -240,6 +240,8 @@ class AuthService extends ChangeNotifier {
     String? gender,
     String? avatarUrl,
     String? coverImageUrl,
+    String? country,
+    String? city,
   }) async {
     _clearError();
     _setLoading(true);
@@ -251,6 +253,8 @@ class AuthService extends ChangeNotifier {
         if (gender != null) 'gender': gender,
         if (avatarUrl != null) 'avatar_url': avatarUrl,
         if (coverImageUrl != null) 'cover_image_url': coverImageUrl,
+        if (country != null) 'country': country,
+        if (city != null) 'city': city,
       });
 
       final data = response.data;
