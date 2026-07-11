@@ -78,12 +78,14 @@ class _OfferCardState extends State<OfferCard> {
     final currentUser = context.watch<AuthService>().currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
     final resolvedCardWidth =
-        cardWidth ?? (screenWidth * 0.40).clamp(130.0, 170.0).toDouble();
+        widget.cardWidth ?? (screenWidth * 0.40).clamp(130.0, 170.0).toDouble();
     final resolvedImageHeight =
-        imageHeight ?? (resolvedCardWidth * 0.52).clamp(68.0, 90.0).toDouble();
+        widget.imageHeight ??
+            (resolvedCardWidth * 0.52).clamp(68.0, 90.0).toDouble();
     final description = widget.offer.displayDescription;
     final mediaUrl = _normalizeUrl(widget.offer.primaryMediaUrl);
-    final showVideoStats = showEngagementStats && _isVideoUrl(mediaUrl);
+    final showVideoStats =
+        widget.showEngagementStats && _isVideoUrl(mediaUrl);
     final canSave = currentUser != null &&
         currentUser.id.trim() != widget.offer.creatorId.trim();
 
@@ -127,7 +129,7 @@ class _OfferCardState extends State<OfferCard> {
                     width: resolvedCardWidth,
                   ),
                 ),
-                if (showDiscountBadge && widget.offer.hasDiscount)
+                if (widget.showDiscountBadge && widget.offer.hasDiscount)
                   Positioned(
                     top: 6,
                     left: 6,
