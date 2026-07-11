@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/cart_service.dart';
 import '../../core/services/media_service.dart';
 import '../../models/offer.dart';
+import 'payment_gateway_screen.dart';
 
 enum _OrdersTab { cart, quotes, payments, projects }
 
@@ -1407,7 +1407,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return null;
   }
 
-  Future<bool> _openExternalUrl(String url) async {
+  Future<bool> _openGatewayScreen(String url) async {
     final normalized = url.trim();
     if (normalized.isEmpty) {
       return false;
@@ -1427,7 +1427,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
 
     try {
-      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!mounted) {
+        return false;
+      }
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PaymentGatewayScreen(
+            checkoutUrl: uri.toString(),
+          ),
+        ),
+      );
+      return true;
     } catch (_) {
       return false;
     }
@@ -1451,7 +1461,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       }
     }
 
-    final launched = await _openExternalUrl(checkoutUrl);
+    final launched = await _openGatewayScreen(checkoutUrl);
     if (!mounted) {
       return;
     }
@@ -1702,15 +1712,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
       if (_paymentMethod == 'online' &&
           gatewayCheckoutUrl != null &&
           gatewayCheckoutUrl.isNotEmpty) {
-        final launched = await _openExternalUrl(gatewayCheckoutUrl);
+        final launched = await _openGatewayScreen(gatewayCheckoutUrl);
         if (!mounted) {
           return;
         }
         if (!launched) {
           messenger.showSnackBar(
             const SnackBar(
-              content:
-                  Text('تعذر فتح بوابة الدفع، تأكد من وجود متصفح ثم حاول مرة أخرى'),
+              content: Text('تعذر فتح صفحة بوابة الدفع داخل التطبيق'),
             ),
           );
         }
