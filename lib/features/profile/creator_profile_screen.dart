@@ -8,6 +8,8 @@ import '../../models/user.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/design/design_tokens.dart';
 import '../../core/services/media_service.dart';
+import '../../core/widgets/report_dialog.dart';
+import '../home/offer_details_screen.dart';
 import 'edit_profile_screen.dart';
 import 'create_offer_screen.dart';
 
@@ -393,6 +395,18 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                             style:
                                 const TextStyle(fontWeight: FontWeight.bold)),
                       ),
+                    ),
+                  ),
+                if (!isOwner && isLoggedIn)
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.flag_outlined, color: Colors.white),
+                      onPressed: () => _showProfileReportDialog(displayUser),
                     ),
                   ),
                 // Settings/Edit Profile - Show for everyone if it's their profile
@@ -2031,6 +2045,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     final mediaService = context.read<MediaService>();
     if (widget.type == "Offer") {
       return mediaService.fetchOffers(widget.userId);
+    } else if (widget.type == "Saved") {
+      return mediaService.fetchSavedOffers();
     } else if (widget.type == "Photo") {
       return mediaService.fetchPhotos(widget.userId);
     } else if (widget.type == "Video") {
@@ -2173,13 +2189,27 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: canPreview
-                            ? () => _openMediaPreview(
-                                  mediaUrl: previewUrl,
-                                  title: title,
-                                  isVideo: isPreviewVideo,
-                                )
-                            : null,
+                        onTap: () {
+                          if (widget.type == "Offer") {
+                            final offer = Offer.fromJson(
+                              Map<String, dynamic>.from(item as Map),
+                            );
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => OfferDetailsScreen(offer: offer),
+                              ),
+                            );
+                            return;
+                          }
+                          if (canPreview) {
+                            _openMediaPreview(
+                              mediaUrl: previewUrl,
+                              title: title,
+                              isVideo: isPreviewVideo,
+                            );
+                          }
+                        },
                         child: isGridVideo
                             ? _buildVideoTile()
                             : Stack(
@@ -2273,6 +2303,14 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                             onPressed: () => _showReportDialog(item),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
+                          )
+                        else if (!widget.isOwner && widget.type == "Offer")
+                          IconButton(
+                            icon: const Icon(Icons.flag_outlined,
+                                size: 20, color: Colors.redAccent),
+                            onPressed: () => _showOfferReportDialog(item),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                           ),
                       ],
                     ),
@@ -2354,97 +2392,62 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
       return;
     }
 
-    final reasons = <String>[
-      'Inappropriate content',
-      'Violence or harmful content',
-      'Spam',
-      'Copyright issue',
-      'Other',
-    ];
-    String selectedReason = reasons.first;
-    final detailsController = TextEditingController();
-    bool isSubmitting = false;
-
-    showDialog(
+    showReportDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text("Report media"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: selectedReason,
-                items: reasons
-                    .map((reason) => DropdownMenuItem<String>(
-                          value: reason,
-                          child: Text(reason),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setDialogState(() => selectedReason = value);
-                  }
-                },
-                decoration: const InputDecoration(
-                  labelText: "Reason",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: detailsController,
-                maxLines: 3,
-                maxLength: 300,
-                decoration: const InputDecoration(
-                  labelText: "Details (optional)",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed:
-                  isSubmitting ? null : () => Navigator.pop(dialogContext),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: isSubmitting
-                  ? null
-                  : () async {
-                      setDialogState(() => isSubmitting = true);
-                      try {
-                        await context.read<MediaService>().reportMedia(
-                              mediaId: mediaId,
-                              reason: selectedReason,
-                              details: detailsController.text.trim(),
-                            );
-                        if (!mounted || !dialogContext.mounted) return;
-                        Navigator.pop(dialogContext);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text("Report sent successfully")),
-                        );
-                      } catch (e) {
-                        if (!mounted) return;
-                        setDialogState(() => isSubmitting = false);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Report failed: $e")),
-                        );
-                      }
-                    },
-              child: isSubmitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text("Send report"),
-            ),
-          ],
-        ),
-      ),
+      title: 'الإبلاغ عن الوسائط',
+      onSubmit: (reason, details) {
+        return context.read<MediaService>().reportMedia(
+              mediaId: mediaId,
+              reason: reason,
+              details: details,
+            );
+      },
+    );
+  }
+
+  void _showOfferReportDialog(dynamic item) {
+    final auth = context.read<AuthService>();
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login first")),
+      );
+      return;
+    }
+
+    final offerId = (item['id'] ?? '').toString();
+    if (offerId.isEmpty || offerId.startsWith('mock-')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("This offer cannot be reported")),
+      );
+      return;
+    }
+
+    showReportDialog(
+      context: context,
+      title: 'الإبلاغ عن العرض',
+      onSubmit: (reason, details) {
+        return context.read<MediaService>().reportContent(
+              targetType: 'offer',
+              targetId: offerId,
+              reason: reason,
+              details: details,
+            );
+      },
+    );
+  }
+
+  void _showProfileReportDialog(User user) {
+    showReportDialog(
+      context: context,
+      title: 'الإبلاغ عن الحساب',
+      onSubmit: (reason, details) {
+        return context.read<MediaService>().reportContent(
+              targetType: 'profile',
+              targetId: user.id,
+              reason: reason,
+              details: details,
+            );
+      },
     );
   }
 

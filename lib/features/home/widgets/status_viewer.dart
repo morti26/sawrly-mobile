@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/auth/auth_service.dart';
+import '../../../core/services/media_service.dart';
 import '../../../core/services/status_service.dart';
+import '../../../core/widgets/report_dialog.dart';
 import '../../../models/creator_status.dart';
 
 class StatusViewer extends StatefulWidget {
@@ -116,6 +118,35 @@ class _StatusViewerState extends State<StatusViewer> {
     }
   }
 
+  Future<void> _reportStory() async {
+    final currentUser = context.read<AuthService>().currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('سجل الدخول أولاً')),
+      );
+      return;
+    }
+    if (currentUser.id.trim() == _status.creatorId.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكنك الإبلاغ عن قصتك الخاصة')),
+      );
+      return;
+    }
+
+    await showReportDialog(
+      context: context,
+      title: 'الإبلاغ عن القصة',
+      onSubmit: (reason, details) {
+        return context.read<MediaService>().reportContent(
+              targetType: 'story',
+              targetId: _status.id,
+              reason: reason,
+              details: details,
+            );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<AuthService>().currentUser;
@@ -207,6 +238,11 @@ class _StatusViewerState extends State<StatusViewer> {
                     ),
                   ),
                 ),
+                if (canLike)
+                  IconButton(
+                    icon: const Icon(Icons.flag_outlined, color: Colors.white),
+                    onPressed: _reportStory,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () => Navigator.pop(context),

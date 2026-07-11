@@ -379,6 +379,17 @@ class MediaService {
     }
   }
 
+  Future<List<dynamic>> fetchSavedOffers() async {
+    try {
+      final res =
+          await _apiClient.client.get('/offers', queryParameters: {'saved': '1'});
+      return res.data as List<dynamic>;
+    } catch (e) {
+      debugPrint("Fetch Saved Offers Error: $e");
+      return [];
+    }
+  }
+
   Future<List<dynamic>> fetchPopularOffers({int limit = 6}) async {
     try {
       final res = await _apiClient.client.get('/offers', queryParameters: {
@@ -468,6 +479,33 @@ class MediaService {
     try {
       await _apiClient.client.post('/media/report', data: {
         'mediaId': mediaId,
+        'reason': reason,
+        'details': details,
+      });
+    } on DioException catch (e) {
+      String message = 'Report failed';
+      final data = e.response?.data;
+      if (data is Map && data['error'] != null) {
+        message = data['error'].toString();
+      } else if (data is String && data.trim().isNotEmpty) {
+        message = data;
+      } else if (e.message != null) {
+        message = e.message!;
+      }
+      throw Exception(message);
+    }
+  }
+
+  Future<void> reportContent({
+    required String targetType,
+    required String targetId,
+    required String reason,
+    String details = '',
+  }) async {
+    try {
+      await _apiClient.client.post('/reports', data: {
+        'targetType': targetType,
+        'targetId': targetId,
         'reason': reason,
         'details': details,
       });

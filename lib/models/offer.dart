@@ -19,6 +19,7 @@ class OfferMediaItem {
 class Offer {
   final String id;
   final String creatorId;
+  final String creatorName;
   final String title;
   final String description;
   final double price; // Current price in IQD (after discount if any)
@@ -32,10 +33,12 @@ class Offer {
   final double? originalPrice; // Original price before discount
   final int likeCount;
   final int orderCount;
+  final bool likedByMe;
 
   Offer({
     required this.id,
     this.creatorId = '',
+    this.creatorName = '',
     required this.title,
     required this.description,
     required this.price,
@@ -49,6 +52,7 @@ class Offer {
     this.originalPrice,
     this.likeCount = 0,
     this.orderCount = 0,
+    this.likedByMe = false,
   });
 
   String get primaryMediaUrl {
@@ -154,6 +158,7 @@ class Offer {
     return Offer(
       id: json['id']?.toString() ?? '',
       creatorId: json['creator_id']?.toString() ?? '',
+      creatorName: json['creator_name']?.toString() ?? '',
       title: json['title'] ?? '',
       description: rawDescription,
       price: _parseDouble(json['price_iqd']),
@@ -170,6 +175,7 @@ class Offer {
       hasDiscount: discount > 0,
       likeCount: _parseInt(json['like_count']),
       orderCount: _parseInt(json['order_count']),
+      likedByMe: json['liked_by_me'] == true,
     );
   }
 }

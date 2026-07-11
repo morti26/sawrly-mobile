@@ -3,8 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
 import 'package:video_player/video_player.dart';
+import '../../core/auth/auth_service.dart';
 import '../../core/design/design_tokens.dart';
 import '../../core/services/cart_service.dart';
+import '../../core/services/media_service.dart';
+import '../../core/widgets/report_dialog.dart';
 import '../navigation/main_navigation.dart';
 
 class OfferDetailsScreen extends StatefulWidget {
@@ -21,6 +24,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   Future<void>? _videoInitFuture;
   late final List<OfferMediaItem> _mediaItems;
   int _activeIndex = 0;
+  late bool _isSaved;
+  bool _isSavingFavorite = false;
 
   @override
   void initState() {
@@ -35,6 +40,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     } else {
       _mediaItems = const [];
     }
+    _isSaved = widget.offer.likedByMe;
     _setActiveMedia(0);
   }
 
@@ -106,6 +112,76 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     final videoExt = ['.mp4', '.mov', '.webm', '.mkv', '.m3u8'];
     return videoExt
         .any((ext) => lower.contains('$ext?') || lower.endsWith(ext));
+  }
+
+  Future<void> _toggleSaved() async {
+    final auth = context.read<AuthService>();
+    final currentUser = auth.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('سجل الدخول أولاً')),
+      );
+      return;
+    }
+    if (currentUser.id.trim() == widget.offer.creatorId.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكنك حفظ عرضك الخاص')),
+      );
+      return;
+    }
+    if (_isSavingFavorite) return;
+
+    setState(() => _isSavingFavorite = true);
+    try {
+      final liked =
+          await context.read<MediaService>().toggleOfferLike(widget.offer.id);
+      if (!mounted) return;
+      setState(() {
+        _isSaved = liked;
+        _isSavingFavorite = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(liked ? 'تمت الإضافة إلى المحفوظات' : 'تمت الإزالة من المحفوظات'),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSavingFavorite = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تحديث المحفوظات')),
+      );
+    }
+  }
+
+  Future<void> _reportOffer() async {
+    final auth = context.read<AuthService>();
+    final currentUser = auth.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('سجل الدخول أولاً')),
+      );
+      return;
+    }
+    if (currentUser.id.trim() == widget.offer.creatorId.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكنك الإبلاغ عن عرضك الخاص')),
+      );
+      return;
+    }
+
+    await showReportDialog(
+      context: context,
+      title: 'الإبلاغ عن العرض',
+      onSubmit: (reason, details) {
+        return context.read<MediaService>().reportContent(
+              targetType: 'offer',
+              targetId: widget.offer.id,
+              reason: reason,
+              details: details,
+            );
+      },
+    );
   }
 
   Widget _buildMediaFor(int index) {
@@ -185,7 +261,12 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartService>();
+    final auth = context.watch<AuthService>();
+    final currentUser = auth.currentUser;
     final isInCart = cart.contains(widget.offer.id);
+    final canSave = currentUser != null &&
+        currentUser.id.trim() != widget.offer.creatorId.trim();
+    final canReport = canSave;
 
     return Scaffold(
       appBar: AppBar(
@@ -198,6 +279,30 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
         ),
+        actions: [
+          if (canSave)
+            IconButton(
+              onPressed: _isSavingFavorite ? null : _toggleSaved,
+              icon: _isSavingFavorite
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      _isSaved ? Icons.favorite : Icons.favorite_border,
+                      color: _isSaved ? Colors.redAccent : Colors.white,
+                    ),
+            ),
+          if (canReport)
+            IconButton(
+              onPressed: _reportOffer,
+              icon: const Icon(Icons.flag_outlined, color: Colors.white),
+            ),
+        ],
       ),
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
