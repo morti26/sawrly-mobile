@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
+import '../../../core/auth/auth_service.dart';
 import '../../../core/services/cart_service.dart';
+import '../../../core/services/media_service.dart';
 import '../offer_details_screen.dart';
 
-class OfferCard extends StatelessWidget {
+class OfferCard extends StatefulWidget {
   final Offer offer;
   final double? cardWidth;
   final double? imageHeight;
@@ -21,17 +23,69 @@ class OfferCard extends StatelessWidget {
   });
 
   @override
+  State<OfferCard> createState() => _OfferCardState();
+}
+
+class _OfferCardState extends State<OfferCard> {
+  late bool _isSaved;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isSaved = widget.offer.likedByMe;
+  }
+
+  Future<void> _toggleSaved() async {
+    final auth = context.read<AuthService>();
+    final currentUser = auth.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('سجل الدخول أولاً')),
+      );
+      return;
+    }
+    if (currentUser.id.trim() == widget.offer.creatorId.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكنك حفظ عرضك الخاص')),
+      );
+      return;
+    }
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final liked =
+          await context.read<MediaService>().toggleOfferLike(widget.offer.id);
+      if (!mounted) return;
+      setState(() {
+        _isSaved = liked;
+        _isSaving = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تحديث المحفوظات')),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isInCart =
-        context.select<CartService, bool>((cart) => cart.contains(offer.id));
+        context.select<CartService, bool>((cart) => cart.contains(widget.offer.id));
+    final currentUser = context.watch<AuthService>().currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
     final resolvedCardWidth =
         cardWidth ?? (screenWidth * 0.40).clamp(130.0, 170.0).toDouble();
     final resolvedImageHeight =
         imageHeight ?? (resolvedCardWidth * 0.52).clamp(68.0, 90.0).toDouble();
-    final description = offer.displayDescription;
-    final mediaUrl = _normalizeUrl(offer.primaryMediaUrl);
+    final description = widget.offer.displayDescription;
+    final mediaUrl = _normalizeUrl(widget.offer.primaryMediaUrl);
     final showVideoStats = showEngagementStats && _isVideoUrl(mediaUrl);
+    final canSave = currentUser != null &&
+        currentUser.id.trim() != widget.offer.creatorId.trim();
 
     return Material(
       color: Colors.transparent,
@@ -40,7 +94,8 @@ class OfferCard extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => OfferDetailsScreen(offer: offer)),
+            MaterialPageRoute(
+                builder: (_) => OfferDetailsScreen(offer: widget.offer)),
           );
         },
         child: Ink(
@@ -72,7 +127,7 @@ class OfferCard extends StatelessWidget {
                     width: resolvedCardWidth,
                   ),
                 ),
-                if (showDiscountBadge && offer.hasDiscount)
+                if (showDiscountBadge && widget.offer.hasDiscount)
                   Positioned(
                     top: 6,
                     left: 6,
@@ -84,7 +139,7 @@ class OfferCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '-${offer.discountPercent}%',
+                        '-${widget.offer.discountPercent}%',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -93,22 +148,56 @@ class OfferCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (showVideoStats)
+                if (canSave)
                   Positioned(
                     top: 6,
                     right: 6,
+                    child: Material(
+                      color: const Color(0xAA10131A),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _isSaving ? null : _toggleSaved,
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  _isSaved
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  size: 18,
+                                  color: _isSaved
+                                      ? Colors.redAccent
+                                      : Colors.white,
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (showVideoStats)
+                  Positioned(
+                    top: 6,
+                    right: canSave ? 40 : 6,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _buildMetricBadge(
                           icon: Icons.favorite_rounded,
-                          value: offer.likeCount,
+                          value: widget.offer.likeCount,
                           iconColor: const Color(0xFFFF5C8A),
                         ),
                         const SizedBox(width: 4),
                         _buildMetricBadge(
                           icon: Icons.shopping_bag_rounded,
-                          value: offer.orderCount,
+                          value: widget.offer.orderCount,
                           iconColor: const Color(0xFFFFA726),
                         ),
                       ],
@@ -129,7 +218,7 @@ class OfferCard extends StatelessWidget {
                       children: [
                         // Title
                         Text(
-                          offer.title,
+                          widget.offer.title,
                           textDirection: TextDirection.rtl,
                           textAlign: TextAlign.right,
                           style: const TextStyle(
@@ -158,17 +247,17 @@ class OfferCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          '${offer.price.toStringAsFixed(0)} IQD',
+                          '${widget.offer.price.toStringAsFixed(0)} IQD',
                           style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                               color: Color(0xFFFFA726)),
                         ),
-                        if (offer.hasDiscount &&
-                            offer.originalPrice != null) ...[
+                        if (widget.offer.hasDiscount &&
+                            widget.offer.originalPrice != null) ...[
                           const SizedBox(width: 4),
                           Text(
-                            offer.originalPrice!.toStringAsFixed(0),
+                            widget.offer.originalPrice!.toStringAsFixed(0),
                             style: const TextStyle(
                               fontSize: 9,
                               color: Colors.grey,

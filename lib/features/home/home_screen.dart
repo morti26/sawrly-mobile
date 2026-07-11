@@ -259,8 +259,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Offer(
                   id: offer.id,
                   creatorId: offer.creatorId,
+                  creatorName: offer.creatorName,
                   title: offer.title,
                   description: offer.description,
+                  price: offer.price,
+                  price: offer.price,
                   price: offer.price,
                   partialPaymentAmount: offer.partialPaymentAmount,
                   fullPaymentAmount: offer.fullPaymentAmount,
@@ -272,6 +275,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   originalPrice: offer.originalPrice,
                   likeCount: offer.likeCount,
                   orderCount: offer.orderCount,
+                  likedByMe: offer.likedByMe,
+                );
+                );
                 );
               } catch (parseError) {
                 debugPrint("Error parsing offer: $parseError");
