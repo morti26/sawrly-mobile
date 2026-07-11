@@ -375,12 +375,12 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         (isCreator
             ? "مصور ومخرج سينمائي مقيم في بغداد. متخصص في حفلات الزفاف والإعلانات التجارية."
             : "عاشق للتصوير الفوتوغرافي.");
-    final locationParts = [
+    final serviceAreaParts = [
       if ((displayUser.city ?? '').trim().isNotEmpty) displayUser.city!.trim(),
       if ((displayUser.country ?? '').trim().isNotEmpty)
         displayUser.country!.trim(),
     ];
-    final locationLabel = locationParts.join(" - ");
+    final serviceAreaLabel = serviceAreaParts.join(" - ");
 
     // Hide stats for client if desired, or keep them if they can follow others
     // For now, allow clients to follow/be followed (social feature)
@@ -543,7 +543,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                   "@${displayUser.email.split('@')[0]}",
                                   style: const TextStyle(color: Colors.white70),
                                 ),
-                                if (locationLabel.isNotEmpty) ...[
+                                if (serviceAreaLabel.isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   Wrap(
                                     spacing: 8,
@@ -551,7 +551,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                     children: [
                                       _buildProfileMetaChip(
                                         icon: Icons.location_on_outlined,
-                                        label: locationLabel,
+                                        label: serviceAreaLabel,
                                       ),
                                       if ((displayUser.gender ?? '')
                                           .trim()
@@ -610,8 +610,16 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     Text(bio,
                         style:
                             const TextStyle(color: Colors.grey, height: 1.4)),
-                    if (locationLabel.isNotEmpty) ...[
+                    if (serviceAreaLabel.isNotEmpty) ...[
                       const SizedBox(height: 14),
+                      const Text(
+                        "نطاق الخدمة",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           const Icon(Icons.location_on_outlined,
@@ -619,7 +627,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              locationLabel,
+                              serviceAreaLabel,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontWeight: FontWeight.w600,

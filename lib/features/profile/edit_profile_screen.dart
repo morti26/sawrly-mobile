@@ -6,6 +6,277 @@ import '../../core/services/media_service.dart';
 import '../../models/user.dart';
 import '../../core/auth/auth_service.dart';
 
+const List<String> _allCountries = [
+  'Afghanistan',
+  'Albania',
+  'Algeria',
+  'Andorra',
+  'Angola',
+  'Antigua and Barbuda',
+  'Argentina',
+  'Armenia',
+  'Australia',
+  'Austria',
+  'Azerbaijan',
+  'Bahamas',
+  'Bahrain',
+  'Bangladesh',
+  'Barbados',
+  'Belarus',
+  'Belgium',
+  'Belize',
+  'Benin',
+  'Bhutan',
+  'Bolivia',
+  'Bosnia and Herzegovina',
+  'Botswana',
+  'Brazil',
+  'Brunei',
+  'Bulgaria',
+  'Burkina Faso',
+  'Burundi',
+  'Cabo Verde',
+  'Cambodia',
+  'Cameroon',
+  'Canada',
+  'Central African Republic',
+  'Chad',
+  'Chile',
+  'China',
+  'Colombia',
+  'Comoros',
+  'Congo',
+  'Costa Rica',
+  'Croatia',
+  'Cuba',
+  'Cyprus',
+  'Czech Republic',
+  'Denmark',
+  'Djibouti',
+  'Dominica',
+  'Dominican Republic',
+  'DR Congo',
+  'Ecuador',
+  'Egypt',
+  'El Salvador',
+  'Equatorial Guinea',
+  'Eritrea',
+  'Estonia',
+  'Eswatini',
+  'Ethiopia',
+  'Fiji',
+  'Finland',
+  'France',
+  'Gabon',
+  'Gambia',
+  'Georgia',
+  'Germany',
+  'Ghana',
+  'Greece',
+  'Grenada',
+  'Guatemala',
+  'Guinea',
+  'Guinea-Bissau',
+  'Guyana',
+  'Haiti',
+  'Honduras',
+  'Hungary',
+  'Iceland',
+  'India',
+  'Indonesia',
+  'Iran',
+  'Iraq',
+  'Ireland',
+  'Israel',
+  'Italy',
+  'Ivory Coast',
+  'Jamaica',
+  'Japan',
+  'Jordan',
+  'Kazakhstan',
+  'Kenya',
+  'Kiribati',
+  'Kuwait',
+  'Kyrgyzstan',
+  'Laos',
+  'Latvia',
+  'Lebanon',
+  'Lesotho',
+  'Liberia',
+  'Libya',
+  'Liechtenstein',
+  'Lithuania',
+  'Luxembourg',
+  'Madagascar',
+  'Malawi',
+  'Malaysia',
+  'Maldives',
+  'Mali',
+  'Malta',
+  'Marshall Islands',
+  'Mauritania',
+  'Mauritius',
+  'Mexico',
+  'Micronesia',
+  'Moldova',
+  'Monaco',
+  'Mongolia',
+  'Montenegro',
+  'Morocco',
+  'Mozambique',
+  'Myanmar',
+  'Namibia',
+  'Nauru',
+  'Nepal',
+  'Netherlands',
+  'New Zealand',
+  'Nicaragua',
+  'Niger',
+  'Nigeria',
+  'North Korea',
+  'North Macedonia',
+  'Norway',
+  'Oman',
+  'Pakistan',
+  'Palau',
+  'Palestine',
+  'Panama',
+  'Papua New Guinea',
+  'Paraguay',
+  'Peru',
+  'Philippines',
+  'Poland',
+  'Portugal',
+  'Qatar',
+  'Romania',
+  'Russia',
+  'Rwanda',
+  'Saint Kitts and Nevis',
+  'Saint Lucia',
+  'Saint Vincent and the Grenadines',
+  'Samoa',
+  'San Marino',
+  'Sao Tome and Principe',
+  'Saudi Arabia',
+  'Senegal',
+  'Serbia',
+  'Seychelles',
+  'Sierra Leone',
+  'Singapore',
+  'Slovakia',
+  'Slovenia',
+  'Solomon Islands',
+  'Somalia',
+  'South Africa',
+  'South Korea',
+  'South Sudan',
+  'Spain',
+  'Sri Lanka',
+  'Sudan',
+  'Suriname',
+  'Sweden',
+  'Switzerland',
+  'Syria',
+  'Taiwan',
+  'Tajikistan',
+  'Tanzania',
+  'Thailand',
+  'Timor-Leste',
+  'Togo',
+  'Tonga',
+  'Trinidad and Tobago',
+  'Tunisia',
+  'Turkey',
+  'Turkmenistan',
+  'Tuvalu',
+  'Uganda',
+  'Ukraine',
+  'United Arab Emirates',
+  'United Kingdom',
+  'United States',
+  'Uruguay',
+  'Uzbekistan',
+  'Vanuatu',
+  'Vatican City',
+  'Venezuela',
+  'Vietnam',
+  'Yemen',
+  'Zambia',
+  'Zimbabwe',
+];
+
+const List<String> _iraqiCities = [
+  'Baghdad',
+  'Basra',
+  'Mosul',
+  'Erbil',
+  'Sulaymaniyah',
+  'Duhok',
+  'Kirkuk',
+  'Najaf',
+  'Karbala',
+  'Hilla',
+  'Nasiriyah',
+  'Amarah',
+  'Kut',
+  'Diwaniyah',
+  'Baqubah',
+  'Ramadi',
+  'Fallujah',
+  'Samarra',
+  'Tikrit',
+  'Kufa',
+  'Zakho',
+  'Halabja',
+  'Sinjar',
+  'Tal Afar',
+  'Khanaqin',
+  'Mandali',
+  'Kalar',
+  'Chamchamal',
+  'Akre',
+  'Shaqlawa',
+  'Soran',
+  'Ranya',
+  'Rawanduz',
+  'Makhmur',
+  'Qaladiza',
+  'Penjwen',
+  'Amedi',
+  'Fao',
+  'Zubair',
+  'Abu al-Khasib',
+  'Qurna',
+  'Shatra',
+  'Suq al-Shuyukh',
+  'Rifai',
+  'Qalat Sukkar',
+  'Maysan',
+  'Ali al-Gharbi',
+  'Numaniyah',
+  'Aziziyah',
+  'Badra',
+  "Mada'in",
+  'Taji',
+  'Mahmudiyah',
+  'Haswa',
+  'Musayyib',
+  'Iskandariyah',
+  'Kifri',
+  'Khalis',
+  'Muqdadiyah',
+  'Jalawla',
+  'Rutba',
+  'Hit',
+  'Haditha',
+  'Anah',
+  'Rawa',
+  'Balad',
+  'Dujail',
+  'Bayji',
+  'Sharqat',
+];
+
 class EditProfileScreen extends StatefulWidget {
   final User user;
 
@@ -21,6 +292,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _countryController;
   late TextEditingController _cityController;
   String _gender = "Male";
+  String? _selectedCountry;
+  final Set<String> _selectedCities = <String>{};
   File? _newProfileImage;
   File? _newCoverImage;
   bool _isSaving = false;
@@ -33,6 +306,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _countryController = TextEditingController(text: widget.user.country ?? "");
     _cityController = TextEditingController(text: widget.user.city ?? "");
     _gender = widget.user.gender ?? "Male";
+    _selectedCountry = _normalizeInitialCountry(widget.user.country);
+    _selectedCities.addAll(_normalizeInitialCities(widget.user.city));
+    _countryController.text = _selectedCountry ?? '';
+    _syncSelectedCitiesText();
   }
 
   @override
@@ -93,8 +370,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         gender: _gender,
         avatarUrl: avatarUrl,
         coverImageUrl: coverUrl,
-        country: _countryController.text.trim(),
-        city: _cityController.text.trim(),
+        country: _selectedCountry?.trim() ?? '',
+        city: _isIraqSelected ? _cityController.text.trim() : '',
       );
 
       if (success && mounted) {
@@ -170,18 +447,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   icon: Icons.person_outline_rounded,
                   textInputAction: TextInputAction.next,
                 ),
-                _buildTextFieldTile(
-                  label: "الدولة",
-                  controller: _countryController,
-                  icon: Icons.public_rounded,
-                  textInputAction: TextInputAction.next,
-                ),
-                _buildTextFieldTile(
-                  label: "المدينة",
-                  controller: _cityController,
-                  icon: Icons.location_city_outlined,
-                  textInputAction: TextInputAction.next,
-                ),
+                _buildCountryTile(),
+                if (_isIraqSelected) _buildIraqiCitiesTile(),
+                if (!_isIraqSelected) _buildCityInfoTile(),
                 _buildGenderTile(),
                 _buildTextFieldTile(
                   label: "نبذة / توقيع",
@@ -405,6 +673,395 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final normalized =
         url.startsWith('/') ? "https://sawrly.com$url" : url;
     return NetworkImage(normalized);
+  }
+
+  bool get _isIraqSelected => _isIraqValue(_selectedCountry);
+
+  bool _isIraqValue(String? value) {
+    final normalized = value?.trim().toLowerCase() ?? '';
+    return normalized == 'iraq' ||
+        normalized == 'republic of iraq' ||
+        normalized == 'العراق' ||
+        normalized == 'جمهورية العراق';
+  }
+
+  String? _normalizeInitialCountry(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    if (_isIraqValue(trimmed)) return 'Iraq';
+    final exactMatch = _allCountries.where((country) => country == trimmed);
+    if (exactMatch.isNotEmpty) return exactMatch.first;
+    final caseInsensitiveMatch = _allCountries.where(
+      (country) => country.toLowerCase() == trimmed.toLowerCase(),
+    );
+    if (caseInsensitiveMatch.isNotEmpty) return caseInsensitiveMatch.first;
+    return trimmed;
+  }
+
+  List<String> _normalizeInitialCities(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) return const [];
+
+    final parts = raw
+        .split(RegExp(r',|،'))
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+
+    final normalized = <String>[];
+    for (final part in parts) {
+      final exactMatch = _iraqiCities.where((city) => city == part);
+      if (exactMatch.isNotEmpty) {
+        normalized.add(exactMatch.first);
+        continue;
+      }
+
+      final caseInsensitiveMatch = _iraqiCities.where(
+        (city) => city.toLowerCase() == part.toLowerCase(),
+      );
+      if (caseInsensitiveMatch.isNotEmpty) {
+        normalized.add(caseInsensitiveMatch.first);
+        continue;
+      }
+
+      normalized.add(part);
+    }
+    return normalized;
+  }
+
+  List<String> get _countryOptionsForUi {
+    final countries = [..._allCountries];
+    final selectedCountry = _selectedCountry?.trim() ?? '';
+    if (selectedCountry.isNotEmpty && !countries.contains(selectedCountry)) {
+      countries.add(selectedCountry);
+    }
+    return countries;
+  }
+
+  List<String> get _iraqiCitiesForUi {
+    final cities = [..._iraqiCities];
+    for (final selectedCity in _selectedCities) {
+      if (!cities.contains(selectedCity)) {
+        cities.add(selectedCity);
+      }
+    }
+    return cities;
+  }
+
+  void _syncSelectedCitiesText() {
+    _cityController.text = _selectedCities.join(', ');
+  }
+
+  Widget _buildCountryTile() {
+    return _buildDropdownTile<String>(
+      label: "الدولة",
+      icon: Icons.public_rounded,
+      value: _selectedCountry,
+      hint: "اختر الدولة",
+      items: _countryOptionsForUi
+          .map(
+            (country) => DropdownMenuItem<String>(
+              value: country,
+              child: Text(
+                country,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        setState(() {
+          _selectedCountry = value;
+          _countryController.text = value ?? '';
+          if (!_isIraqValue(value)) {
+            _selectedCities.clear();
+            _cityController.clear();
+          }
+        });
+      },
+    );
+  }
+
+  Widget _buildIraqiCitiesTile() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_city_outlined,
+                  color: Colors.white70,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton(
+                      onPressed: _showIraqiCitiesPicker,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.18),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        _selectedCities.isEmpty
+                            ? "اختر المدن"
+                            : "تم اختيار ${_selectedCities.length} مدينة",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const SizedBox(
+                  width: 78,
+                  child: Text(
+                    "المدن",
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_selectedCities.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: _selectedCities
+                      .map(
+                        (city) => InputChip(
+                          label: Text(city),
+                          onDeleted: () {
+                            setState(() {
+                              _selectedCities.remove(city);
+                              _syncSelectedCitiesText();
+                            });
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showIraqiCitiesPicker() async {
+    final tempSelectedCities = {..._selectedCities};
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1B1F2A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.72,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Row(
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            child: const Text("إلغاء"),
+                          ),
+                          const Spacer(),
+                          const Text(
+                            "اختر المدن",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedCities
+                                  ..clear()
+                                  ..addAll(tempSelectedCities);
+                                _syncSelectedCitiesText();
+                              });
+                              Navigator.pop(sheetContext);
+                            },
+                            child: const Text("تم"),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _iraqiCitiesForUi.length,
+                        itemBuilder: (context, index) {
+                          final city = _iraqiCitiesForUi[index];
+                          final isSelected = tempSelectedCities.contains(city);
+                          return CheckboxListTile(
+                            value: isSelected,
+                            activeColor: const Color(0xFF8E6BFF),
+                            checkColor: Colors.white,
+                            title: Text(
+                              city,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (checked) {
+                              setSheetState(() {
+                                if (checked == true) {
+                                  tempSelectedCities.add(city);
+                                } else {
+                                  tempSelectedCities.remove(city);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCityInfoTile() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              color: Colors.white54,
+              size: 18,
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                "قائمة المدن متاحة الآن فقط عند اختيار العراق",
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            SizedBox(
+              width: 78,
+              child: Text(
+                "المدن",
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownTile<T>({
+    required String label,
+    required IconData icon,
+    required T? value,
+    required String hint,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white70, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<T>(
+                  value: value,
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF232938),
+                  hint: Text(
+                    hint,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(color: Colors.white38, fontSize: 14),
+                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  items: items,
+                  onChanged: onChanged,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 78,
+              child: Text(
+                label,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildTextFieldTile({
