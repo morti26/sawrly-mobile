@@ -1030,10 +1030,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _showCountryPicker() async {
-    final searchController = TextEditingController();
     String searchQuery = '';
 
-    await showModalBottomSheet<void>(
+    final selectedCountry = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF1B1F2A),
@@ -1073,7 +1072,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                       child: TextField(
-                        controller: searchController,
                         onChanged: (value) {
                           setSheetState(() {
                             searchQuery = value.trim().toLowerCase();
@@ -1127,15 +1125,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   )
                                 : null,
                             onTap: () {
-                              setState(() {
-                                _selectedCountry = country;
-                                _countryController.text = country;
-                                if (!_isIraqValue(country)) {
-                                  _selectedCities.clear();
-                                  _cityController.clear();
-                                }
-                              });
-                              Navigator.pop(sheetContext);
+                              Navigator.pop(sheetContext, country);
                             },
                           );
                         },
@@ -1149,7 +1139,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         );
       },
     );
-    searchController.dispose();
+
+    if (!mounted || selectedCountry == null) return;
+
+    setState(() {
+      _selectedCountry = selectedCountry;
+      _countryController.text = selectedCountry;
+      if (!_isIraqValue(selectedCountry)) {
+        _selectedCities.clear();
+        _cityController.clear();
+      }
+    });
   }
 
   Widget _buildCityInfoTile() {
