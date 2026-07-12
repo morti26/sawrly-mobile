@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/auth/auth_service.dart';
 import '../../core/services/media_service.dart';
 
 class CreateOfferScreen extends StatefulWidget {
@@ -40,6 +41,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   File? _selectedVideo;
   List<dynamic>? _initialMediaItems;
   String? _initialImageUrl;
+  bool _isPublishing = false;
 
   @override
   void initState() {
@@ -219,16 +221,25 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           ],
         ),
         child: InkWell(
-          onTap: _publishOffer,
+          onTap: _isPublishing ? null : _publishOffer,
           child: Center(
-            child: Text(
-              isEditing ? "حفظ" : "نشر",
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            child: _isPublishing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    isEditing ? "حفظ" : "نشر",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
           ),
         ),
       ),
@@ -648,6 +659,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Future<void> _publishOffer() async {
+    if (_isPublishing) return;
     if (_titleController.text.isEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("العنوان مطلوب")));
@@ -711,14 +723,34 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       return;
     }
 
+    final bool isEditing = widget.initialItem != null;
+    if (!isEditing) {
+      final currentUser = context.read<AuthService>().currentUser;
+      if (currentUser != null) {
+        final existingOffers =
+            await context.read<MediaService>().fetchOffers(currentUser.id);
+        if (existingOffers.length >= 2) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("يمكنك نشر عرضين فقط كحد أقصى"),
+            ),
+          );
+          return;
+        }
+      }
+    }
+
+    if (!mounted) return;
+    final dialogContext = context;
+    final mediaService = dialogContext.read<MediaService>();
+
+    setState(() => _isPublishing = true);
     showDialog(
-      context: context,
+      context: dialogContext,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
-
-    final mediaService = context.read<MediaService>();
-    final bool isEditing = widget.initialItem != null;
 
     try {
       String description = _descriptionController.text;
@@ -760,7 +792,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         Navigator.pop(context, true); // Return true to indicate refresh needed
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content:
-                Text(isEditing ? "تم التحديث بنjاج!" : "تم النشر بنjاج!")));
+                Text(isEditing ? "تم التحديث بنجاح!" : "تم النشر بنجاح!")));
       } else if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text("فشل: $error")));
@@ -770,6 +802,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text("خطأ: $e")));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPublishing = false);
       }
     }
   }

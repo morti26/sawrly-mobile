@@ -228,6 +228,21 @@ class _OfferCardState extends State<OfferCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        if (widget.offer.creatorName.trim().isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            widget.offer.creatorName,
+                            textDirection: TextDirection.rtl,
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              color: Colors.white60,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                         if (description.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(

@@ -147,6 +147,16 @@ class _StatusViewerState extends State<StatusViewer> {
     );
   }
 
+  String _formatStoryTimestamp(DateTime value) {
+    final local = value.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final year = local.year.toString();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/$year - $hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<AuthService>().currentUser;
@@ -229,13 +239,26 @@ class _StatusViewerState extends State<StatusViewer> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _status.creatorName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _status.creatorName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'نُشرت: ${_formatStoryTimestamp(_status.createdAt)}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (canLike)
@@ -250,7 +273,7 @@ class _StatusViewerState extends State<StatusViewer> {
               ],
             ),
           ),
-
+ 
           if (canLike || _likeCount > 0)
             Positioned(
               bottom: MediaQuery.of(context).padding.bottom + 16,

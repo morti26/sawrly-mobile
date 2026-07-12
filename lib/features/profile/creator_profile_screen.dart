@@ -24,6 +24,10 @@ class CreatorProfileScreen extends StatefulWidget {
 
 class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     with TickerProviderStateMixin {
+  static const int _maxFreeCreatorImages = 8;
+  static const int _maxFreeCreatorVideos = 4;
+  static const int _maxFreeVideoDurationSeconds = 60;
+
   late TabController _tabController;
 
   bool _isLoadingProfile = false;
@@ -96,6 +100,64 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     );
   }
 
+  Future<void> _showSubscriptionRequiredDialog(
+    BuildContext screenContext, {
+    required String message,
+  }) async {
+    await showDialog<void>(
+      context: screenContext,
+      builder: (context) => AlertDialog(
+        title: const Text("اشتراك مطلوب", textAlign: TextAlign.right),
+        content: Text(message, textAlign: TextAlign.right),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("موافق"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<int?> _readVideoDurationSeconds(File file) async {
+    final controller = VideoPlayerController.file(file);
+    try {
+      await controller.initialize();
+      return controller.value.duration.inSeconds;
+    } catch (_) {
+      return null;
+    } finally {
+      await controller.dispose();
+    }
+  }
+
+  void _showUploadLoadingDialog(BuildContext screenContext, String message) {
+    showDialog<void>(
+      context: screenContext,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF161921),
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                message,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -156,6 +218,20 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                   onTap: () async {
                     Navigator.pop(context);
                     final mediaService = screenContext.read<MediaService>();
+                    final currentUser =
+                        screenContext.read<AuthService>().currentUser;
+                    if (currentUser == null) return;
+                    final existingPhotos =
+                        await mediaService.fetchPhotos(currentUser.id);
+                    if (existingPhotos.length >= _maxFreeCreatorImages) {
+                      if (!screenContext.mounted) return;
+                      await _showSubscriptionRequiredDialog(
+                        screenContext,
+                        message:
+                            "يمكنك رفع $_maxFreeCreatorImages صور فقط بدون اشتراك. يلزم اشتراك شهري أو سنوي لرفع المزيد.",
+                      );
+                      return;
+                    }
                     final file = await mediaService.pickImage();
                     if (file != null) {
                       // Show caption dialog
@@ -177,8 +253,16 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                 ],
                               ));
 
+                      if (!screenContext.mounted) return;
+                      _showUploadLoadingDialog(
+                        screenContext,
+                        "جاري رفع الصورة...",
+                      );
                       final success =
                           await mediaService.uploadPhoto(file, caption);
+                      if (screenContext.mounted) {
+                        Navigator.of(screenContext, rootNavigator: true).pop();
+                      }
                       if (success && mounted) {
                         setState(() {
                           _mediaReloadTick++;
@@ -209,8 +293,34 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                   onTap: () async {
                     Navigator.pop(context);
                     final mediaService = screenContext.read<MediaService>();
+                    final currentUser =
+                        screenContext.read<AuthService>().currentUser;
+                    if (currentUser == null) return;
+                    final existingVideos =
+                        await mediaService.fetchVideos(currentUser.id);
+                    if (existingVideos.length >= _maxFreeCreatorVideos) {
+                      if (!screenContext.mounted) return;
+                      await _showSubscriptionRequiredDialog(
+                        screenContext,
+                        message:
+                            "يمكنك رفع $_maxFreeCreatorVideos فيديوهات فقط بدون اشتراك. يلزم اشتراك شهري أو سنوي لرفع المزيد.",
+                      );
+                      return;
+                    }
                     final file = await mediaService.pickVideo();
                     if (file != null) {
+                      final durationSeconds =
+                          await _readVideoDurationSeconds(file);
+                      if ((durationSeconds ?? 0) >
+                          _maxFreeVideoDurationSeconds) {
+                        if (!screenContext.mounted) return;
+                        await _showSubscriptionRequiredDialog(
+                          screenContext,
+                          message:
+                              "مدة الفيديو يجب ألا تتجاوز دقيقة واحدة بدون اشتراك. يلزم اشتراك شهري أو سنوي لرفع فيديو أطول.",
+                        );
+                        return;
+                      }
                       String caption = "";
                       if (!screenContext.mounted) return;
                       await showDialog(
@@ -229,8 +339,20 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                 ],
                               ));
 
+                      if (!screenContext.mounted) return;
+                      _showUploadLoadingDialog(
+                        screenContext,
+                        "جاري رفع الفيديو...",
+                      );
                       final success =
-                          await mediaService.uploadVideo(file, caption);
+                          await mediaService.uploadVideo(
+                        file,
+                        caption,
+                        durationSeconds: durationSeconds,
+                      );
+                      if (screenContext.mounted) {
+                        Navigator.of(screenContext, rootNavigator: true).pop();
+                      }
                       if (success && mounted) {
                         setState(() {
                           _mediaReloadTick++;

@@ -361,6 +361,29 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                     style: const TextStyle(
                         fontSize: 22, fontWeight: FontWeight.bold),
                   ),
+                  if (widget.offer.creatorName.trim().isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.person_outline_rounded,
+                          size: 18,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.offer.creatorName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Text(
                     '${widget.offer.price.toStringAsFixed(0)} IQD',

@@ -221,8 +221,19 @@ class MediaService {
     return _uploadMedia('/media/photo', file, caption);
   }
 
-  Future<bool> uploadVideo(File file, String caption) async {
-    return _uploadMedia('/media/video', file, caption);
+  Future<bool> uploadVideo(
+    File file,
+    String caption, {
+    int? durationSeconds,
+  }) async {
+    return _uploadMedia(
+      '/media/video',
+      file,
+      caption,
+      extraFields: {
+        if (durationSeconds != null) 'durationSeconds': durationSeconds.toString(),
+      },
+    );
   }
 
   Future<String?> createEvent(
@@ -528,7 +539,11 @@ class MediaService {
   Future<bool> deleteOffer(String id) async {
     try {
       // Primary path: proper HTTP DELETE
-      await _apiClient.client.delete('/offers', queryParameters: {'id': id});
+      await _apiClient.client.delete(
+        '/offers',
+        queryParameters: {'id': id},
+        data: {'id': id},
+      );
       return true;
     } on DioException {
       // Fallback path for IIS method-handling edge cases
@@ -536,6 +551,7 @@ class MediaService {
         await _apiClient.client.post(
           '/offers',
           queryParameters: {'id': id, '_method': 'DELETE'},
+          data: {'id': id},
         );
         return true;
       } on DioException catch (e) {
