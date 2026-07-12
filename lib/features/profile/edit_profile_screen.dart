@@ -441,6 +441,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 16),
             _buildSectionCard(
               children: [
+                _buildServiceAreaIntroTile(),
                 _buildTextFieldTile(
                   label: "الاسم",
                   controller: _nameController,
@@ -450,6 +451,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _buildCountryTile(),
                 if (_isIraqSelected) _buildIraqiCitiesTile(),
                 if (!_isIraqSelected) _buildCityInfoTile(),
+                if (_serviceAreaPreview.isNotEmpty)
+                  _buildServiceAreaPreviewTile(),
                 _buildGenderTile(),
                 _buildTextFieldTile(
                   label: "نبذة / توقيع",
@@ -677,6 +680,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   bool get _isIraqSelected => _isIraqValue(_selectedCountry);
 
+  String get _serviceAreaPreview {
+    final parts = <String>[];
+    if (_cityController.text.trim().isNotEmpty) {
+      parts.add(_cityController.text.trim());
+    }
+    if ((_selectedCountry ?? '').trim().isNotEmpty) {
+      parts.add(_selectedCountry!.trim());
+    }
+    return parts.join(' - ');
+  }
+
   bool _isIraqValue(String? value) {
     final normalized = value?.trim().toLowerCase() ?? '';
     return normalized == 'iraq' ||
@@ -752,6 +766,92 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _cityController.text = _selectedCities.join(', ');
   }
 
+  Widget _buildServiceAreaIntroTile() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF8E6BFF).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF8E6BFF).withValues(alpha: 0.28),
+          ),
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.travel_explore_rounded,
+              color: Color(0xFFB79CFF),
+              size: 18,
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                "حدد أماكن تقديم الخدمة ليظهر ذلك للآخرين في ملفك الشخصي.",
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceAreaPreviewTile() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.visibility_outlined,
+              color: Colors.white54,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _serviceAreaPreview,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const SizedBox(
+              width: 92,
+              child: Text(
+                "سيظهر للناس",
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCountryTile() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -786,7 +886,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Text(
                     (_selectedCountry?.isNotEmpty ?? false)
                         ? _selectedCountry!
-                        : "اختر الدولة",
+                        : "اختر بلد الخدمة",
                     style: const TextStyle(color: Colors.white),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -797,7 +897,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(
               width: 78,
               child: Text(
-                "الدولة",
+                "بلد الخدمة",
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   color: Colors.white70,
@@ -847,7 +947,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       child: Text(
                         _selectedCities.isEmpty
-                            ? "اختر المدن"
+                            ? "اختر مدن الخدمة"
                             : "تم اختيار ${_selectedCities.length} مدينة",
                         style: const TextStyle(color: Colors.white),
                       ),
@@ -858,7 +958,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(
                   width: 78,
                   child: Text(
-                    "المدن",
+                    "مدن الخدمة",
                     textAlign: TextAlign.right,
                     style: TextStyle(
                       color: Colors.white70,
@@ -929,7 +1029,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           const Spacer(),
                           const Text(
-                            "اختر المدن",
+                            "اختر مدن الخدمة",
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -963,7 +1063,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         },
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: "ابحث عن مدينة",
+                          hintText: "ابحث عن مدينة خدمة",
                           hintStyle: const TextStyle(color: Colors.white38),
                           prefixIcon:
                               const Icon(Icons.search, color: Colors.white54),
@@ -1057,7 +1157,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           const Spacer(),
                           const Text(
-                            "اختر الدولة",
+                            "اختر بلد الخدمة",
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -1079,7 +1179,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         },
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: "ابحث عن دولة",
+                          hintText: "ابحث عن بلد الخدمة",
                           hintStyle: const TextStyle(color: Colors.white38),
                           prefixIcon:
                               const Icon(Icons.search, color: Colors.white54),
@@ -1172,7 +1272,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             SizedBox(width: 10),
             Expanded(
               child: Text(
-                "قائمة المدن متاحة الآن فقط عند اختيار العراق",
+                "يمكنك الآن اختيار مدن الخدمة عند تحديد العراق. في باقي الدول سيظهر بلد الخدمة فقط.",
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   color: Colors.white60,
@@ -1185,7 +1285,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             SizedBox(
               width: 78,
               child: Text(
-                "المدن",
+                "مدن الخدمة",
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   color: Colors.white70,
