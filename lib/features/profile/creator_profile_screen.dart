@@ -2347,11 +2347,14 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
           ));
         }
 
+        final bool isOfferGrid =
+            widget.type == "Offer" || widget.type == "Saved";
+
         return GridView.builder(
           padding: const EdgeInsets.all(8),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: widget.type == "Offer"
+            childAspectRatio: isOfferGrid
                 ? 0.95
                 : widget.type == "Event"
                     ? 0.86
@@ -2375,7 +2378,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
 
             bool showVideoBadge = false;
 
-            if (widget.type == "Offer") {
+            if (isOfferGrid) {
               final offer = Offer.fromJson(
                 Map<String, dynamic>.from(item as Map),
               );
@@ -2441,7 +2444,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
-                          if (widget.type == "Offer") {
+                          if (isOfferGrid) {
                             final offer = Offer.fromJson(
                               Map<String, dynamic>.from(item as Map),
                             );
@@ -2536,7 +2539,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                           ),
                         ),
                         if (widget.isOwner &&
-                            (widget.type == "Offer" ||
+                            (isOfferGrid ||
                                 widget.type == "Photo" ||
                                 widget.type == "Video" ||
                                 widget.type == "Event"))
@@ -2555,7 +2558,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           )
-                        else if (!widget.isOwner && widget.type == "Offer")
+                        else if (!widget.isOwner && isOfferGrid)
                           IconButton(
                             icon: const Icon(Icons.flag_outlined,
                                 size: 20, color: Colors.redAccent),
