@@ -509,6 +509,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     return Scaffold(
       backgroundColor: const Color(0xFF161921),
       body: NestedScrollView(
+        physics: const ClampingScrollPhysics(),
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
