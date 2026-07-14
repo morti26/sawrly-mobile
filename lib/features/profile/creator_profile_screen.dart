@@ -2352,6 +2352,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
 
         return GridView.builder(
           padding: const EdgeInsets.all(8),
+          physics: const ClampingScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             childAspectRatio: isOfferGrid
