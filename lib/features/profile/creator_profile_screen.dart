@@ -659,12 +659,23 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                   style: const TextStyle(color: Colors.white70),
                                 ),
                                 if ((displayUser.gender ?? '').trim().isNotEmpty &&
-                                    _genderIcon(displayUser.gender) != null) ...[
+                                    _genderEmoji(displayUser.gender) != null) ...[
                                   const SizedBox(height: 6),
-                                  Icon(
-                                    _genderIcon(displayUser.gender),
-                                    color: Colors.white70,
-                                    size: 18,
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.35),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _genderEmoji(displayUser.gender)!,
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
                                   ),
                                 ],
                                 if (serviceAreaLabel.isNotEmpty) ...[
@@ -791,10 +802,10 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     }
   }
 
-  IconData? _genderIcon(String? gender) {
+  String? _genderEmoji(String? gender) {
     final normalized = gender?.trim().toLowerCase();
-    if (normalized == 'male') return Icons.male_rounded;
-    if (normalized == 'female') return Icons.female_rounded;
+    if (normalized == 'male') return '👨';
+    if (normalized == 'female') return '👩';
     return null;
   }
 
