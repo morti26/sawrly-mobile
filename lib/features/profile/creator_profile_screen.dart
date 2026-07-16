@@ -649,14 +649,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    if (_genderIcon(displayUser.gender) != null)
-                                      Icon(
-                                        _genderIcon(displayUser.gender),
-                                        color: Colors.white70,
-                                        size: 18,
-                                      ),
-                                    if (_genderIcon(displayUser.gender) != null)
-                                      const SizedBox(width: 6),
                                     if (displayUser.role == UserRole.creator)
                                       const Icon(Icons.verified,
                                           color: Colors.blue, size: 20),
@@ -666,6 +658,15 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                   "@${displayUser.email.split('@')[0]}",
                                   style: const TextStyle(color: Colors.white70),
                                 ),
+                                if ((displayUser.gender ?? '').trim().isNotEmpty &&
+                                    _genderIcon(displayUser.gender) != null) ...[
+                                  const SizedBox(height: 6),
+                                  Icon(
+                                    _genderIcon(displayUser.gender),
+                                    color: Colors.white70,
+                                    size: 18,
+                                  ),
+                                ],
                                 if (serviceAreaLabel.isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   Wrap(
@@ -676,24 +677,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                         icon: Icons.location_on_outlined,
                                         label: serviceAreaLabel,
                                       ),
-                                      if ((displayUser.gender ?? '')
-                                          .trim()
-                                          .isNotEmpty)
-                                        _buildProfileMetaChip(
-                                          icon: _genderIcon(displayUser.gender) ??
-                                              Icons.wc_rounded,
-                                          label: _genderLabel(displayUser.gender),
-                                        ),
                                     ],
-                                  ),
-                                ] else if ((displayUser.gender ?? '')
-                                    .trim()
-                                    .isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  _buildProfileMetaChip(
-                                    icon: _genderIcon(displayUser.gender) ??
-                                        Icons.wc_rounded,
-                                    label: _genderLabel(displayUser.gender),
                                   ),
                                 ],
                               ],
@@ -812,13 +796,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     if (normalized == 'male') return Icons.male_rounded;
     if (normalized == 'female') return Icons.female_rounded;
     return null;
-  }
-
-  String _genderLabel(String? gender) {
-    final normalized = gender?.trim().toLowerCase();
-    if (normalized == 'male') return 'ذكر';
-    if (normalized == 'female') return 'أنثى';
-    return gender?.trim().isNotEmpty == true ? gender!.trim() : '';
   }
 
   Widget _buildProfileMetaChip({
