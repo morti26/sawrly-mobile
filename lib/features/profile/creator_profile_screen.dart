@@ -161,7 +161,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
       context: screenContext,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF161921),
+        backgroundColor: AppColors.background,
         content: Row(
           children: [
             const SizedBox(
@@ -554,7 +554,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     // Hide stats for client if desired, or keep them if they can follow others
     // For now, allow clients to follow/be followed (social feature)
     return Scaffold(
-      backgroundColor: const Color(0xFF161921),
+      backgroundColor: AppColors.background,
       body: NestedScrollView(
         physics: const ClampingScrollPhysics(),
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -2690,7 +2690,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
   void _showItemOptions(BuildContext context, dynamic item) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF161921),
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

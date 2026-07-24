@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/services/media_service.dart';
 import '../../models/banner_ad.dart';
 import '../home/widgets/home_header.dart';
@@ -72,7 +73,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF161921),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/network/api_client.dart';
 import '../../models/user.dart';
 import '../profile/creator_profile_screen.dart';
@@ -98,7 +99,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF161921),
+        backgroundColor: AppColors.background,
         elevation: 0,
         titleSpacing: 12,
         title: Container(

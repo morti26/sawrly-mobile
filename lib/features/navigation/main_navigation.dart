@@ -77,20 +77,20 @@ class _MainNavigationState extends State<MainNavigation> {
                   offset: const Offset(0, 8),
                 ),
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.10),
-                  blurRadius: 12,
-                  offset: const Offset(0, -2),
+                  color: AppColors.primary.withValues(alpha: 0.22),
+                  blurRadius: 20,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Material(
-              color: AppColors.background.withValues(alpha: 0.97),
+              color: AppColors.menuBackground.withValues(alpha: 0.97),
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.textPrimary.withValues(alpha: 0.10),
+                    color: AppColors.primaryLight.withValues(alpha: 0.32),
                     width: 1,
                   ),
                 ),
@@ -131,10 +131,10 @@ class _MainNavigationState extends State<MainNavigation> {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.10),
+        color: AppColors.primary.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(13),
         border: Border.all(
-          color: AppColors.primaryLight.withValues(alpha: 0.55),
+          color: AppColors.primaryLight.withValues(alpha: 0.72),
           width: 1.3,
         ),
         boxShadow: AppShadows.glowPrimary,

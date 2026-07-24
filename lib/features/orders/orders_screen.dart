@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_service.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/cart_service.dart';
 import '../../core/services/media_service.dart';
@@ -2503,13 +2504,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final activeTab = availableTabs[safeIndex];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF161921),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'حجوزاتي',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF161921),
+        backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
       ),

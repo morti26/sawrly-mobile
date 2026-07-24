@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/services/media_service.dart';
 import '../../models/user.dart';
 import '../../core/auth/auth_service.dart';
@@ -419,12 +420,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     context.watch<AuthService>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF161921),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF161921),
+        backgroundColor: AppColors.background,
         foregroundColor: Colors.white,
         systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Color(0xFF161921),
+          statusBarColor: AppColors.background,
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
         ),

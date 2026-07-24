@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/services/media_service.dart';
 
 class CreateOfferScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class CreateOfferScreen extends StatefulWidget {
 
 class _CreateOfferScreenState extends State<CreateOfferScreen> {
   static const double _minimumOfferPrice = 1200;
-  static const Color _bg = Color(0xFF161921);
+  static const Color _bg = AppColors.background;
   static const Color _surface = Color(0xFF222734);
   static const Color _surfaceAlt = Color(0xFF1B1F2A);
   static const Color _accentPink = Color(0xFFFF4DA6);
