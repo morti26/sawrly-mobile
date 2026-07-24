@@ -11,9 +11,17 @@ class User {
   final String? coverImageUrl;
   final String? country;
   final String? city;
+  final String? subscriptionPlan;
+  final String? subscriptionExpiresAt;
+  final bool isSuperadmin;
+  final String? superadminBadgeLabel;
+  final String? superadminBadgeIconUrl;
   final int followersCount;
   final int followingCount;
   final bool isFollowing;
+  final String? creatorLevelKey;
+  final String? creatorLevelName;
+  final String? creatorLevelIcon;
 
   User({
     required this.id,
@@ -26,9 +34,17 @@ class User {
     this.coverImageUrl,
     this.country,
     this.city,
+    this.subscriptionPlan,
+    this.subscriptionExpiresAt,
+    this.isSuperadmin = false,
+    this.superadminBadgeLabel,
+    this.superadminBadgeIconUrl,
     this.followersCount = 0,
     this.followingCount = 0,
     this.isFollowing = false,
+    this.creatorLevelKey,
+    this.creatorLevelName,
+    this.creatorLevelIcon,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -45,9 +61,17 @@ class User {
       coverImageUrl: json['cover_image_url'],
       country: json['country'],
       city: json['city'],
+      subscriptionPlan: json['subscription_plan'],
+      subscriptionExpiresAt: json['subscription_expires_at']?.toString(),
+      isSuperadmin: json['is_superadmin'] == true,
+      superadminBadgeLabel: json['superadmin_badge_label'],
+      superadminBadgeIconUrl: json['superadmin_badge_icon_url'],
       followersCount: json['followers_count'] ?? 0,
       followingCount: json['following_count'] ?? 0,
       isFollowing: json['is_following'] ?? false,
+      creatorLevelKey: json['creator_level_key'],
+      creatorLevelName: json['creator_level_name'],
+      creatorLevelIcon: json['creator_level_icon'],
     );
   }
 
@@ -63,6 +87,14 @@ class User {
       'cover_image_url': coverImageUrl,
       'country': country,
       'city': city,
+      'subscription_plan': subscriptionPlan,
+      'subscription_expires_at': subscriptionExpiresAt,
+      'is_superadmin': isSuperadmin,
+      'superadmin_badge_label': superadminBadgeLabel,
+      'superadmin_badge_icon_url': superadminBadgeIconUrl,
+      'creator_level_key': creatorLevelKey,
+      'creator_level_name': creatorLevelName,
+      'creator_level_icon': creatorLevelIcon,
     };
   }
 }

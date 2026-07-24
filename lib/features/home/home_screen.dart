@@ -16,6 +16,7 @@ import '../../core/services/media_service.dart';
 import '../../core/auth/auth_service.dart';
 import 'widgets/status_viewer.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,6 +34,20 @@ class _HomeScreenState extends State<HomeScreen> {
   int _lastStoryDbgCount = -1;
   static const String _tooLargeUploadMessage =
       'حجم الملف كبير جداً. يرجى اختيار ملف أصغر.';
+  static const Duration _storyVideoMaxDuration = Duration(minutes: 1);
+
+  Future<bool> _isStoryVideoDurationAllowed(File file) async {
+    final controller = VideoPlayerController.file(file);
+    try {
+      await controller.initialize();
+      final duration = controller.value.duration;
+      return duration <= _storyVideoMaxDuration;
+    } catch (_) {
+      return false;
+    } finally {
+      await controller.dispose();
+    }
+  }
 
   String _buildFrozenMessage(String? frozenUntilRaw) {
     if (frozenUntilRaw == null || frozenUntilRaw.trim().isEmpty) {
@@ -390,14 +405,31 @@ class _HomeScreenState extends State<HomeScreen> {
       file = await mediaService.pickImage(source: ImageSource.gallery);
       mediaType = "image";
     } else if (selection == "camera_video") {
-      file = await mediaService.pickVideo(source: ImageSource.camera);
+      file = await mediaService.pickVideo(
+        source: ImageSource.camera,
+        maxDuration: _storyVideoMaxDuration,
+      );
       mediaType = "video";
     } else if (selection == "gallery_video") {
-      file = await mediaService.pickVideo(source: ImageSource.gallery);
+      file = await mediaService.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: _storyVideoMaxDuration,
+      );
       mediaType = "video";
     }
 
     if (file == null) return null;
+    if (mediaType == "video") {
+      final ok = await _isStoryVideoDurationAllowed(file);
+      if (!ok) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("أقصى مدة لفيديو القصة هي دقيقة واحدة")),
+          );
+        }
+        return null;
+      }
+    }
     return {'file': file, 'mediaType': mediaType};
   }
 

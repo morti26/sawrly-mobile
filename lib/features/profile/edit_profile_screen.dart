@@ -336,6 +336,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    final nameTrimmed = _nameController.text.trim();
+    final bioTrimmed = _bioController.text.trim();
+    if (nameTrimmed.length > 30) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("الاسم يجب ألا يتجاوز 30 حرفاً")),
+        );
+      }
+      return;
+    }
+    if (bioTrimmed.length > 140) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("النبذة يجب ألا تتجاوز 140 حرفاً")),
+        );
+      }
+      return;
+    }
+
     debugPrint("EditProfileScreen: Save pressed!");
     setState(() => _isSaving = true);
 
@@ -365,8 +384,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
 
       final success = await authService.updateProfile(
-        name: _nameController.text.trim(),
-        bio: _bioController.text.trim(),
+        name: nameTrimmed,
+        bio: bioTrimmed,
         gender: _gender,
         avatarUrl: avatarUrl,
         coverImageUrl: coverUrl,
@@ -446,6 +465,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   label: "الاسم",
                   controller: _nameController,
                   icon: Icons.person_outline_rounded,
+                  maxLength: 30,
                   textInputAction: TextInputAction.next,
                 ),
                 _buildCountryTile(),
@@ -459,6 +479,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   controller: _bioController,
                   icon: Icons.edit_note_rounded,
                   maxLines: 4,
+                  maxLength: 140,
                   textInputAction: TextInputAction.newline,
                 ),
               ],
@@ -1305,6 +1326,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required TextEditingController controller,
     required IconData icon,
     int maxLines = 1,
+    int? maxLength,
     TextInputAction? textInputAction,
   }) {
     return Padding(
@@ -1326,8 +1348,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 controller: controller,
                 maxLines: maxLines,
                 minLines: maxLines > 1 ? maxLines : 1,
+                inputFormatters: [
+                  if (maxLength != null)
+                    LengthLimitingTextInputFormatter(maxLength),
+                ],
                 textAlign: TextAlign.right,
                 textInputAction: textInputAction,
+                maxLength: maxLength,
+                buildCounter: (
+                  context, {
+                  required currentLength,
+                  required isFocused,
+                  maxLength,
+                }) =>
+                    null,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,

@@ -123,8 +123,12 @@ class MediaService {
     return null;
   }
 
-  Future<File?> pickVideo({ImageSource source = ImageSource.gallery}) async {
-    final XFile? video = await _picker.pickVideo(source: source);
+  Future<File?> pickVideo({
+    ImageSource source = ImageSource.gallery,
+    Duration? maxDuration,
+  }) async {
+    final XFile? video =
+        await _picker.pickVideo(source: source, maxDuration: maxDuration);
     if (video != null) return File(video.path);
     return null;
   }

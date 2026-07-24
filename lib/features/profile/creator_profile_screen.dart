@@ -24,8 +24,10 @@ class CreatorProfileScreen extends StatefulWidget {
 
 class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     with TickerProviderStateMixin {
-  static const int _maxFreeCreatorImages = 8;
+  static const int _maxFreeCreatorImages = 12;
   static const int _maxFreeCreatorVideos = 4;
+  static const int _maxMonthlyCreatorImages = 16;
+  static const int _maxMonthlyCreatorVideos = 8;
   static const int _maxFreeVideoDurationSeconds = 60;
 
   late TabController _tabController;
@@ -117,6 +119,29 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         ],
       ),
     );
+  }
+
+  String _normalizedPlan(String? planRaw) {
+    return (planRaw ?? '').trim().toLowerCase();
+  }
+
+  bool _hasActiveSubscription(User user) {
+    final plan = _normalizedPlan(user.subscriptionPlan);
+    if (plan.isEmpty) return false;
+    final expiresAtRaw = user.subscriptionExpiresAt;
+    if (expiresAtRaw == null || expiresAtRaw.trim().isEmpty) return false;
+    final expiresAt = DateTime.tryParse(expiresAtRaw);
+    return expiresAt != null && expiresAt.isAfter(DateTime.now());
+  }
+
+  bool _hasUnlimitedMediaPlan(User user) {
+    if (!_hasActiveSubscription(user)) return false;
+    final plan = _normalizedPlan(user.subscriptionPlan);
+    return plan == 'yearly' || plan == 'plus' || plan == 'monthly_plus';
+  }
+
+  bool _hasLimitedMonthlyPlan(User user) {
+    return _hasActiveSubscription(user) && _normalizedPlan(user.subscriptionPlan) == 'monthly';
   }
 
   Future<int?> _readVideoDurationSeconds(File file) async {
@@ -223,12 +248,22 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     if (currentUser == null) return;
                     final existingPhotos =
                         await mediaService.fetchPhotos(currentUser.id);
-                    if (existingPhotos.length >= _maxFreeCreatorImages) {
+                    final hasUnlimitedPlan =
+                        _hasUnlimitedMediaPlan(currentUser);
+                    final hasLimitedMonthlyPlan =
+                        _hasLimitedMonthlyPlan(currentUser);
+                    final maxImages = hasLimitedMonthlyPlan
+                        ? _maxMonthlyCreatorImages
+                        : _maxFreeCreatorImages;
+                    if (!hasUnlimitedPlan &&
+                        existingPhotos.length >= maxImages) {
                       if (!screenContext.mounted) return;
                       await _showSubscriptionRequiredDialog(
                         screenContext,
                         message:
-                            "يمكنك رفع $_maxFreeCreatorImages صور فقط بدون اشتراك. يلزم اشتراك شهري أو سنوي لرفع المزيد.",
+                            hasLimitedMonthlyPlan
+                                ? "الخطة الشهرية المحدودة تسمح برفع $_maxMonthlyCreatorImages صورة كحد أقصى."
+                                : "يمكنك رفع $_maxFreeCreatorImages صور فقط بدون اشتراك. الاشتراك الشهري المحدود يضيف 4 صور إضافية، أما Plus والسنوي فغير محدودين.",
                       );
                       return;
                     }
@@ -298,12 +333,22 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     if (currentUser == null) return;
                     final existingVideos =
                         await mediaService.fetchVideos(currentUser.id);
-                    if (existingVideos.length >= _maxFreeCreatorVideos) {
+                    final hasUnlimitedPlan =
+                        _hasUnlimitedMediaPlan(currentUser);
+                    final hasLimitedMonthlyPlan =
+                        _hasLimitedMonthlyPlan(currentUser);
+                    final maxVideos = hasLimitedMonthlyPlan
+                        ? _maxMonthlyCreatorVideos
+                        : _maxFreeCreatorVideos;
+                    if (!hasUnlimitedPlan &&
+                        existingVideos.length >= maxVideos) {
                       if (!screenContext.mounted) return;
                       await _showSubscriptionRequiredDialog(
                         screenContext,
                         message:
-                            "يمكنك رفع $_maxFreeCreatorVideos فيديوهات فقط بدون اشتراك. يلزم اشتراك شهري أو سنوي لرفع المزيد.",
+                            hasLimitedMonthlyPlan
+                                ? "الخطة الشهرية المحدودة تسمح برفع $_maxMonthlyCreatorVideos فيديوهات كحد أقصى."
+                                : "يمكنك رفع $_maxFreeCreatorVideos فيديوهات فقط بدون اشتراك. الاشتراك الشهري المحدود يضيف 4 فيديوهات إضافية، أما Plus والسنوي فغير محدودين.",
                       );
                       return;
                     }
@@ -311,13 +356,15 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     if (file != null) {
                       final durationSeconds =
                           await _readVideoDurationSeconds(file);
-                      if ((durationSeconds ?? 0) >
+                      if (!hasLimitedMonthlyPlan &&
+                          !hasUnlimitedPlan &&
+                          (durationSeconds ?? 0) >
                           _maxFreeVideoDurationSeconds) {
                         if (!screenContext.mounted) return;
                         await _showSubscriptionRequiredDialog(
                           screenContext,
                           message:
-                              "مدة الفيديو يجب ألا تتجاوز دقيقة واحدة بدون اشتراك. يلزم اشتراك شهري أو سنوي لرفع فيديو أطول.",
+                              "مدة الفيديو يجب ألا تتجاوز دقيقة واحدة بدون اشتراك. الاشتراكات المدفوعة تسمح بفيديوهات أطول.",
                         );
                         return;
                       }
@@ -438,9 +485,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
     if (isCreator) {
       tabs = const [
-        Tab(text: "عروضي"),
-        Tab(text: "صور"),
-        Tab(text: "فيديوهات"),
+        Tab(text: "إعلاناتي"),
+        Tab(text: "الصور"),
+        Tab(text: "الفيديوهات"),
         Tab(text: "الجدول"),
       ];
       tabViews = [
@@ -640,44 +687,54 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      displayUser.name,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
+                                    if (displayUser.role == UserRole.creator &&
+                                        (displayUser.creatorLevelName ?? '')
+                                            .trim()
+                                            .isNotEmpty &&
+                                        (displayUser.creatorLevelIcon ?? '')
+                                            .trim()
+                                            .isNotEmpty) ...[
+                                      _buildCreatorLevelBadge(
+                                        icon: displayUser.creatorLevelIcon!.trim(),
+                                        name: displayUser.creatorLevelName!.trim(),
+                                      ),
+                                      const SizedBox(width: 10),
+                                    ],
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              displayUser.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          if (displayUser.role == UserRole.creator)
+                                            const Icon(Icons.verified,
+                                                color: Colors.blue, size: 20),
+                                          if (displayUser.isSuperadmin) ...[
+                                            const SizedBox(width: 8),
+                                            _buildSuperadminBadgeIcon(
+                                              iconUrl: displayUser.superadminBadgeIconUrl,
+                                              label: displayUser.superadminBadgeLabel,
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    if (displayUser.role == UserRole.creator)
-                                      const Icon(Icons.verified,
-                                          color: Colors.blue, size: 20),
                                   ],
                                 ),
                                 Text(
                                   "@${displayUser.email.split('@')[0]}",
                                   style: const TextStyle(color: Colors.white70),
                                 ),
-                                if ((displayUser.gender ?? '').trim().isNotEmpty &&
-                                    _genderEmoji(displayUser.gender) != null) ...[
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    width: 28,
-                                    height: 28,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.18),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.35),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      _genderEmoji(displayUser.gender)!,
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                  ),
-                                ],
                                 if (serviceAreaLabel.isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   Wrap(
@@ -802,11 +859,73 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     }
   }
 
-  String? _genderEmoji(String? gender) {
-    final normalized = gender?.trim().toLowerCase();
-    if (normalized == 'male') return '👨';
-    if (normalized == 'female') return '👩';
-    return null;
+  Widget _buildCreatorLevelBadge({
+    required String icon,
+    required String name,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuperadminBadgeIcon({
+    required String? iconUrl,
+    required String? label,
+  }) {
+    final normalizedUrl = (iconUrl ?? '').trim();
+    final tooltip = (label ?? '').trim().isEmpty ? 'سوبر أدمن' : label!.trim();
+
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1D4ED8).withValues(alpha: 0.16),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: const Color(0xFF60A5FA).withValues(alpha: 0.7),
+          ),
+        ),
+        child: ClipOval(
+          child: normalizedUrl.isNotEmpty
+              ? Image.network(
+                  normalizedUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.shield_rounded,
+                    color: Color(0xFF60A5FA),
+                    size: 15,
+                  ),
+                )
+              : const Icon(
+                  Icons.shield_rounded,
+                  color: Color(0xFF60A5FA),
+                  size: 15,
+                ),
+        ),
+      ),
+    );
   }
 
   Widget _buildProfileMetaChip({
@@ -2955,46 +3074,64 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
+    const double actionSlotWidth = 60;
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
         children: [
           Row(
             children: [
-              if (showUpload)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0, right: 4.0),
-                  child: IconButton(
-                    icon: const Icon(Icons.add_circle,
-                        color: Colors.blue, size: 28),
-                    onPressed: onUpload,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    splashRadius: 20,
-                  ),
-                ),
+              SizedBox(
+                width: actionSlotWidth,
+                child: showUpload
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 8.0, right: 4.0),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF9B59F5),
+                                Color(0xFF6D5BFF),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x409B59F5),
+                                blurRadius: 16,
+                                offset: Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.add_rounded,
+                                color: Colors.white, size: 24),
+                            tooltip: 'إضافة',
+                            onPressed: onUpload,
+                            splashRadius: 22,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
               Expanded(
-                child: Align(
-                  // Align TabBar to the left
-                  alignment: Alignment.centerLeft,
-                  child: TabBar(
-                    controller: controller,
-                    labelColor: const Color(0xFFBC83FF),
-                    unselectedLabelColor: Colors.white70,
-                    indicatorColor: const Color(0xFF9B59F5),
-                    overlayColor: WidgetStateProperty.all(
-                      const Color(0x1A7A3EED),
-                    ),
-                    physics: const BouncingScrollPhysics(),
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start, // Force start alignment
-                    labelPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0), // Ensure padding
-                    padding: EdgeInsets.zero, // Remove outer padding
-                    tabs: tabs, // Use dynamic tabs
+                child: TabBar(
+                  controller: controller,
+                  labelColor: const Color(0xFFBC83FF),
+                  unselectedLabelColor: Colors.white70,
+                  indicatorColor: const Color(0xFF9B59F5),
+                  overlayColor: WidgetStateProperty.all(
+                    const Color(0x1A7A3EED),
                   ),
+                  physics: const BouncingScrollPhysics(),
+                  isScrollable: false,
+                  labelPadding:
+                      const EdgeInsets.symmetric(horizontal: 8.0),
+                  padding: EdgeInsets.zero,
+                  tabs: tabs,
                 ),
               ),
+              const SizedBox(width: actionSlotWidth),
             ],
           ),
           const Divider(height: 1),
