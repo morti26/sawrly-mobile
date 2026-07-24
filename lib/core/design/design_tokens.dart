@@ -12,10 +12,10 @@ class AppColors {
   static const Color accentPink = Color(0xFFFF4DA6);
 
   // Background colors
-  static const Color background = Color(0xFF2F0D3D);
-  static const Color surface = Color(0xFF3D1550);
-  static const Color surfaceLight = Color(0xFF53206B);
-  static const Color menuBackground = Color(0xFF381049);
+  static const Color background = Color(0xFF34102F);
+  static const Color surface = Color(0xFF45173F);
+  static const Color surfaceLight = Color(0xFF5C2254);
+  static const Color menuBackground = Color(0xFF3C1237);
 
   // Text colors
   static const Color textPrimary = Color(0xFFFFFFFF);
@@ -50,8 +50,8 @@ class AppColors {
   ];
 
   static const List<Color> darkGradient = [
-    Color(0xFF2F0D3D),
-    Color(0xFF17061F),
+    Color(0xFF34102F),
+    Color(0xFF1D091A),
   ];
 }
 
