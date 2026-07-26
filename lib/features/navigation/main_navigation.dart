@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/design/design_tokens.dart';
 import '../home/home_screen.dart';
 import '../search/global_search_screen.dart';
@@ -35,11 +36,11 @@ class _MainNavigationState extends State<MainNavigation> {
 
   // Icons matching the reference image exactly
   final List<IconData> _icons = [
-    Icons.home_outlined,
-    Icons.search_rounded,
-    Icons.grid_view_rounded,
-    Icons.shopping_bag_outlined,
-    Icons.person_outline_rounded,
+    PhosphorIconsRegular.house,
+    PhosphorIconsRegular.magnifyingGlass,
+    PhosphorIconsRegular.squaresFour,
+    PhosphorIconsRegular.shoppingBag,
+    PhosphorIconsRegular.user,
   ];
 
   @override
