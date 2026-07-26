@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import '../../core/design/design_tokens.dart';
 import '../home/home_screen.dart';
 import '../search/global_search_screen.dart';
