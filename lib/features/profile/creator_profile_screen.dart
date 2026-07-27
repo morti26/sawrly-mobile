@@ -685,56 +685,68 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Row(
-                                  children: [
-                                    if (displayUser.role == UserRole.creator &&
-                                        (displayUser.creatorLevelName ?? '')
-                                            .trim()
-                                            .isNotEmpty &&
-                                        (displayUser.creatorLevelIcon ?? '')
-                                            .trim()
-                                            .isNotEmpty) ...[
-                                      _buildCreatorLevelBadge(
-                                        icon: displayUser.creatorLevelIcon!.trim(),
-                                        name: displayUser.creatorLevelName!.trim(),
-                                      ),
-                                      const SizedBox(width: 10),
-                                    ],
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              displayUser.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                displayUser.name,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          if (displayUser.role == UserRole.creator)
-                                            const Icon(Icons.verified,
-                                                color: Colors.blue, size: 20),
-                                          if (displayUser.isSuperadmin) ...[
                                             const SizedBox(width: 8),
-                                            _buildSuperadminBadgeIcon(
-                                              iconUrl: displayUser.superadminBadgeIconUrl,
-                                              label: displayUser.superadminBadgeLabel,
-                                            ),
+                                            if (displayUser.role == UserRole.creator)
+                                              const Icon(Icons.verified,
+                                                  color: Colors.blue, size: 20),
                                           ],
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
                                 Text(
                                   "@${displayUser.email.split('@')[0]}",
                                   style: const TextStyle(color: Colors.white70),
                                 ),
+                                  if ((displayUser.role == UserRole.creator &&
+                                          (displayUser.creatorLevelName ?? '')
+                                              .trim()
+                                              .isNotEmpty &&
+                                          (displayUser.creatorLevelIcon ?? '')
+                                              .trim()
+                                              .isNotEmpty) ||
+                                      displayUser.isSuperadmin) ...[
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        if (displayUser.role == UserRole.creator &&
+                                            (displayUser.creatorLevelName ?? '')
+                                                .trim()
+                                                .isNotEmpty &&
+                                            (displayUser.creatorLevelIcon ?? '')
+                                                .trim()
+                                                .isNotEmpty)
+                                          _buildCreatorLevelBadge(
+                                            icon: displayUser.creatorLevelIcon!.trim(),
+                                            name: displayUser.creatorLevelName!.trim(),
+                                          ),
+                                        if (displayUser.isSuperadmin)
+                                          _buildSuperadminBadgeIcon(
+                                            iconUrl: displayUser.superadminBadgeIconUrl,
+                                            label: displayUser.superadminBadgeLabel,
+                                          ),
+                                      ],
+                                    ),
+                                  ],
                                 if (serviceAreaLabel.isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   Wrap(
@@ -897,33 +909,25 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
     return Tooltip(
       message: tooltip,
-      child: Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1D4ED8).withValues(alpha: 0.16),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFF60A5FA).withValues(alpha: 0.7),
-          ),
-        ),
-        child: ClipOval(
-          child: normalizedUrl.isNotEmpty
-              ? Image.network(
-                  normalizedUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.shield_rounded,
-                    color: Color(0xFF60A5FA),
-                    size: 15,
-                  ),
-                )
-              : const Icon(
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: normalizedUrl.isNotEmpty
+            ? Image.network(
+                normalizedUrl,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (_, __, ___) => const Icon(
                   Icons.shield_rounded,
-                  color: Color(0xFF60A5FA),
-                  size: 15,
+                  color: Colors.white,
+                  size: 22,
                 ),
-        ),
+              )
+            : const Icon(
+                Icons.shield_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
       ),
     );
   }
