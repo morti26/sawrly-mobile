@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../notifications/notification_screen.dart';
 import '../../support/support_chat_screen.dart';
+import '../../qa/feature_test_screen.dart';
 import '../../../core/services/media_service.dart';
 
 /// Camera logo built from pure Flutter widgets — no PNG, no white background, never black
@@ -200,6 +201,21 @@ class _HomeHeaderState extends State<HomeHeader> {
             ),
             Row(
               children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FeatureTestScreen(),
+                        ),
+                      );
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                    icon: Icon(Icons.fact_check_outlined, size: 20, color: iconColor),
+                    tooltip: 'Testsida',
+                  ),
+                  const SizedBox(width: 10),
                 IconButton(
                   onPressed: () {
                     Navigator.push(
@@ -211,7 +227,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                   constraints: const BoxConstraints.tightFor(width: 30, height: 30),
                   icon: Icon(Icons.notifications_none, size: 22, color: iconColor),
                 ),
-                const SizedBox(width: 14),
+                  const SizedBox(width: 10),
                 IconButton(
                   onPressed: () {
                     Navigator.push(
