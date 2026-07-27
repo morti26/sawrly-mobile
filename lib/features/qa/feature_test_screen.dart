@@ -175,8 +175,8 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
       const _FeatureCheck(
         number: 5,
         title: 'Ikon för man eller kvinna allmänt i profilen',
-        status: _FeatureCheckStatus.missing,
-        note: 'Fältet finns i redigera profil, men könsikon visas inte allmänt i profilhuvudet nu.',
+          status: _FeatureCheckStatus.partial,
+          note: 'Adminsidans uppladdning för man/kvinna finns, men mobilprofilen visar ännu inte den uppladdade könsikonen allmänt i profilhuvudet.',
       ),
       _FeatureCheck(
         number: 6,
