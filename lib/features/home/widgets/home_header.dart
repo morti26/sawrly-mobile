@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/auth/auth_service.dart';
 import '../../notifications/notification_screen.dart';
 import '../../support/support_chat_screen.dart';
 import '../../qa/feature_test_screen.dart';
@@ -136,6 +137,8 @@ class _HomeHeaderState extends State<HomeHeader> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = context.watch<AuthService>().currentUser;
+    final isSuperAdmin = currentUser?.isSuperadmin == true;
     final iconColor = Colors.white.withValues(alpha: 0.85);
     final logoFuture = _logoFuture;
 
@@ -201,21 +204,23 @@ class _HomeHeaderState extends State<HomeHeader> {
             ),
             Row(
               children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FeatureTestScreen(),
-                        ),
-                      );
-                    },
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                    icon: Icon(Icons.fact_check_outlined, size: 20, color: iconColor),
-                    tooltip: 'Testsida',
-                  ),
-                  const SizedBox(width: 10),
+                  if (isSuperAdmin) ...[
+                    IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const FeatureTestScreen(),
+                          ),
+                        );
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                      icon: Icon(Icons.fact_check_outlined, size: 20, color: iconColor),
+                      tooltip: 'Testsida',
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                 IconButton(
                   onPressed: () {
                     Navigator.push(

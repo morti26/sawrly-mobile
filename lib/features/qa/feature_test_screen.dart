@@ -86,6 +86,28 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = context.watch<AuthService>().currentUser;
+    if (currentUser?.isSuperadmin != true) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Testsida'),
+          backgroundColor: AppColors.background,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Den här sidan är bara tillgänglig för super admin.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
