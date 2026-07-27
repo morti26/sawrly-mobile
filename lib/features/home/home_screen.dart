@@ -671,9 +671,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     final effectiveDiscountOffers = discountOfferMap.values.toList();
-      final showStoriesSection = isCreator ||
-          statusService.statusList.isNotEmpty ||
-          (statusService.isLoading && statusService.statusList.isEmpty);
 
     // Find my status if I am a creator
     String myStatusMatch = '';
@@ -740,39 +737,37 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                        if (showStoriesSection) ...[
-                          const SizedBox(height: 12),
-                          if (statusService.isLoading &&
-                              statusService.statusList.isEmpty)
-                            const SizedBox(
-                              height: 100,
-                              child: Center(child: CircularProgressIndicator()),
-                            )
-                          else
-                            CreatorStatusRow(
-                              statusList: statusService.statusList,
-                              showAddButton: isCreator,
-                              userImage: currentUserImage,
-                              myUserName: currentUser?.name,
-                              myStatus: myStatus,
-                              onAddPressed: isCreator ? _createStory : null,
-                              onMyStoryLongPress: myStatus == null
-                                  ? null
-                                  : () => _openMyStoryActions(myStatus!),
-                              onStatusPressed: (statuses) {
-                                debugPrint(
-                                  'STORYDBG open viewer statuses=${statuses.length} first=${statuses.isNotEmpty ? statuses.first.id : ''} last=${statuses.isNotEmpty ? statuses.last.id : ''} creatorId=${statuses.isNotEmpty ? statuses.first.creatorId : ''}',
-                                );
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => StatusViewer(
-                                    statuses: statuses,
-                                  ),
-                                );
-                              },
-                            ),
-                          const SizedBox(height: 12),
-                        ],
+                        const SizedBox(height: 12),
+                        if (statusService.isLoading &&
+                            statusService.statusList.isEmpty)
+                          const SizedBox(
+                            height: 100,
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else
+                          CreatorStatusRow(
+                            statusList: statusService.statusList,
+                            showAddButton: isCreator,
+                            userImage: currentUserImage,
+                            myUserName: currentUser?.name,
+                            myStatus: myStatus,
+                            onAddPressed: isCreator ? _createStory : null,
+                            onMyStoryLongPress: myStatus == null
+                                ? null
+                                : () => _openMyStoryActions(myStatus!),
+                            onStatusPressed: (statuses) {
+                              debugPrint(
+                                'STORYDBG open viewer statuses=${statuses.length} first=${statuses.isNotEmpty ? statuses.first.id : ''} last=${statuses.isNotEmpty ? statuses.last.id : ''} creatorId=${statuses.isNotEmpty ? statuses.first.creatorId : ''}',
+                              );
+                              showDialog(
+                                context: context,
+                                builder: (_) => StatusViewer(
+                                  statuses: statuses,
+                                ),
+                              );
+                            },
+                          ),
+                        const SizedBox(height: 12),
                       if (_activeBanner != null)
                         BannerAnnouncement(banner: _activeBanner!)
                       else

@@ -103,6 +103,10 @@ class CreatorStatusRow extends StatelessWidget {
     final leadingCount = (hasOwnStorySlot ? 1 : 0) + (hasAddButtonSlot ? 1 : 0);
     final totalCount = groups.length + leadingCount;
 
+      if (totalCount == 0) {
+        return const SizedBox.shrink();
+      }
+
     return SizedBox(
       height: 100,
       child: ListView.builder(
