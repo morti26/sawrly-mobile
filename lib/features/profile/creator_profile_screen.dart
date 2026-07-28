@@ -904,7 +904,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     required String? iconUrl,
     required String? label,
   }) {
-    final normalizedUrl = (iconUrl ?? '').trim();
+    final normalizedUrl = _normalizePublicMediaUrl(iconUrl ?? '');
     final tooltip = (label ?? '').trim().isEmpty ? 'سوبر أدمن' : label!.trim();
 
     return Tooltip(
