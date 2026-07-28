@@ -38,12 +38,14 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   late TabController _tabController;
 
   bool _isLoadingProfile = false;
+  bool _isReloadingBadge = false;
   int _mediaReloadTick = 0;
   User? _fullProfile;
   int _followersCount = 0;
   int _followingCount = 0;
   bool _isFollowing = false;
   int _badgeReloadTick = 0;
+  String? _badgeReloadStatus;
 
   @override
   void initState() {
@@ -95,14 +97,56 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
   Future<void> _forceReloadSuperadminBadge() async {
     debugPrint("[DEBUG] _forceReloadSuperadminBadge D: requested");
-    await context.read<AuthService>().fetchMe();
-    if (!mounted) return;
-    await _loadFullProfile(bypassCache: true);
+    if (_isReloadingBadge) return;
     if (!mounted) return;
     setState(() {
-      _badgeReloadTick += 1;
-      _debugLastImageStatus = null;
+      _isReloadingBadge = true;
+      _badgeReloadStatus = 'fetching /auth/me...';
     });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Laddar om superadmin-badge..."),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    try {
+      await context.read<AuthService>().fetchMe();
+      if (!mounted) return;
+      setState(() => _badgeReloadStatus = 'fetching /users/:id...');
+      await _loadFullProfile(bypassCache: true);
+      if (!mounted) return;
+      setState(() {
+        _badgeReloadTick += 1;
+        _debugLastImageStatus = null;
+        _badgeReloadStatus = 'forcing Image.network rebuild...';
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      if (!mounted) return;
+      setState(() => _badgeReloadStatus = 'done (kolla debug-fältet)');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Superadmin-badge reload klar. badgeReloadTick=$_badgeReloadTick",
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      debugPrint("[DEBUG] _forceReloadSuperadminBadge D error: $e");
+      if (mounted) {
+        setState(() => _badgeReloadStatus = 'error: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Misslyckades med reload: $e"),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isReloadingBadge = false);
+      }
+    }
     debugPrint("[DEBUG] _forceReloadSuperadminBadge D: finished badgeReloadTick=$_badgeReloadTick");
   }
 
@@ -655,13 +699,23 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     margin: const EdgeInsets.only(
                         right: 8.0, top: 8.0, bottom: 8.0),
                     decoration: BoxDecoration(
-                      color: Colors.deepPurpleAccent.withValues(alpha: 0.35),
+                      color: _isReloadingBadge
+                          ? Colors.deepPurpleAccent.withValues(alpha: 0.55)
+                          : Colors.deepPurpleAccent.withValues(alpha: 0.35),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.white),
+                      icon: _isReloadingBadge
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.refresh, color: Colors.white),
                       tooltip: 'Reload superadmin badge',
-                      onPressed: _forceReloadSuperadminBadge,
+                      onPressed:
+                          _isReloadingBadge ? null : _forceReloadSuperadminBadge,
                     ),
                   )
               ],
@@ -881,18 +935,30 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       SelectableText(
                         "imageStatus=${_debugLastImageStatus ?? 'not-rendered-yet'}\n"
                         "raw=${displayUser.superadminBadgeIconUrl ?? 'null'}\n"
-                        "resolved=${_debugLastNormalizedUrl ?? 'null'}",
+                        "resolved=${_debugLastNormalizedUrl ?? 'null'}\n"
+                        "badgeReloadTick=$_badgeReloadTick\n"
+                        "reloadStatus=${_badgeReloadStatus ?? 'idle'}",
                         style: const TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                       const SizedBox(height: 6),
                       OutlinedButton.icon(
-                        icon: const Icon(Icons.refresh, size: 14, color: Colors.white),
-                        label: const Text("Force reload badge",
-                            style: TextStyle(color: Colors.white)),
+                        icon: _isReloadingBadge
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.refresh, size: 14, color: Colors.white),
+                        label: Text(
+                          _isReloadingBadge ? "Reloadar..." : "Force reload badge",
+                          style: const TextStyle(color: Colors.white),
+                        ),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
                         ),
-                        onPressed: _forceReloadSuperadminBadge,
+                        onPressed:
+                            _isReloadingBadge ? null : _forceReloadSuperadminBadge,
                       ),
                     ],
                     const SizedBox(height: 20),
