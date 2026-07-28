@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -63,6 +65,13 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     setState(() => _isLoadingProfile = true);
     final fullProfile =
         await context.read<AuthService>().fetchUserProfile(user.id);
+    // #region debug-point D:full-profile-loaded
+    unawaited(() async {
+      try {
+        await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'D', 'location': 'creator_profile_screen.dart:67', 'msg': '[DEBUG] _loadFullProfile completed', 'data': {'requestedUserId': user.id, 'gotProfile': fullProfile != null, 'is_superadmin': fullProfile?.isSuperadmin, 'superadmin_badge_icon_url': fullProfile?.superadminBadgeIconUrl, 'superadmin_badge_label': fullProfile?.superadminBadgeLabel, 'email': fullProfile?.email}, 'ts': DateTime.now().millisecondsSinceEpoch});
+      } catch (_) {}
+    }());
+    // #endregion
     if (fullProfile != null && mounted) {
       setState(() {
         _fullProfile = fullProfile;
@@ -906,6 +915,13 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }) {
     final normalizedUrl = _normalizePublicMediaUrl(iconUrl ?? '');
     final tooltip = (label ?? '').trim().isEmpty ? 'سوبر أدمن' : label!.trim();
+    // #region debug-point C:superadmin-badge-build
+    unawaited(() async {
+      try {
+        await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'C', 'location': 'creator_profile_screen.dart:911', 'msg': '[DEBUG] superadmin badge build', 'data': {'rawIconUrl': iconUrl, 'normalizedUrl': normalizedUrl, 'tooltip': tooltip, 'width': 28, 'height': 28}, 'ts': DateTime.now().millisecondsSinceEpoch});
+      } catch (_) {}
+    }());
+    // #endregion
 
     return Tooltip(
       message: tooltip,
@@ -917,16 +933,48 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                 normalizedUrl,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.shield_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (frame != null || wasSynchronouslyLoaded) {
+                    // #region debug-point B:superadmin-image-loaded
+                    unawaited(() async {
+                      try {
+                        await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'B', 'location': 'creator_profile_screen.dart:922', 'msg': '[DEBUG] superadmin badge image loaded', 'data': {'normalizedUrl': normalizedUrl, 'frame': frame, 'sync': wasSynchronouslyLoaded}, 'ts': DateTime.now().millisecondsSinceEpoch});
+                      } catch (_) {}
+                    }());
+                    // #endregion
+                  }
+                  return child;
+                },
+                errorBuilder: (_, error, stackTrace) {
+                  // #region debug-point B:superadmin-image-error
+                  unawaited(() async {
+                    try {
+                      await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'B', 'location': 'creator_profile_screen.dart:930', 'msg': '[DEBUG] superadmin badge image error', 'data': {'normalizedUrl': normalizedUrl, 'error': error.toString()}, 'ts': DateTime.now().millisecondsSinceEpoch});
+                    } catch (_) {}
+                  }());
+                  // #endregion
+                  return const Icon(
+                    Icons.shield_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  );
+                },
               )
-            : const Icon(
-                Icons.shield_rounded,
-                color: Colors.white,
-                size: 22,
+            : Builder(
+                builder: (context) {
+                  // #region debug-point B:superadmin-image-missing-url
+                  unawaited(() async {
+                    try {
+                      await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'B', 'location': 'creator_profile_screen.dart:941', 'msg': '[DEBUG] superadmin badge missing url fallback', 'data': {'rawIconUrl': iconUrl, 'normalizedUrl': normalizedUrl}, 'ts': DateTime.now().millisecondsSinceEpoch});
+                    } catch (_) {}
+                  }());
+                  // #endregion
+                  return const Icon(
+                    Icons.shield_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  );
+                },
               ),
       ),
     );
