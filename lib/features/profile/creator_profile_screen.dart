@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -14,6 +13,10 @@ import '../../core/widgets/report_dialog.dart';
 import '../home/offer_details_screen.dart';
 import 'edit_profile_screen.dart';
 import 'create_offer_screen.dart';
+
+// Used by runtime debug evidence logging below.
+String? _debugLastNormalizedUrl;
+String? _debugLastImageStatus;
 
 class CreatorProfileScreen extends StatefulWidget {
   final User? user;
@@ -40,6 +43,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   int _followersCount = 0;
   int _followingCount = 0;
   bool _isFollowing = false;
+  int _badgeReloadTick = 0;
 
   @override
   void initState() {
@@ -58,19 +62,22 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     _loadFullProfile();
   }
 
-  Future<void> _loadFullProfile() async {
+  Future<void> _loadFullProfile({bool bypassCache = false}) async {
     final user = widget.user ?? context.read<AuthService>().currentUser;
     if (user == null) return;
 
     setState(() => _isLoadingProfile = true);
     final fullProfile =
-        await context.read<AuthService>().fetchUserProfile(user.id);
+        await context.read<AuthService>().fetchUserProfile(user.id, bypassCache: bypassCache);
     // #region debug-point D:full-profile-loaded
-    unawaited(() async {
-      try {
-        await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'D', 'location': 'creator_profile_screen.dart:67', 'msg': '[DEBUG] _loadFullProfile completed', 'data': {'requestedUserId': user.id, 'gotProfile': fullProfile != null, 'is_superadmin': fullProfile?.isSuperadmin, 'superadmin_badge_icon_url': fullProfile?.superadminBadgeIconUrl, 'superadmin_badge_label': fullProfile?.superadminBadgeLabel, 'email': fullProfile?.email}, 'ts': DateTime.now().millisecondsSinceEpoch});
-      } catch (_) {}
-    }());
+    debugPrint(
+      "[DEBUG] _loadFullProfile D: requestedUserId=${user.id} bypassCache=$bypassCache "
+      "gotProfile=${fullProfile != null} "
+      "isSuperadmin=${fullProfile?.isSuperadmin} "
+      "badgeIconUrl=${fullProfile?.superadminBadgeIconUrl} "
+      "badgeLabel=${fullProfile?.superadminBadgeLabel} "
+      "email=${fullProfile?.email}",
+    );
     // #endregion
     if (fullProfile != null && mounted) {
       setState(() {
@@ -79,10 +86,24 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         _followingCount = fullProfile.followingCount;
         _isFollowing = fullProfile.isFollowing;
         _isLoadingProfile = false;
+        _badgeReloadTick += 1;
       });
     } else if (mounted) {
       setState(() => _isLoadingProfile = false);
     }
+  }
+
+  Future<void> _forceReloadSuperadminBadge() async {
+    debugPrint("[DEBUG] _forceReloadSuperadminBadge D: requested");
+    await context.read<AuthService>().fetchMe();
+    if (!mounted) return;
+    await _loadFullProfile(bypassCache: true);
+    if (!mounted) return;
+    setState(() {
+      _badgeReloadTick += 1;
+      _debugLastImageStatus = null;
+    });
+    debugPrint("[DEBUG] _forceReloadSuperadminBadge D: finished badgeReloadTick=$_badgeReloadTick");
   }
 
   Future<void> _toggleFollow(String targetUserId) async {
@@ -628,6 +649,20 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         );
                       },
                     ),
+                  ),
+                if (isOwner && displayUser.isSuperadmin)
+                  Container(
+                    margin: const EdgeInsets.only(
+                        right: 8.0, top: 8.0, bottom: 8.0),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurpleAccent.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.white),
+                      tooltip: 'Reload superadmin badge',
+                      onPressed: _forceReloadSuperadminBadge,
+                    ),
                   )
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -833,6 +868,33 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         ],
                       ),
                     ],
+                    if (isOwner && displayUser.isSuperadmin) ...[
+                      const SizedBox(height: 14),
+                      const Text(
+                        "Superadmin badge debug",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        "imageStatus=${_debugLastImageStatus ?? 'not-rendered-yet'}\n"
+                        "raw=${displayUser.superadminBadgeIconUrl ?? 'null'}\n"
+                        "resolved=${_debugLastNormalizedUrl ?? 'null'}",
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                      const SizedBox(height: 6),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.refresh, size: 14, color: Colors.white),
+                        label: const Text("Force reload badge",
+                            style: TextStyle(color: Colors.white)),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                        ),
+                        onPressed: _forceReloadSuperadminBadge,
+                      ),
+                    ],
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -915,12 +977,18 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }) {
     final normalizedUrl = _normalizePublicMediaUrl(iconUrl ?? '');
     final tooltip = (label ?? '').trim().isEmpty ? 'سوبر أدمن' : label!.trim();
+    final cacheBuster = _badgeReloadTick > 0 ? '?t=$_badgeReloadTick' : '';
+    final imageUrl = normalizedUrl.isEmpty
+        ? normalizedUrl
+        : (normalizedUrl.contains('?')
+            ? '$normalizedUrl&t=$_badgeReloadTick'
+            : '$normalizedUrl$cacheBuster');
     // #region debug-point C:superadmin-badge-build
-    unawaited(() async {
-      try {
-        await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'C', 'location': 'creator_profile_screen.dart:911', 'msg': '[DEBUG] superadmin badge build', 'data': {'rawIconUrl': iconUrl, 'normalizedUrl': normalizedUrl, 'tooltip': tooltip, 'width': 28, 'height': 28}, 'ts': DateTime.now().millisecondsSinceEpoch});
-      } catch (_) {}
-    }());
+    _debugLastNormalizedUrl = imageUrl;
+    debugPrint(
+      "[DEBUG] buildSuperadminBadge C: rawIconUrl=$iconUrl "
+      "normalizedUrl=$normalizedUrl imageUrl=$imageUrl badgeReloadTick=$_badgeReloadTick",
+    );
     // #endregion
 
     return Tooltip(
@@ -928,30 +996,46 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
       child: SizedBox(
         width: 28,
         height: 28,
-        child: normalizedUrl.isNotEmpty
+        child: imageUrl.isNotEmpty
             ? Image.network(
-                normalizedUrl,
+                imageUrl,
+                key: ValueKey('superadmin-badge-$imageUrl-$_badgeReloadTick'),
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
                 frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                   if (frame != null || wasSynchronouslyLoaded) {
                     // #region debug-point B:superadmin-image-loaded
-                    unawaited(() async {
-                      try {
-                        await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'B', 'location': 'creator_profile_screen.dart:922', 'msg': '[DEBUG] superadmin badge image loaded', 'data': {'normalizedUrl': normalizedUrl, 'frame': frame, 'sync': wasSynchronouslyLoaded}, 'ts': DateTime.now().millisecondsSinceEpoch});
-                      } catch (_) {}
-                    }());
+                    _debugLastImageStatus = 'loaded';
+                    debugPrint(
+                      "[DEBUG] superadmin badge image B: loaded url=$imageUrl frame=$frame sync=$wasSynchronouslyLoaded",
+                    );
                     // #endregion
                   }
                   return child;
                 },
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return Center(
+                    child: SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white70,
+                        value: progress.expectedTotalBytes == null
+                            ? null
+                            : progress.cumulativeBytesLoaded /
+                                (progress.expectedTotalBytes ?? 1),
+                      ),
+                    ),
+                  );
+                },
                 errorBuilder: (_, error, stackTrace) {
                   // #region debug-point B:superadmin-image-error
-                  unawaited(() async {
-                    try {
-                      await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'B', 'location': 'creator_profile_screen.dart:930', 'msg': '[DEBUG] superadmin badge image error', 'data': {'normalizedUrl': normalizedUrl, 'error': error.toString()}, 'ts': DateTime.now().millisecondsSinceEpoch});
-                    } catch (_) {}
-                  }());
+                  _debugLastImageStatus = 'error';
+                  debugPrint(
+                    "[DEBUG] superadmin badge image B: error url=$imageUrl error=$error",
+                  );
                   // #endregion
                   return const Icon(
                     Icons.shield_rounded,
@@ -963,11 +1047,10 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             : Builder(
                 builder: (context) {
                   // #region debug-point B:superadmin-image-missing-url
-                  unawaited(() async {
-                    try {
-                      await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'B', 'location': 'creator_profile_screen.dart:941', 'msg': '[DEBUG] superadmin badge missing url fallback', 'data': {'rawIconUrl': iconUrl, 'normalizedUrl': normalizedUrl}, 'ts': DateTime.now().millisecondsSinceEpoch});
-                    } catch (_) {}
-                  }());
+                  _debugLastImageStatus = 'missing-url';
+                  debugPrint(
+                    "[DEBUG] superadmin badge image B: missing-url rawIconUrl=$iconUrl normalizedUrl=$normalizedUrl",
+                  );
                   // #endregion
                   return const Icon(
                     Icons.shield_rounded,

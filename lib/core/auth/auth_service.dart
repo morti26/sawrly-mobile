@@ -142,7 +142,13 @@ class AuthService extends ChangeNotifier {
       final response = await _apiClient.client.get('/auth/me');
       final data = response.data;
       if (data is Map<String, dynamic>) {
-        // Added specific type check
+        // #region debug-point A:fetch-me
+        debugPrint(
+          "[DEBUG] fetchMe A: isSuperadmin=${data['is_superadmin']} "
+          "badgeIconUrl=${data['superadmin_badge_icon_url']} "
+          "badgeLabel=${data['superadmin_badge_label']} email=${data['email']}",
+        );
+        // #endregion
         final user = User.fromJson(data);
         _currentUser = user;
         final roleString = user.role == UserRole.creator ? 'creator' : 'client';
@@ -154,6 +160,7 @@ class AuthService extends ChangeNotifier {
             "fetchMe: Expected Map<String, dynamic> but got ${data.runtimeType}");
       }
     } catch (e) {
+      debugPrint("[DEBUG] fetchMe A error: $e");
       rethrow;
     }
   }
@@ -179,23 +186,29 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<User?> fetchUserProfile(String userId) async {
+  Future<User?> fetchUserProfile(String userId, {bool bypassCache = false}) async {
     try {
-      final response = await _apiClient.client.get('/users/$userId');
+      final response = await _apiClient.client.get(
+        '/users/$userId',
+        queryParameters: bypassCache ? {'__t': DateTime.now().millisecondsSinceEpoch.toString()} : null,
+        options: bypassCache ? Options(headers: {'Cache-Control': 'no-cache,no-store,must-revalidate', 'Pragma': 'no-cache'}) : null,
+      );
       final data = response.data;
       if (data is Map<String, dynamic>) {
-        // #region debug-point A:profile-response
-        unawaited(() async {
-          try {
-            await Dio().post('http://85.230.36.174:7777/event', data: {'sessionId': 'superadmin-icon-bug', 'runId': 'pre-fix', 'hypothesisId': 'A', 'location': 'auth_service.dart:184', 'msg': '[DEBUG] fetchUserProfile response received', 'data': {'userId': userId, 'is_superadmin': data['is_superadmin'], 'superadmin_badge_icon_url': data['superadmin_badge_icon_url'], 'superadmin_badge_label': data['superadmin_badge_label'], 'email': data['email']}, 'ts': DateTime.now().millisecondsSinceEpoch});
-          } catch (_) {}
-        }());
+        // #region debug-point A:fetch-user-profile
+        debugPrint(
+          "[DEBUG] fetchUserProfile A: userId=$userId bypassCache=$bypassCache "
+          "isSuperadmin=${data['is_superadmin']} "
+          "badgeIconUrl=${data['superadmin_badge_icon_url']} "
+          "badgeLabel=${data['superadmin_badge_label']} "
+          "email=${data['email']}",
+        );
         // #endregion
         return User.fromJson(data);
       }
       return null;
     } catch (e) {
-      debugPrint("Error fetching user profile: $e");
+      debugPrint("[DEBUG] fetchUserProfile A error: $e");
       return null;
     }
   }
