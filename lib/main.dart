@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
@@ -9,6 +11,7 @@ import 'core/services/cart_service.dart';
 import 'core/services/media_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/support_service.dart';
+import 'core/theme/app_theme_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +24,12 @@ Future<void> main() async {
   final notificationService = NotificationService(apiClient);
   final cartService = CartService();
   final supportService = SupportService(apiClient);
+  final themeService = AppThemeService(apiClient);
 
   // Start initialization
   await authService.init();
+  // Theme init is best-effort: if the request fails, the app still uses defaults.
+  unawaited(themeService.loadFromServer());
 
   runApp(
     MultiProvider(
@@ -34,6 +40,7 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: notificationService),
         ChangeNotifierProvider.value(value: cartService), // Add CartService
         ChangeNotifierProvider.value(value: supportService),
+        ChangeNotifierProvider.value(value: themeService),
         Provider.value(value: apiClient),
       ],
       child: const FotgrafApp(),

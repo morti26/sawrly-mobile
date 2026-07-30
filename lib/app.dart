@@ -1,113 +1,139 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'features/navigation/main_navigation.dart';
 import 'core/design/design_tokens.dart';
-// import 'features/auth/login_screen.dart';
+import 'core/theme/app_theme_service.dart';
 
 class FotgrafApp extends StatelessWidget {
   const FotgrafApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'صورلي',
-      debugShowCheckedModeBanner: false,
-      locale: const Locale('ar', ''),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('ar', ''),
-      ],
-      themeMode: ThemeMode.dark,
-      darkTheme: ThemeData(
-        fontFamily: AppTextStyles.fontFamily,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          brightness: Brightness.dark,
-          surface: AppColors.surface,
-          primary: AppColors.primary,
-          onPrimary: Colors.white,
-          onSurface: AppColors.textPrimary,
-        ),
-        scaffoldBackgroundColor: AppColors.background,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.background,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-        ),
-        cardTheme: CardThemeData(
-          color: AppColors.surface,
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: AppColors.surface,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            borderSide: const BorderSide(color: AppColors.error),
-          ),
-          labelStyle: AppTextStyles.label,
-          hintStyle: AppTextStyles.body.copyWith(color: AppColors.textTertiary),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+    return Consumer<AppThemeService>(
+      builder: (context, themeService, child) {
+        final c = themeService.colors;
+        final e = themeService.effects;
+        final chipRadius = BorderRadius.circular(e.chipRadius >= 999 ? 9999 : e.chipRadius);
+        final cardRadius = BorderRadius.circular(e.cardRadius);
+        final buttonRadius = BorderRadius.circular(e.buttonRadius);
+        final cardShadowOpacity = e.cardShadowOpacity.clamp(0.0, 1.0);
+
+        return MaterialApp(
+          title: 'صورلي',
+          debugShowCheckedModeBanner: false,
+          locale: const Locale('ar', ''),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('ar', ''),
+          ],
+          themeMode: ThemeMode.dark,
+          darkTheme: ThemeData(
+            fontFamily: AppTextStyles.fontFamily,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: c.primary,
+              brightness: Brightness.dark,
+              surface: c.surface,
+              primary: c.primary,
+              onPrimary: c.textPrimary,
+              onSurface: c.textPrimary,
             ),
-            textStyle: AppTextStyles.button,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xl,
-              vertical: AppSpacing.md,
+            scaffoldBackgroundColor: c.background,
+            appBarTheme: AppBarTheme(
+              backgroundColor: c.background.withValues(alpha: e.surfaceOpacity.clamp(0.5, 1.0)),
+              foregroundColor: c.textPrimary,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              shadowColor: Colors.black.withValues(alpha: cardShadowOpacity),
+              surfaceTintColor: Colors.transparent,
             ),
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            textStyle: AppTextStyles.button,
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.border),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            cardTheme: CardThemeData(
+              color: c.surface.withValues(alpha: e.surfaceOpacity),
+              elevation: 0,
+              shadowColor: Colors.black.withValues(alpha: cardShadowOpacity),
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: cardRadius,
+                side: BorderSide(color: c.borderLight.withValues(alpha: e.borderOpacity)),
+              ),
             ),
-            textStyle: AppTextStyles.button,
+            chipTheme: ChipThemeData(
+              backgroundColor: c.surfaceLight.withValues(alpha: e.surfaceOpacity),
+              selectedColor: c.primary.withValues(alpha: 0.18),
+              labelStyle: AppTextStyles.bodySmall.copyWith(color: c.textPrimary),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              shape: RoundedRectangleBorder(borderRadius: chipRadius),
+              side: BorderSide(
+                color: c.borderLight.withValues(alpha: e.borderOpacity.clamp(0, 0.8)),
+              ),
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: c.surface.withValues(alpha: e.surfaceOpacity),
+              border: OutlineInputBorder(
+                borderRadius: cardRadius,
+                borderSide: BorderSide(color: c.border.withValues(alpha: e.borderOpacity)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: cardRadius,
+                borderSide: BorderSide(color: c.border.withValues(alpha: e.borderOpacity)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: cardRadius,
+                borderSide: BorderSide(color: c.primary, width: 2),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: cardRadius,
+                borderSide: BorderSide(color: c.error),
+              ),
+              labelStyle: AppTextStyles.label,
+              hintStyle: AppTextStyles.body.copyWith(color: c.textTertiary),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: c.primary,
+                foregroundColor: c.textPrimary,
+                elevation: 0,
+                shadowColor: c.primary.withValues(alpha: 0.45),
+                shape: RoundedRectangleBorder(borderRadius: buttonRadius),
+                textStyle: AppTextStyles.button,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.md,
+                ),
+              ),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: c.primary,
+                shape: RoundedRectangleBorder(borderRadius: buttonRadius),
+                textStyle: AppTextStyles.button,
+              ),
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: c.primary,
+                side: BorderSide(color: c.border.withValues(alpha: e.borderOpacity)),
+                shape: RoundedRectangleBorder(borderRadius: buttonRadius),
+                textStyle: AppTextStyles.button,
+              ),
+            ),
+            useMaterial3: true,
           ),
-        ),
-        useMaterial3: true,
-      ),
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.ltr,
-          child: child!,
+          builder: (context, child) {
+            return Directionality(
+              textDirection: TextDirection.ltr,
+              child: child!,
+            );
+          },
+          home: child,
         );
       },
-      // Authentication-gated destinations are handled inside MainNavigation.
-      home: const MainNavigation(),
+      child: const MainNavigation(),
     );
   }
 }

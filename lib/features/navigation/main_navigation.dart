@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import '../../core/design/design_tokens.dart';
+import 'package:provider/provider.dart';
+import '../../core/theme/app_theme_service.dart';
 import '../home/home_screen.dart';
 import '../search/global_search_screen.dart';
 import '../categories/categories_screen.dart';
@@ -34,7 +36,6 @@ class _MainNavigationState extends State<MainNavigation> {
     ),
   ];
 
-  // Icons matching the reference image exactly
   final List<IconData> _icons = [
     PhosphorIconsRegular.house,
     PhosphorIconsRegular.magnifyingGlass,
@@ -42,6 +43,41 @@ class _MainNavigationState extends State<MainNavigation> {
     PhosphorIconsRegular.shoppingBag,
     PhosphorIconsRegular.user,
   ];
+
+  String? _navIconUrlForIndex(int index, {required bool active}) {
+    final navIcons = context.read<AppThemeService>().navIcons;
+    switch (index) {
+      case 0:
+        return active ? navIcons.homeActive ?? navIcons.home : navIcons.home;
+      case 1:
+        return active ? navIcons.searchActive ?? navIcons.search : navIcons.search;
+      case 2:
+        return active
+            ? navIcons.categoriesActive ?? navIcons.categories
+            : navIcons.categories;
+      case 3:
+        return active ? navIcons.ordersActive ?? navIcons.orders : navIcons.orders;
+      case 4:
+        return active ? navIcons.profileActive ?? navIcons.profile : navIcons.profile;
+    }
+    return null;
+  }
+
+  String _normalizePublicUrl(String raw) {
+    if (raw.trim().isEmpty) return raw;
+    String url = raw.trim();
+    if (url.startsWith('/')) {
+      url = 'https://sawrly.com$url';
+    } else if (url.startsWith('http://10.0.2.2:') ||
+        url.startsWith('http://127.0.0.1:') ||
+        url.startsWith('http://localhost:')) {
+      const host = 'http://10.0.2.2:3000';
+      final pathIndex = url.indexOf('/', 8);
+      final rest = pathIndex >= 0 ? url.substring(pathIndex) : '';
+      url = '$host$rest';
+    }
+    return url;
+  }
 
   @override
   void initState() {
@@ -51,17 +87,54 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true, // body extends under the floating nav bar
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: _buildFloatingNavBar(),
+    return Consumer<AppThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          extendBody: true,
+          body: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
+          bottomNavigationBar: _buildFloatingNavBar(themeService),
+        );
+      },
     );
   }
 
-  Widget _buildFloatingNavBar() {
+  Widget _buildFloatingNavBar(AppThemeService theme) {
+    final c = theme.colors;
+    final e = theme.effects;
+    final navRadius = BorderRadius.circular(14);
+    final activeOpacity = e.activeGlowOpacity.clamp(0.0, 1.0);
+    final navShadow = e.navShadowOpacity.clamp(0.0, 1.0);
+
+    final activeGlow = [
+      BoxShadow(
+        color: c.primary.withValues(alpha: activeOpacity * 0.7),
+        blurRadius: 18,
+        spreadRadius: 1,
+        offset: const Offset(0, 6),
+      ),
+      BoxShadow(
+        color: c.primaryLight.withValues(alpha: activeOpacity * 0.4),
+        blurRadius: 10,
+        offset: const Offset(0, 2),
+      ),
+    ];
+
+    final navOuterShadow = [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: navShadow),
+        blurRadius: 26,
+        offset: const Offset(0, -8),
+      ),
+      BoxShadow(
+        color: c.primary.withValues(alpha: navShadow * 0.4),
+        blurRadius: 14,
+        offset: const Offset(0, -2),
+      ),
+    ];
+
     return SafeArea(
       bottom: true,
       child: Padding(
@@ -70,44 +143,42 @@ class _MainNavigationState extends State<MainNavigation> {
           child: Container(
             height: 64,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.22),
-                  blurRadius: 20,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              borderRadius: navRadius,
+              boxShadow: navOuterShadow,
             ),
-            child: Material(
-              color: AppColors.menuBackground.withValues(alpha: 0.97),
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.primaryLight.withValues(alpha: 0.32),
-                    width: 1,
-                  ),
+            child: ClipRRect(
+              borderRadius: navRadius,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: e.glassBlur,
+                  sigmaY: e.glassBlur,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(_icons.length, _buildNavItem),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: c.menuBackground.withValues(alpha: e.surfaceOpacity),
+                    borderRadius: navRadius,
+                    border: Border.all(
+                      color: c.primaryLight.withValues(alpha: e.borderOpacity.clamp(0, 0.8)),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(
+                      _icons.length,
+                      (i) => _buildNavItem(i, activeGlow),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-    );  // close SafeArea
+    );
   }
 
-  Widget _buildNavItem(int index) {
+  Widget _buildNavItem(int index, List<BoxShadow> activeGlow) {
     final isActive = _currentIndex == index;
     return SizedBox(
       width: 56,
@@ -121,37 +192,109 @@ class _MainNavigationState extends State<MainNavigation> {
         },
         borderRadius: BorderRadius.circular(14),
         child: Center(
-          child: isActive ? _buildActiveIcon(index) : _buildInactiveIcon(index),
+          child: isActive ? _buildActiveIcon(index, activeGlow) : _buildInactiveIcon(index),
         ),
       ),
     );
   }
 
-  Widget _buildActiveIcon(int index) {
+  Widget _buildActiveIcon(int index, List<BoxShadow> activeGlow) {
+    final c = context.read<AppThemeService>().colors;
+    final e = context.read<AppThemeService>().effects;
+    final customUrl = _navIconUrlForIndex(index, active: true);
+    final resolvedUrl = customUrl != null ? _normalizePublicUrl(customUrl) : null;
+    final activeRadius = BorderRadius.circular(13);
     return Container(
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.22),
-        borderRadius: BorderRadius.circular(13),
+        gradient: e.primaryGradient(c.primary.withValues(alpha: 0.35), c.primaryDark.withValues(alpha: 0.18)),
+        borderRadius: activeRadius,
         border: Border.all(
-          color: AppColors.primaryLight.withValues(alpha: 0.72),
+          color: c.primaryLight.withValues(alpha: 0.72),
           width: 1.3,
         ),
-        boxShadow: AppShadows.glowPrimary,
+        boxShadow: activeGlow,
       ),
-      child: Icon(
-        _icons[index],
-        color: AppColors.primaryLight,
-        size: 21,
-      ),
+      child: resolvedUrl != null
+          ? Padding(
+              padding: const EdgeInsets.all(7),
+              child: Image.network(
+                resolvedUrl,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (_, __, ___) => Icon(
+                  _icons[index],
+                  color: c.primaryLight,
+                  size: 21,
+                ),
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return Center(
+                    child: SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: c.primaryLight,
+                        value: progress.expectedTotalBytes == null
+                            ? null
+                            : progress.cumulativeBytesLoaded /
+                                (progress.expectedTotalBytes ?? 1),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          : Icon(
+              _icons[index],
+              color: c.primaryLight,
+              size: 21,
+            ),
     );
   }
 
   Widget _buildInactiveIcon(int index) {
+    final c = context.read<AppThemeService>().colors;
+    final customUrl = _navIconUrlForIndex(index, active: false);
+    final resolvedUrl = customUrl != null ? _normalizePublicUrl(customUrl) : null;
+    if (resolvedUrl != null) {
+      return SizedBox(
+        width: 26,
+        height: 26,
+        child: Image.network(
+          resolvedUrl,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (_, __, ___) => Icon(
+            _icons[index],
+            color: c.textPrimary.withValues(alpha: 0.55),
+            size: 22,
+          ),
+          loadingBuilder: (_, child, progress) {
+            if (progress == null) return child;
+            return Center(
+              child: SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: c.textPrimary.withValues(alpha: 0.55),
+                  value: progress.expectedTotalBytes == null
+                      ? null
+                      : progress.cumulativeBytesLoaded /
+                          (progress.expectedTotalBytes ?? 1),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
     return Icon(
       _icons[index],
-      color: AppColors.textPrimary.withValues(alpha: 0.55),
+      color: c.textPrimary.withValues(alpha: 0.55),
       size: 22,
     );
   }
