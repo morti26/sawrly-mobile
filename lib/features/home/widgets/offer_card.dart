@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
+import 'package:video_player/video_player.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/services/cart_service.dart';
 import '../../../core/services/media_service.dart';
@@ -374,6 +375,10 @@ class _OfferCardMedia extends StatefulWidget {
 }
 
 class _OfferCardMediaState extends State<_OfferCardMedia> {
+  VideoPlayerController? _videoController;
+  Future<void>? _videoInitFuture;
+  bool _videoReady = false;
+
   bool get _isVideo {
     final lower = widget.mediaUrl.toLowerCase();
     if (lower.isEmpty) return false;
@@ -381,6 +386,47 @@ class _OfferCardMediaState extends State<_OfferCardMedia> {
     const videoExt = ['.mp4', '.mov', '.webm', '.mkv', '.m3u8', '.m4v'];
     return videoExt
         .any((ext) => lower.contains('$ext?') || lower.endsWith(ext));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isVideo && widget.mediaUrl.isNotEmpty) {
+      _initVideo();
+    }
+  }
+
+  Future<void> _initVideo() async {
+    try {
+      final uri = Uri.parse(widget.mediaUrl);
+      _videoController = VideoPlayerController.networkUrl(uri)..setLooping(true);
+      _videoInitFuture = _videoController!.initialize().then((_) {
+        if (!mounted) return;
+        setState(() => _videoReady = true);
+        _videoController!.play();
+        _videoController!.setVolume(0);
+      });
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _OfferCardMedia oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mediaUrl != widget.mediaUrl) {
+      _videoController?.dispose();
+      _videoController = null;
+      _videoInitFuture = null;
+      _videoReady = false;
+      if (_isVideo && widget.mediaUrl.isNotEmpty) {
+        _initVideo();
+      }
+    }
   }
 
   Widget _buildFallback(BuildContext context, {bool video = false}) {
@@ -412,7 +458,48 @@ class _OfferCardMediaState extends State<_OfferCardMedia> {
     }
 
     if (_isVideo) {
-      return _buildFallback(context, video: true);
+      return SizedBox(
+        height: widget.height,
+        width: widget.width,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_videoReady &&
+                _videoController != null &&
+                _videoController!.value.isInitialized)
+              FittedBox(
+                fit: BoxFit.cover,
+                clipBehavior: Clip.hardEdge,
+                child: SizedBox(
+                  width: _videoController!.value.size.width,
+                  height: _videoController!.value.size.height,
+                  child: VideoPlayer(_videoController!),
+                ),
+              )
+            else
+              FutureBuilder(
+                future: _videoInitFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting ||
+                      !_videoReady) {
+                    return _buildFallback(context, video: true);
+                  }
+                  return _buildFallback(context, video: true);
+                },
+              ),
+            const Center(
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                color: Color(0xCCFFFFFF),
+                size: 34,
+                shadows: [
+                  BoxShadow(color: Colors.black38, blurRadius: 6, spreadRadius: 1),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     final dpr = MediaQuery.devicePixelRatioOf(context);

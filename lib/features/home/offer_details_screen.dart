@@ -31,14 +31,28 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   void initState() {
     super.initState();
     if (widget.offer.mediaItems.isNotEmpty) {
-      _mediaItems = widget.offer.mediaItems;
+      _mediaItems = List<OfferMediaItem>.from(widget.offer.mediaItems)
+        ..sort((a, b) {
+          final aImg = a.type != 'video' && !_isVideoUrl(a.url);
+          final bImg = b.type != 'video' && !_isVideoUrl(b.url);
+          if (aImg && !bImg) return -1;
+          if (!aImg && bImg) return 1;
+          return 0;
+        });
     } else if (widget.offer.imageUrl.trim().isNotEmpty) {
       final url = widget.offer.imageUrl.trim();
       _mediaItems = [
         OfferMediaItem(url: url, type: _isVideoUrl(url) ? 'video' : 'image'),
       ];
     } else {
-      _mediaItems = const [];
+      final primary = widget.offer.primaryMediaUrl.trim();
+      if (primary.isNotEmpty) {
+        _mediaItems = [
+          OfferMediaItem(url: primary, type: _isVideoUrl(primary) ? 'video' : 'image'),
+        ];
+      } else {
+        _mediaItems = const [];
+      }
     }
     _isSaved = widget.offer.likedByMe;
     _setActiveMedia(0);
@@ -207,11 +221,46 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
 
     if (isVideo) {
       if (index != _activeIndex) {
-        return Container(
-          color: Colors.black,
-          alignment: Alignment.center,
-          child:
-              const Icon(Icons.videocam_rounded, color: Colors.white, size: 56),
+        final normalized = _normalizeMediaUrl(item.url);
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_videoController != null &&
+                _activeIndex == index &&
+                _videoController!.value.isInitialized)
+              FittedBox(
+                fit: BoxFit.cover,
+                clipBehavior: Clip.hardEdge,
+                child: SizedBox(
+                  width: _videoController!.value.size.width,
+                  height: _videoController!.value.size.height,
+                  child: VideoPlayer(_videoController!),
+                ),
+              )
+            else
+              Image.network(
+                normalized,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.black,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.videocam_rounded,
+                      color: Colors.white, size: 56),
+                ),
+              ),
+            Container(
+              color: Colors.black12,
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.play_circle_fill_rounded,
+                color: Colors.white,
+                size: 64,
+                shadows: [
+                  BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 2)
+                ],
+              ),
+            ),
+          ],
         );
       }
       return FutureBuilder<void>(
