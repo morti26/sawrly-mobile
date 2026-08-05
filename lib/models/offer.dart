@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class OfferMediaItem {
   final String url;
   final String type;
@@ -174,8 +176,14 @@ class Offer {
       }
     }
 
+    final parsedId = (_pick<dynamic>(json, const ['id', 'Id']) ?? '').toString();
+    if (kDebugMode) {
+      debugPrint(
+          "DEBUG Offer.fromJson [$parsedId] → legacyImageUrl='$legacyImageUrl' (from image_url/imageUrl), mediaItems.len=${parsedMediaItems.length}, effectiveImageUrl='$effectiveImageUrl'");
+    }
+
     return Offer(
-      id: (_pick<dynamic>(json, const ['id', 'Id']) ?? '').toString(),
+      id: parsedId,
       creatorId:
           (_pick<dynamic>(json, const ['creator_id', 'creatorId', 'CreatorId']) ??
                   '')

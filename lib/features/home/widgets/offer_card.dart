@@ -85,6 +85,10 @@ class _OfferCardState extends State<OfferCard> {
             (resolvedCardWidth * 0.52).clamp(68.0, 90.0).toDouble();
     final description = widget.offer.displayDescription;
     final mediaUrl = _normalizeUrl(widget.offer.primaryMediaUrl);
+    if (mediaUrl.isEmpty) {
+      debugPrint(
+          "DEBUG OfferCard [${widget.offer.id}/${widget.offer.title}] → primaryMediaUrl EMPTY! widget.offer.imageUrl='${widget.offer.imageUrl}', mediaItems.len=${widget.offer.mediaItems.length}");
+    }
     final showVideoStats =
         widget.showEngagementStats && _isVideoUrl(mediaUrl);
     final canSave = currentUser != null &&
