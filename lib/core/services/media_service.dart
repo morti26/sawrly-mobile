@@ -387,7 +387,22 @@ class MediaService {
       final query = creatorId != null ? {'creatorId': creatorId} : null;
       final res =
           await _apiClient.client.get('/offers', queryParameters: query);
-      return res.data as List<dynamic>;
+      final data = res.data as List<dynamic>;
+
+      if (data.isNotEmpty) {
+        final first = data.first;
+        if (first is Map) {
+          final keys = first.keys.toList();
+          debugPrint("DEBUG fetchOffers: got ${data.length} items. First item KEYS: $keys");
+          final rawImg = first['image_url'] ?? first['imageUrl'] ?? 'MISSING_BOTH';
+          final rawItems = first['media_items'] ?? first['mediaItems'] ?? 'MISSING_BOTH';
+          debugPrint("DEBUG fetchOffers: image_url/imageUrl -> $rawImg | media_items/mediaItems type -> ${rawItems.runtimeType}, len -> ${rawItems is List ? rawItems.length : 'not list'}");
+        }
+      } else {
+        debugPrint("DEBUG fetchOffers: EMPTY list returned from /offers");
+      }
+
+      return data;
     } catch (e) {
       debugPrint("Fetch Offers Error in MediaService: $e");
       return [];
