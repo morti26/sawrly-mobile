@@ -744,24 +744,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   }
 
   String _normalizeMediaUrl(String raw) {
-    if (raw.trim().isEmpty) return '';
-    String url = raw.trim();
-    if (url.startsWith('/')) {
-      url = 'https://sawrly.com$url';
-    } else if (url.startsWith('http://10.0.2.2:') ||
-        url.startsWith('http://localhost:')) {
-      url = url.replaceFirst(
-          RegExp(r'http://(10\.0\.2\.2|localhost):\d+'), 'https://sawrly.com');
-    } else if (url.startsWith('http://sawrly.com')) {
-      url = url.replaceFirst('http://', 'https://');
-    }
-
-    try {
-      Uri.parse(url);
-      return url;
-    } catch (_) {
-      return Uri.encodeFull(url);
-    }
+    return normalizePublicMediaUrl(raw);
   }
 
   bool _isVideoUrl(String url) {

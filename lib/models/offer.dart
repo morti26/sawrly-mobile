@@ -5,6 +5,7 @@ String normalizePublicMediaUrl(String raw) {
   if (value.isEmpty) return '';
   String url = value;
 
+  // Steg 1: Hantera alla kända prefix för relativa URL:er
   if (url.startsWith('/')) {
     url = 'https://sawrly.com$url';
   } else if (url.startsWith('uploads/') ||
@@ -22,6 +23,40 @@ String normalizePublicMediaUrl(String raw) {
     url = 'https://sawrly.com/$url';
   }
 
+  // Steg 2: För alla fullständiga URL:er – hantera äldre legacy-domän och http-schema
+  const legacyHost = 'ph.sitely24.com';
+  final uri = Uri.tryParse(url);
+  if (uri != null && uri.hasAuthority) {
+    bool changed = false;
+    String scheme = uri.scheme;
+    String host = uri.host;
+    int? port = uri.hasPort ? uri.port : null;
+
+    // Ersätt äldre legacy-domän med sawrly.com
+    if (host == legacyHost) {
+      host = 'sawrly.com';
+      changed = true;
+    }
+
+    // Alltid https om det är sawrly (eller legacy som precis bytts)
+    if (scheme == 'http' && (host == 'sawrly.com')) {
+      scheme = 'https';
+      port = null;
+      changed = true;
+    }
+
+    if (changed) {
+      url = uri
+          .replace(
+            scheme: scheme,
+            host: host,
+            port: port,
+          )
+          .toString();
+    }
+  }
+
+  // Steg 3: URL-encoding om Uri.parse skulle krascha pga specialtecken
   try {
     Uri.parse(url);
     return url;

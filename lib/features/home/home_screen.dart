@@ -156,14 +156,6 @@ class _HomeScreenState extends State<HomeScreen> {
           .map((e) {
             try {
               final offer = Offer.fromJson(e);
-              String img = offer.imageUrl.trim();
-              if (img.startsWith('/')) {
-                img = 'https://sawrly.com$img';
-              } else if (img.startsWith('http://sawrly.com')) {
-                img = img.replaceFirst('http://', 'https://');
-              } else if (img.isEmpty) {
-                img = 'https://via.placeholder.com/300';
-              }
               return Offer(
                 id: offer.id,
                 creatorId: offer.creatorId,
@@ -173,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 price: offer.price,
                 partialPaymentAmount: offer.partialPaymentAmount,
                 fullPaymentAmount: offer.fullPaymentAmount,
-                imageUrl: img,
+                imageUrl: offer.imageUrl,
                 mediaItems: offer.mediaItems,
                 isPopular: true,
                 hasDiscount: offer.hasDiscount,
@@ -203,14 +195,6 @@ class _HomeScreenState extends State<HomeScreen> {
           .map((e) {
             try {
               final offer = Offer.fromJson(e);
-              String img = offer.imageUrl.trim();
-              if (img.startsWith('/')) {
-                img = 'https://sawrly.com$img';
-              } else if (img.startsWith('http://sawrly.com')) {
-                img = img.replaceFirst('http://', 'https://');
-              } else if (img.isEmpty) {
-                img = 'https://via.placeholder.com/300';
-              }
               return Offer(
                 id: offer.id,
                 creatorId: offer.creatorId,
@@ -220,8 +204,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 price: offer.price,
                 partialPaymentAmount: offer.partialPaymentAmount,
                 fullPaymentAmount: offer.fullPaymentAmount,
-                imageUrl: img,
+                imageUrl: offer.imageUrl,
                 mediaItems: offer.mediaItems,
+                isPopular: offer.isPopular,
                 hasDiscount: offer.hasDiscount,
                 discountPercent: offer.discountPercent,
                 originalPrice: offer.originalPrice,
@@ -259,41 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _allOffers = rawData
             .map((e) {
               try {
-                final offer = Offer.fromJson(e);
-                // Normalize media URL for real mobile devices
-                String img = offer.imageUrl.trim();
-                if (img.startsWith("/")) {
-                  img = "https://sawrly.com$img";
-                } else if (img.startsWith("http://10.0.2.2:3000")) {
-                  img = img.replaceFirst(
-                      "http://10.0.2.2:3000", "https://sawrly.com");
-                } else if (img.startsWith("http://localhost:3000")) {
-                  img = img.replaceFirst(
-                      "http://localhost:3000", "https://sawrly.com");
-                } else if (img.startsWith("http://sawrly.com")) {
-                  img = img.replaceFirst("http://", "https://");
-                } else if (img.isEmpty) {
-                  img = "https://via.placeholder.com/300";
-                }
-                return Offer(
-                  id: offer.id,
-                  creatorId: offer.creatorId,
-                  creatorName: offer.creatorName,
-                  title: offer.title,
-                  description: offer.description,
-                  price: offer.price,
-                  partialPaymentAmount: offer.partialPaymentAmount,
-                  fullPaymentAmount: offer.fullPaymentAmount,
-                  imageUrl: img,
-                  mediaItems: offer.mediaItems,
-                  isPopular: offer.isPopular,
-                  hasDiscount: offer.hasDiscount,
-                  discountPercent: offer.discountPercent,
-                  originalPrice: offer.originalPrice,
-                  likeCount: offer.likeCount,
-                  orderCount: offer.orderCount,
-                  likedByMe: offer.likedByMe,
-                );
+                return Offer.fromJson(e);
               } catch (parseError) {
                 debugPrint("Error parsing offer: $parseError");
                 debugPrint("Problematic data: $e");

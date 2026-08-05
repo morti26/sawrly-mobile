@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../models/banner_ad.dart';
+import '../../../../models/offer.dart' show normalizePublicMediaUrl;
 
 class BannerAnnouncement extends StatefulWidget {
   final BannerAd? banner;
@@ -119,24 +120,7 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
   }
 
   String _normalizeUrl(String url) {
-    if (url.startsWith('/')) return 'https://sawrly.com$url';
-    if (url.startsWith('http://10.0.2.2:3000')) {
-      return url.replaceFirst('http://10.0.2.2:3000', 'https://sawrly.com');
-    }
-    if (url.startsWith('http://localhost:3000')) {
-      return url.replaceFirst('http://localhost:3000', 'https://sawrly.com');
-    }
-    if (url.startsWith('http://sawrly.com')) {
-      return url.replaceFirst('http://', 'https://');
-    }
-    final uri = Uri.tryParse(url);
-    if (uri != null && uri.hasAuthority) {
-      final legacyHost = ['ph', 'sitely24', 'com'].join('.');
-      if (uri.host == legacyHost) {
-        return uri.replace(scheme: 'https', host: 'sawrly.com', port: null).toString();
-      }
-    }
-    return url;
+    return normalizePublicMediaUrl(url);
   }
 
   Future<void> _launchUrl() async {

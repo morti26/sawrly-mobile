@@ -301,27 +301,7 @@ class _OfferCardState extends State<OfferCard> {
   }
 
   String _normalizeUrl(String raw) {
-    if (raw.trim().isEmpty) return '';
-    String url = raw.trim();
-    if (url.startsWith('/')) {
-      url = 'https://sawrly.com$url';
-    } else if (url.startsWith('http://10.0.2.2:') ||
-        url.startsWith('http://localhost:')) {
-      url = url.replaceFirst(
-          RegExp(r'http://(10\.0\.2\.2|localhost):\d+'), 'https://sawrly.com');
-    } else if (url.startsWith('http://sawrly.com')) {
-      url = url.replaceFirst('http://', 'https://');
-    } else if (!url.startsWith('http')) {
-      url = 'https://sawrly.com/$url';
-    }
-
-    // Check if the URL needs encoding (e.g. contains unescaped spaces)
-    try {
-      Uri.parse(url);
-      return url;
-    } catch (_) {
-      return Uri.encodeFull(url);
-    }
+    return normalizePublicMediaUrl(raw);
   }
 
   bool _isVideoUrl(String url) {
