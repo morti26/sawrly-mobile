@@ -5,6 +5,27 @@ String normalizePublicMediaUrl(String raw) {
   if (value.isEmpty) return '';
   String url = value;
 
+  // Steg 0: Ta bort "/api/" prefix för statiska media-filer (backend returnerar
+  // /api/uploads/... men static files servas från /uploads/... utan /api)
+  const kStaticFolders = ['uploads/', 'images/', 'media/', 'videos/'];
+  if (url.startsWith('/api/')) {
+    final rest = url.substring('/api/'.length); // ex: 'uploads/offers/...'
+    for (final folder in kStaticFolders) {
+      if (rest.startsWith(folder)) {
+        url = '/$rest'; // '/uploads/offers/...'
+        break;
+      }
+    }
+  } else if (url.startsWith('api/')) {
+    final rest = url.substring('api/'.length);
+    for (final folder in kStaticFolders) {
+      if (rest.startsWith(folder)) {
+        url = rest; // 'uploads/offers/...' (hanteras av steg 1)
+        break;
+      }
+    }
+  }
+
   // Steg 1: Hantera alla kända prefix för relativa URL:er
   if (url.startsWith('/')) {
     url = 'https://sawrly.com$url';
@@ -31,6 +52,19 @@ String normalizePublicMediaUrl(String raw) {
     String scheme = uri.scheme;
     String host = uri.host;
     int? port = uri.hasPort ? uri.port : null;
+    String path = uri.path;
+
+    // Ta bort /api/ prefix från path om det pekar på statiska folders (även för fullständiga URL:er)
+    if (path.startsWith('/api/')) {
+      final rest = path.substring('/api/'.length);
+      for (final folder in kStaticFolders) {
+        if (rest.startsWith(folder)) {
+          path = '/$rest';
+          changed = true;
+          break;
+        }
+      }
+    }
 
     // Ersätt äldre legacy-domän med sawrly.com
     if (host == legacyHost) {
@@ -51,6 +85,7 @@ String normalizePublicMediaUrl(String raw) {
             scheme: scheme,
             host: host,
             port: port,
+            path: path,
           )
           .toString();
     }
