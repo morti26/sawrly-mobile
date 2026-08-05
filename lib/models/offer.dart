@@ -8,8 +8,8 @@ class OfferMediaItem {
 
   factory OfferMediaItem.fromJson(dynamic json) {
     if (json is Map) {
-      final url = json['url']?.toString() ?? '';
-      final type = json['type']?.toString() ?? '';
+      final url = (json['url'] ?? json['Url'] ?? '').toString().trim();
+      final type = (json['type'] ?? json['Type'] ?? '').toString().trim();
       return OfferMediaItem(url: url, type: type);
     }
     return const OfferMediaItem(url: '', type: '');
@@ -22,15 +22,15 @@ class Offer {
   final String creatorName;
   final String title;
   final String description;
-  final double price; // Current price in IQD (after discount if any)
+  final double price;
   final double? partialPaymentAmount;
   final double? fullPaymentAmount;
   final String imageUrl;
   final List<OfferMediaItem> mediaItems;
   final bool isPopular;
   final bool hasDiscount;
-  final int discountPercent; // 0-100
-  final double? originalPrice; // Original price before discount
+  final int discountPercent;
+  final double? originalPrice;
   final int likeCount;
   final int orderCount;
   final bool likedByMe;
@@ -123,17 +123,33 @@ class Offer {
     return int.tryParse(match.group(1) ?? '') ?? 0;
   }
 
+  static T? _pick<T>(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      if (json.containsKey(key) && json[key] != null) {
+        return json[key] as T;
+      }
+    }
+    return null;
+  }
+
   factory Offer.fromJson(Map<String, dynamic> json) {
-    final rawDescription = json['description'] ?? '';
-    final dbDiscount = _parseInt(json['discount_percent']);
+    final rawDescription =
+        (_pick<String>(json, const ['description', 'Description']) ?? '')
+            .toString();
+
+    final dbDiscount = _parseInt(_pick<dynamic>(
+        json, const ['discount_percent', 'discountPercent', 'DiscountPercent']));
     final discount =
         dbDiscount > 0 ? dbDiscount : _parseLegacyDiscount(rawDescription);
-    final originalRaw = json['original_price_iqd'];
+
+    final originalRaw = _pick<dynamic>(json,
+        const ['original_price_iqd', 'originalPriceIqd', 'OriginalPriceIqd']);
     final originalPrice =
         originalRaw == null ? null : _parseDouble(originalRaw);
 
     final parsedMediaItems = <OfferMediaItem>[];
-    final rawMediaItems = json['media_items'];
+    final rawMediaItems = _pick<dynamic>(
+        json, const ['media_items', 'mediaItems', 'MediaItems']);
     if (rawMediaItems is List) {
       for (final item in rawMediaItems) {
         final parsed = OfferMediaItem.fromJson(item);
@@ -143,7 +159,10 @@ class Offer {
       }
     }
 
-    final legacyImageUrl = (json['image_url'] ?? '').toString();
+    final legacyImageUrl = (_pick<dynamic>(
+            json, const ['image_url', 'imageUrl', 'ImageUrl']) ??
+        '')
+        .toString();
     String effectiveImageUrl = legacyImageUrl;
     if (parsedMediaItems.isNotEmpty) {
       final firstImage = parsedMediaItems.firstWhere(
@@ -156,26 +175,58 @@ class Offer {
     }
 
     return Offer(
-      id: json['id']?.toString() ?? '',
-      creatorId: json['creator_id']?.toString() ?? '',
-      creatorName: json['creator_name']?.toString() ?? '',
-      title: json['title'] ?? '',
+      id: (_pick<dynamic>(json, const ['id', 'Id']) ?? '').toString(),
+      creatorId:
+          (_pick<dynamic>(json, const ['creator_id', 'creatorId', 'CreatorId']) ??
+                  '')
+              .toString(),
+      creatorName: (_pick<dynamic>(
+                  json, const ['creator_name', 'creatorName', 'CreatorName']) ??
+              '')
+          .toString(),
+      title: (_pick<String>(json, const ['title', 'Title']) ?? '').toString(),
       description: rawDescription,
-      price: _parseDouble(json['price_iqd']),
-      partialPaymentAmount: json['partial_payment_iqd'] == null
+      price: _parseDouble(_pick<dynamic>(
+          json, const ['price_iqd', 'priceIqd', 'PriceIqd'])),
+      partialPaymentAmount: _pick<dynamic>(json, const [
+        'partial_payment_iqd',
+        'partialPaymentIqd',
+        'PartialPaymentIqd'
+      ]) == null
           ? null
-          : _parseDouble(json['partial_payment_iqd']),
-      fullPaymentAmount: json['full_payment_iqd'] == null
+          : _parseDouble(_pick<dynamic>(json, const [
+              'partial_payment_iqd',
+              'partialPaymentIqd',
+              'PartialPaymentIqd'
+            ])),
+      fullPaymentAmount: _pick<dynamic>(json, const [
+        'full_payment_iqd',
+        'fullPaymentIqd',
+        'FullPaymentIqd'
+      ]) == null
           ? null
-          : _parseDouble(json['full_payment_iqd']),
+          : _parseDouble(_pick<dynamic>(json, const [
+              'full_payment_iqd',
+              'fullPaymentIqd',
+              'FullPaymentIqd'
+            ])),
       imageUrl: effectiveImageUrl,
       mediaItems: parsedMediaItems,
       discountPercent: discount,
       originalPrice: originalPrice,
       hasDiscount: discount > 0,
-      likeCount: _parseInt(json['like_count']),
-      orderCount: _parseInt(json['order_count']),
-      likedByMe: json['liked_by_me'] == true,
+      likeCount: _parseInt(_pick<dynamic>(
+          json, const ['like_count', 'likeCount', 'LikeCount'])),
+      orderCount: _parseInt(_pick<dynamic>(
+          json, const ['order_count', 'orderCount', 'OrderCount'])),
+      likedByMe: _pick<dynamic>(
+                  json, const ['liked_by_me', 'likedByMe', 'LikedByMe']) ==
+              true ||
+          _pick<dynamic>(
+                  json, const ['liked_by_me', 'likedByMe', 'LikedByMe'])
+              .toString()
+              .trim() ==
+              'true',
     );
   }
 }

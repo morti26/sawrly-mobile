@@ -1,10 +1,13 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
 import 'package:video_player/video_player.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/design/design_tokens.dart';
+import '../../core/network/api_client.dart';
 import '../../core/services/cart_service.dart';
 import '../../core/services/media_service.dart';
 import '../../core/widgets/report_dialog.dart';
@@ -26,6 +29,630 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   int _activeIndex = 0;
   late bool _isSaved;
   bool _isSavingFavorite = false;
+  bool _isStartingPayment = false;
+
+  String _formatDateTime(DateTime value) {
+    final y = value.year.toString().padLeft(4, '0');
+    final m = value.month.toString().padLeft(2, '0');
+    final d = value.day.toString().padLeft(2, '0');
+    final hh = value.hour.toString().padLeft(2, '0');
+    final mm = value.minute.toString().padLeft(2, '0');
+    return '$y-$m-$d $hh:$mm';
+  }
+
+  int _isoWeekNumber(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    final thursday = normalized.add(
+      Duration(days: DateTime.thursday - normalized.weekday),
+    );
+    final firstThursday = DateTime(thursday.year, 1, 4);
+    final firstWeekStart = firstThursday.subtract(
+      Duration(days: firstThursday.weekday - 1),
+    );
+    final currentWeekStart = normalized.subtract(
+      Duration(days: normalized.weekday - 1),
+    );
+    return ((currentWeekStart.difference(firstWeekStart).inDays) ~/ 7) + 1;
+  }
+
+  DateTime _startOfWeekSaturday(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    final delta = (normalized.weekday - DateTime.saturday) % 7;
+    return normalized.subtract(Duration(days: delta));
+  }
+
+  Future<DateTime?> _pickWeeklySchedule(BuildContext context) async {
+    final now = DateTime.now();
+    DateTime selectedDate = DateTime(now.year, now.month, now.day);
+    TimeOfDay selectedTime = TimeOfDay.fromDateTime(now);
+    DateTime weekAnchor = selectedDate;
+
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161921),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final weekStart = _startOfWeekSaturday(weekAnchor);
+          final weekNumber = _isoWeekNumber(selectedDate);
+          final days = List.generate(
+            7,
+            (i) => weekStart.add(Duration(days: i)),
+          );
+
+          const weekdayLabel = <int, String>{
+            DateTime.saturday: 'س',
+            DateTime.sunday: 'ح',
+            DateTime.monday: 'ن',
+            DateTime.tuesday: 'ث',
+            DateTime.wednesday: 'ر',
+            DateTime.thursday: 'خ',
+            DateTime.friday: 'ج',
+          };
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'اختيار الموعد',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 48),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            setModalState(() {
+                              weekAnchor = weekAnchor.subtract(
+                                const Duration(days: 7),
+                              );
+                            });
+                          },
+                          icon: const Icon(
+                            Icons.chevron_right,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'الأسبوع $weekNumber • ${_formatDateTime(selectedDate).split(' ').first}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setModalState(() {
+                              weekAnchor = weekAnchor.add(
+                                const Duration(days: 7),
+                              );
+                            });
+                          },
+                          icon: const Icon(
+                            Icons.chevron_left,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: days.map((day) {
+                        final isSelected =
+                            day.year == selectedDate.year &&
+                            day.month == selectedDate.month &&
+                            day.day == selectedDate.day;
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                setModalState(() {
+                                  selectedDate = day;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF7C3AED)
+                                      : const Color(0xFF232838),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      weekdayLabel[day.weekday] ?? '',
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.white70,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      day.day.toString(),
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (picked != null) {
+                          setModalState(() {
+                            selectedTime = picked;
+                          });
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF232838),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.access_time,
+                              color: Colors.white70,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'الوقت: ${selectedTime.format(context)}',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            const Icon(Icons.edit, color: Colors.white70),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white24),
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            child: const Text('إلغاء'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final scheduled = DateTime(
+                                selectedDate.year,
+                                selectedDate.month,
+                                selectedDate.day,
+                                selectedTime.hour,
+                                selectedTime.minute,
+                              );
+                              Navigator.pop(context, scheduled);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7C3AED),
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            child: const Text('حسناً'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<int?> _pickPaymentAmountIqd(
+    BuildContext context,
+    int maxAmount,
+  ) async {
+    int selectedAmount = maxAmount;
+    final controller = TextEditingController(text: maxAmount.toString());
+    bool isPartial = false;
+
+    final result = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161921),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          int? parseController() {
+            final raw = controller.text.trim();
+            final value = int.tryParse(raw);
+            if (value == null) return null;
+            return value;
+          }
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'قيمة الدفع',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 48),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF232838),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'المبلغ الكامل: $maxAmount IQD',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        setModalState(() {
+                          isPartial = false;
+                          controller.text = maxAmount.toString();
+                          selectedAmount = maxAmount;
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isPartial
+                              ? const Color(0xFF232838)
+                              : const Color(0xFF7C3AED),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'دفع كامل المبلغ',
+                          style: TextStyle(
+                            color: isPartial ? Colors.white70 : Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        setModalState(() {
+                          isPartial = true;
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isPartial
+                              ? const Color(0xFF7C3AED)
+                              : const Color(0xFF232838),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'دفع جزء من المبلغ',
+                          style: TextStyle(
+                            color: isPartial ? Colors.white : Colors.white70,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (isPartial)
+                      TextField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        textDirection: TextDirection.ltr,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF232838),
+                          labelText: 'المبلغ (IQD)',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (_) {
+                          final parsed = parseController();
+                          setModalState(() {
+                            if (parsed != null) {
+                              selectedAmount = parsed;
+                            }
+                          });
+                        },
+                      ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white24),
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            child: const Text('إلغاء'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final amount = isPartial
+                                  ? parseController()
+                                  : maxAmount;
+                              if (amount == null) {
+                                return;
+                              }
+                              if (amount <= 0 || amount > maxAmount) {
+                                return;
+                              }
+                              Navigator.pop(context, amount);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7C3AED),
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            child: const Text('متابعة'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    controller.dispose();
+    return result;
+  }
+
+  Future<bool> _openExternalUrl(String url) async {
+    final normalized = url.trim();
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    final uri = Uri.tryParse(normalized);
+    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+      return false;
+    }
+
+    if (!await canLaunchUrl(uri)) {
+      return false;
+    }
+
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _startOnlinePayment() async {
+    if (_isStartingPayment) {
+      return;
+    }
+
+    final auth = context.read<AuthService>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (!auth.isAuthenticated) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')),
+      );
+      return;
+    }
+
+    if (auth.isCreator) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('هذه الميزة متاحة للعملاء فقط')),
+      );
+      return;
+    }
+
+    final maxAmount = widget.offer.price.round();
+    final scheduledAt = await _pickWeeklySchedule(context);
+    if (scheduledAt == null || !mounted) {
+      return;
+    }
+
+    final amount = await _pickPaymentAmountIqd(context, maxAmount);
+    if (amount == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isStartingPayment = true;
+    });
+
+    try {
+      final apiClient = context.read<ApiClient>();
+      final checkoutRes = await apiClient.client.post(
+        '/checkout',
+        data: {
+          'offerIds': [widget.offer.id],
+          'paymentMethod': 'cash',
+        },
+      );
+
+      final payload = checkoutRes.data;
+      final items = payload is Map<String, dynamic>
+          ? (payload['items'] as List<dynamic>? ?? const [])
+          : const [];
+      final firstItem = items.isNotEmpty && items.first is Map
+          ? Map<String, dynamic>.from(items.first as Map)
+          : null;
+
+      final quoteId = firstItem?['quoteId']?.toString().trim() ?? '';
+      final paymentId = firstItem?['paymentId']?.toString().trim() ?? '';
+
+      if (quoteId.isEmpty || paymentId.isEmpty) {
+        throw Exception('تعذر إنشاء الطلب للدفع الإلكتروني');
+      }
+
+      await apiClient.client.post(
+        '/payments',
+        data: {'quoteId': quoteId, 'amount': amount, 'method': 'online'},
+      );
+
+      final onlineRes = await apiClient.client.post(
+        '/payments/$paymentId/online-checkout',
+      );
+      final onlinePayload = onlineRes.data;
+      final checkoutUrl = onlinePayload is Map<String, dynamic>
+          ? (onlinePayload['gatewayCheckoutUrl'] ??
+                    onlinePayload['checkoutUrl'])
+                ?.toString()
+          : null;
+
+      if (checkoutUrl == null || checkoutUrl.trim().isEmpty) {
+        throw Exception('تعذر إنشاء رابط بوابة الدفع');
+      }
+
+      final launched = await _openExternalUrl(checkoutUrl);
+      if (!mounted) {
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            launched
+                ? 'تم تحديد الموعد: ${_formatDateTime(scheduledAt)} • المبلغ: $amount IQD'
+                : 'تعذر فتح بوابة الدفع، حاول من صفحة المدفوعات',
+          ),
+        ),
+      );
+    } on DioException catch (e) {
+      final responseData = e.response?.data;
+      final message = responseData is Map<String, dynamic>
+          ? responseData['error']?.toString()
+          : null;
+      messenger.showSnackBar(
+        SnackBar(content: Text(message ?? 'فشل فتح بوابة الدفع')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isStartingPayment = false;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -316,6 +943,9 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     final canSave = currentUser != null &&
         currentUser.id.trim() != widget.offer.creatorId.trim();
     final canReport = canSave;
+    final canPay = currentUser != null &&
+        !auth.isCreator &&
+        currentUser.id.trim() != widget.offer.creatorId.trim();
 
     return Scaffold(
       appBar: AppBar(
@@ -450,6 +1080,62 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                     style: const TextStyle(fontSize: 15, height: 1.6),
                   ),
                   const SizedBox(height: 24),
+                  if (canPay) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: AppColors.accentGradient,
+                          ),
+                          boxShadow: AppShadows.glowAccent,
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: _isStartingPayment
+                                ? null
+                                : _startOnlinePayment,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _isStartingPayment
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.payment,
+                                        color: Colors.white,
+                                      ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  _isStartingPayment
+                                      ? '...جارٍ التحويل'
+                                      : 'متابعة الدفع',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: Container(
