@@ -1,7 +1,7 @@
 name: fotgraf_mobile
-description: "Sawrly - صورلي - Kundrelease v1.2.0: Alla 15 kundkrav genomgångna. Rapportera-knappar, favoriter, kön-ikon, land+stad, 8b/4v/2o gränser, Story TTL 24h, Skapare-namn i erbjudande, Laddningslista, Redigera profil fält ordnade"
+description: "Sawrly - صورلي - Kundrelease v1.2.1: Alla 15 kundkrav + TEMA-AWARE. Profil/Redigera/Skapa erbjudande använder NU admin-panelens temafärger (AppThemeService). Inga hårdkodade färger i dessa 3 filer längre."
 publish_to: 'none'
-version: 1.2.0+5
+version: 1.2.1+6
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

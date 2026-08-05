@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/design/design_tokens.dart';
+import '../../core/theme/app_theme_service.dart';
 import '../../core/services/media_service.dart';
 
 // Punkt 7: Status för varje uppladdningsfil (laddningslista)
@@ -19,11 +20,6 @@ class CreateOfferScreen extends StatefulWidget {
 
 class _CreateOfferScreenState extends State<CreateOfferScreen> {
   static const double _minimumOfferPrice = 1200;
-  static const Color _bg = AppColors.background;
-  static const Color _surface = Color(0xFF222734);
-  static const Color _surfaceAlt = Color(0xFF1B1F2A);
-  static const Color _accentPink = Color(0xFFFF4DA6);
-  static const Color _accentPurple = Color(0xFF7A3EED);
 
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
@@ -102,40 +98,43 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
 
   // Punkt 7: Bygg widget för varje rad i laddningslistan
   Widget _buildQueueRow(Map<String, dynamic> item) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final _StepStatus status = item['status'] as _StepStatus;
     final bool isImage = item['type'] == 'image';
-    Color bg = Colors.grey.withValues(alpha: 0.10);
+    Color bg = colors.textTertiary.withValues(alpha: 0.10);
     IconData icon = Icons.help_outline;
     String statusText = "-";
-    Color iconColor = Colors.grey;
+    Color iconColor = colors.textTertiary;
     final bool isUploading = status == _StepStatus.uploading;
     if (status == _StepStatus.waiting) {
-      bg = Colors.orange.withValues(alpha: 0.12);
+      bg = colors.warning.withValues(alpha: 0.12);
       icon = Icons.hourglass_empty;
       statusText = "في الانتظار";
-      iconColor = Colors.orangeAccent;
+      iconColor = colors.warning;
     } else if (status == _StepStatus.uploading) {
-      bg = Colors.blue.withValues(alpha: 0.14);
+      bg = colors.info.withValues(alpha: 0.14);
       icon = Icons.upload_file_rounded;
       statusText = "جاري الرفع...";
-      iconColor = Colors.blueAccent;
+      iconColor = colors.primary;
     } else if (status == _StepStatus.success) {
-      bg = Colors.green.withValues(alpha: 0.12);
+      bg = colors.success.withValues(alpha: 0.12);
       icon = Icons.check_circle;
       statusText = "تم";
-      iconColor = Colors.greenAccent;
+      iconColor = colors.success;
     } else if (status == _StepStatus.error) {
-      bg = Colors.red.withValues(alpha: 0.12);
+      bg = colors.error.withValues(alpha: 0.12);
       icon = Icons.error_outline;
       statusText = "فشل";
-      iconColor = Colors.redAccent;
+      iconColor = colors.error;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderLight),
       ),
       child: Row(
         children: [
@@ -144,14 +143,14 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
             height: 34,
             decoration: BoxDecoration(
               color: isImage
-                  ? Colors.blue.withValues(alpha: 0.20)
-                  : Colors.red.withValues(alpha: 0.20),
+                  ? colors.info.withValues(alpha: 0.20)
+                  : colors.error.withValues(alpha: 0.20),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               isImage ? Icons.image : Icons.videocam_rounded,
               size: 18,
-              color: isImage ? Colors.blueAccent : Colors.redAccent,
+              color: isImage ? colors.primary : colors.error,
             ),
           ),
           const SizedBox(width: 10),
@@ -163,8 +162,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                   item['name'],
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -172,8 +171,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                 const SizedBox(height: 3),
                 Text(
                   "${isImage ? 'صورة' : 'فيديو'} • ${item['sizeMb']} MB • $statusText",
-                  style: const TextStyle(
-                    color: Colors.white60,
+                  style: TextStyle(
+                    color: colors.textSecondary.withValues(alpha: 0.85),
                     fontSize: 11.5,
                   ),
                 ),
@@ -188,12 +187,12 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           ),
           if (isUploading) ...[
             const SizedBox(width: 6),
-            const SizedBox(
+            SizedBox(
               width: 14,
               height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Colors.blueAccent,
+                color: colors.primary,
               ),
             ),
           ],
@@ -204,8 +203,11 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
 
   // Punkt 7: Dialog med lista över alla uppladdningsfiler
   Widget _buildPublishQueueDialog() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Dialog(
-      backgroundColor: _surface,
+      backgroundColor: colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 30),
       child: Padding(
@@ -220,34 +222,34 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [_accentPink, _accentPurple],
+                    gradient: LinearGradient(
+                      colors: [colors.accentPink, colors.primaryDark],
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.cloud_upload_rounded,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         "جاري النشر",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 17,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         "يرجى عدم إغلاق الشاشة",
                         style: TextStyle(
-                          color: Colors.white60,
+                          color: colors.textSecondary.withValues(alpha: 0.85),
                           fontSize: 12.5,
                         ),
                       ),
@@ -258,9 +260,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
             ),
             const SizedBox(height: 18),
             if (_publishQueue.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Center(child: CircularProgressIndicator(color: Colors.white70)),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Center(child: CircularProgressIndicator(color: colors.textSecondary)),
               )
             else
               Flexible(
@@ -280,24 +282,24 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.28),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(color: colors.borderLight),
                 ),
                 child: Row(
                   children: [
-                    const SizedBox(
+                    SizedBox(
                       width: 12,
                       height: 12,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: _accentPink,
+                        color: colors.accentPink,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _publishStage,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: colors.textSecondary,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w500,
                         ),
@@ -360,6 +362,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Future<void> _pickMedia() async {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final selection = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -367,12 +372,12 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.image, color: Colors.blue),
+              leading: Icon(Icons.image, color: colors.info),
               title: const Text("رفع صورة"),
               onTap: () => Navigator.pop(context, "image"),
             ),
             ListTile(
-              leading: const Icon(Icons.videocam, color: Colors.red),
+              leading: Icon(Icons.videocam, color: colors.error),
               title: const Text("رفع فيديو"),
               onTap: () => Navigator.pop(context, "video"),
             ),
@@ -465,26 +470,29 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Widget _buildSaveButton(bool isEditing) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: Ink(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [_accentPink, _accentPurple],
+            colors: [colors.accentPink, colors.primaryDark],
           ),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: _accentPink.withValues(alpha: 0.30),
+              color: colors.accentPink.withValues(alpha: 0.30),
               blurRadius: 18,
               offset: const Offset(0, 10),
             ),
             BoxShadow(
-              color: _accentPurple.withValues(alpha: 0.18),
+              color: colors.primaryDark.withValues(alpha: 0.18),
               blurRadius: 24,
               offset: const Offset(0, 14),
             ),
@@ -494,18 +502,18 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           onTap: _isPublishing ? null : _publishOffer,
           child: Center(
             child: _isPublishing
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: colors.textPrimary,
                     ),
                   )
                 : Text(
                     isEditing ? "حفظ" : "نشر",
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -518,18 +526,21 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final bool isEditing = widget.initialItem != null;
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: colors.background,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: _bg,
+        backgroundColor: colors.background,
         elevation: 0,
         centerTitle: true,
         title: Text(isEditing ? "تعديل العرض" : "قائمة العروض",
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: colors.textPrimary, fontWeight: FontWeight.bold)),
         leading: Padding(
           padding: const EdgeInsets.only(left: 10, top: 6, bottom: 6),
           child: SizedBox.expand(
@@ -539,7 +550,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         leadingWidth: 98,
         actions: [
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: colors.textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -553,13 +564,13 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _offerType,
-                  hint: const Align(
+                  hint: Align(
                       alignment: Alignment.centerRight,
                       child: Text("اختر ...",
                           style:
-                              TextStyle(color: Colors.white54))), // "Choose..."
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                              TextStyle(color: colors.textTertiary))), // "Choose..."
+                  icon: Icon(Icons.arrow_drop_down, color: colors.textSecondary),
+                  style: TextStyle(color: colors.textPrimary, fontSize: 15),
                   isExpanded: true,
                   items: _offerTypes
                       .map((e) => DropdownMenuItem(
@@ -568,13 +579,13 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                               alignment: Alignment.centerRight,
                               child: Text(
                                 e,
-                                style: const TextStyle(color: Colors.white),
+                                style: TextStyle(color: colors.textPrimary),
                               ),
                             ),
                           ))
                       .toList(),
                   onChanged: (val) => setState(() => _offerType = val),
-                  dropdownColor: _surface,
+                  dropdownColor: colors.surface,
                 ),
               ),
             ),
@@ -620,15 +631,15 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: _surfaceAlt,
+                color: Color.lerp(colors.background, colors.surface, 0.78)!,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: colors.borderLight),
               ),
-              child: const Text(
+              child: Text(
                 "يمكنك تحديد مبلغ الدفعة الجزئية ومبلغ الدفع الكامل كما يظهر للعميل. إذا تركت الحقول فارغة سيتم اعتماد 30% للدفعة الجزئية وسعر العرض الحالي للدفع الكامل.",
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: colors.textSecondary,
                   fontSize: 12,
                   height: 1.55,
                 ),
@@ -645,13 +656,13 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _discountPercentage,
-                  hint: const Align(
+                  hint: Align(
                       alignment: Alignment.centerRight,
                       child: Text("اختر نسبة الخصم ...",
                           style: TextStyle(
-                              color: Colors.white54))), // "Choose Discount..."
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                              color: colors.textTertiary))), // "Choose Discount..."
+                  icon: Icon(Icons.arrow_drop_down, color: colors.textSecondary),
+                  style: TextStyle(color: colors.textPrimary, fontSize: 15),
                   isExpanded: true,
                   menuMaxHeight: 280,
                   items: _discounts
@@ -661,13 +672,13 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                               alignment: Alignment.centerRight,
                               child: Text(
                                 e,
-                                style: const TextStyle(color: Colors.white),
+                                style: TextStyle(color: colors.textPrimary),
                               ),
                             ),
                           ))
                       .toList(),
                   onChanged: (val) => setState(() => _discountPercentage = val),
-                  dropdownColor: _surface,
+                  dropdownColor: colors.surface,
                 ),
               ),
             ),
@@ -678,12 +689,15 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Widget _buildDropdownContainer({required Widget child}) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: _surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: colors.borderLight),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.28),
@@ -697,22 +711,25 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   InputDecoration _buildInputDecoration(String hint) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(
-        color: Colors.white54,
+      hintStyle: TextStyle(
+        color: colors.textTertiary,
         fontSize: 15,
         height: 1.5,
       ),
       filled: true,
-      fillColor: _surface,
+      fillColor: colors.surface,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Colors.white12),
+        borderSide: BorderSide(color: colors.borderLight),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: _accentPink, width: 1.2),
+        borderSide: BorderSide(color: colors.accentPink, width: 1.2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
@@ -725,6 +742,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     double? height,
     TextInputType keyboardType = TextInputType.text,
   }) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final field = TextField(
       controller: controller,
       maxLines: maxLines,
@@ -733,9 +753,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       textDirection: TextDirection.rtl,
       textAlignVertical:
           maxLines > 1 ? TextAlignVertical.top : TextAlignVertical.center,
-      cursorColor: _accentPink,
-      style: const TextStyle(
-        color: Colors.white,
+      cursorColor: colors.accentPink,
+      style: TextStyle(
+        color: colors.textPrimary,
         fontSize: 15,
         height: 1.5,
       ),
@@ -750,6 +770,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Widget _buildMediaPicker() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final selectedTiles = <Widget>[];
     for (int i = 0; i < _selectedImages.length; i++) {
       selectedTiles.add(_buildLocalImageTile(_selectedImages[i], i));
@@ -778,9 +801,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _surfaceAlt,
+        color: Color.lerp(colors.background, colors.surface, 0.78)!,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: colors.borderLight),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.24),
@@ -806,6 +829,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Widget _buildLocalImageTile(File file, int index) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Stack(
       children: [
         _buildTileFrame(
@@ -823,10 +849,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.black54,
+                color: colors.textTertiary.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.close, size: 16, color: Colors.white),
+              child: Icon(Icons.close, size: 16, color: colors.textPrimary),
             ),
           ),
         ),
@@ -835,14 +861,17 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Widget _buildLocalVideoTile() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Stack(
       children: [
         _buildTileFrame(
           child: Container(
             color: Colors.black87,
-            child: const Center(
+            child: Center(
               child:
-                  Icon(Icons.videocam_rounded, color: Colors.white, size: 30),
+                  Icon(Icons.videocam_rounded, color: colors.textPrimary, size: 30),
             ),
           ),
         ),
@@ -858,10 +887,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.black54,
+                color: colors.textTertiary.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.close, size: 16, color: Colors.white),
+              child: Icon(Icons.close, size: 16, color: colors.textPrimary),
             ),
           ),
         ),
@@ -870,13 +899,16 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Widget _buildRemoteTile(String rawUrl, bool isVideo) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final url = rawUrl.startsWith('/') ? "https://sawrly.com$rawUrl" : rawUrl;
     if (isVideo) {
       return _buildTileFrame(
         child: Container(
           color: Colors.black87,
-          child: const Center(
-            child: Icon(Icons.videocam_rounded, color: Colors.white, size: 30),
+          child: Center(
+            child: Icon(Icons.videocam_rounded, color: colors.textPrimary, size: 30),
           ),
         ),
       );
@@ -887,6 +919,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Widget _buildAddTile() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final canAddImage = _selectedImages.length < 3;
     final canAddVideo = _selectedVideo == null;
     final enabled = canAddImage || canAddVideo;
@@ -895,30 +930,30 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       child: _buildTileFrame(
         child: Container(
           decoration: BoxDecoration(
-            color: enabled ? _surface : _surfaceAlt,
+            color: enabled ? colors.surface : Color.lerp(colors.background, colors.surface, 0.78)!,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: enabled ? _accentPink.withValues(alpha: 0.35) : Colors.white12,
+              color: enabled ? colors.accentPink.withValues(alpha: 0.35) : colors.borderLight,
             ),
             boxShadow: enabled
                 ? [
                     BoxShadow(
-                      color: _accentPink.withValues(alpha: 0.22),
+                      color: colors.accentPink.withValues(alpha: 0.22),
                       blurRadius: 16,
                       offset: const Offset(0, 10),
                     ),
                   ]
                 : null,
           ),
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add, color: Colors.white70),
-                SizedBox(height: 4),
+                Icon(Icons.add, color: colors.textSecondary),
+                const SizedBox(height: 4),
                 Text(
                   "اضافة",
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 12),
                 ),
               ],
             ),

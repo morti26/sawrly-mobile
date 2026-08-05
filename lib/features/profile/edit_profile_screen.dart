@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/design/design_tokens.dart';
+import '../../core/theme/app_theme_service.dart';
 import '../../core/services/media_service.dart';
 import '../../models/user.dart';
 import '../../core/auth/auth_service.dart';
@@ -417,38 +418,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     context.watch<AuthService>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: Colors.white,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: AppColors.background,
+        backgroundColor: colors.background,
+        foregroundColor: colors.textPrimary,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: colors.background,
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
         ),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: colors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
-        title: const Text("تعديل الملف الشخصي",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text("تعديل الملف الشخصي",
+            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveProfile,
             child: _isSaving
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Text("حفظ",
+                        strokeWidth: 2, color: colors.textPrimary))
+                : Text("حفظ",
                     style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
+                        color: colors.textPrimary, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 8),
         ],
@@ -504,9 +508,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text(
+                          child: Text(
                             'خروج',
-                            style: TextStyle(color: Colors.red),
+                            style: TextStyle(color: colors.error),
                           ),
                         ),
                       ],
@@ -519,13 +523,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     navigator.popUntil((route) => route.isFirst);
                   }
                 },
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text(
+                icon: Icon(Icons.logout, color: colors.error),
+                label: Text(
                   'تسجيل الخروج',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: colors.error),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
+                  side: BorderSide(color: colors.error),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -540,6 +544,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildMediaSection() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return _buildSectionCard(
       children: [
         _buildImageTile(
@@ -559,6 +566,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildSectionCard({required List<Widget> children}) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     // Lägg till konsekventa mellanrum mellan varje barn automatiskt
     final spaced = <Widget>[];
     for (int i = 0; i < children.length; i++) {
@@ -571,9 +581,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1F2A),
+        color: Color.lerp(colors.background, colors.surface, 0.78)!,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: colors.textPrimary.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.25),
@@ -593,6 +603,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required VoidCallback onTap,
     required Widget preview,
   }) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
@@ -601,7 +614,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
+            color: colors.textPrimary.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Row(
@@ -613,8 +626,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Text(
                       title,
                       textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -623,8 +636,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Text(
                       subtitle,
                       textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      style: TextStyle(
+                        color: colors.textSecondary.withValues(alpha: 0.85),
                         fontSize: 12,
                       ),
                     ),
@@ -641,6 +654,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildCoverPreview() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final imageProvider = _newCoverImage != null
         ? FileImage(_newCoverImage!)
         : _buildNetworkImage(widget.user.coverImageUrl);
@@ -649,25 +665,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       width: 108,
       height: 68,
       decoration: BoxDecoration(
-        color: const Color(0xFF2A3040),
+        color: colors.surfaceLight,
         borderRadius: BorderRadius.circular(14),
         image: imageProvider != null
             ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
             : null,
       ),
       child: imageProvider == null
-          ? const Icon(Icons.image_outlined, color: Colors.white54)
+          ? Icon(Icons.image_outlined, color: colors.textTertiary)
           : Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
                 color: Colors.black.withValues(alpha: 0.12),
               ),
-              child: const Icon(Icons.camera_alt_outlined, color: Colors.white70),
+              child: Icon(Icons.camera_alt_outlined, color: colors.textSecondary),
             ),
     );
   }
 
   Widget _buildAvatarPreview() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final imageProvider = _newProfileImage != null
         ? FileImage(_newProfileImage!)
         : _buildNetworkImage(widget.user.avatarUrl);
@@ -679,13 +698,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           height: 64,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF2A3040),
+            color: colors.surfaceLight,
             image: imageProvider != null
                 ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
                 : null,
           ),
           child: imageProvider == null
-              ? const Icon(Icons.person_outline, color: Colors.white54)
+              ? Icon(Icons.person_outline, color: colors.textTertiary)
               : null,
         ),
         Positioned(
@@ -693,13 +712,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           right: 0,
           child: Container(
             padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: Color(0xFF11131C),
+            decoration: BoxDecoration(
+              color: colors.background,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.camera_alt_outlined,
-              color: Colors.white,
+              color: colors.textPrimary,
               size: 12,
             ),
           ),
@@ -805,33 +824,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildServiceAreaIntroTile() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF8E6BFF).withValues(alpha: 0.12),
+          color: colors.primary.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFF8E6BFF).withValues(alpha: 0.28),
+            color: colors.primary.withValues(alpha: 0.28),
           ),
         ),
-        child: const Row(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
               Icons.travel_explore_rounded,
-              color: Color(0xFFB79CFF),
+              color: colors.primaryLight,
               size: 18,
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 "حدد أماكن تقديم الخدمة ليظهر ذلك للآخرين في ملفك الشخصي.",
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: colors.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -844,20 +866,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildServiceAreaPreviewTile() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: colors.textPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.visibility_outlined,
-              color: Colors.white54,
+              color: colors.textTertiary,
               size: 18,
             ),
             const SizedBox(width: 10),
@@ -865,20 +890,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: Text(
                 _serviceAreaPreview,
                 textAlign: TextAlign.right,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            const SizedBox(
+            SizedBox(
               width: 92,
               child: Text(
                 "سيظهر للناس",
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: colors.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -891,20 +916,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildCountryTile() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: colors.textPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.public_rounded,
-              color: Colors.white70,
+              color: colors.textSecondary,
               size: 18,
             ),
             const SizedBox(width: 10),
@@ -915,7 +943,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onPressed: _showCountryPicker,
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.18),
+                      color: colors.textPrimary.withValues(alpha: 0.18),
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -925,20 +953,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     (_selectedCountry?.isNotEmpty ?? false)
                         ? _selectedCountry!
                         : "اختر بلد الخدمة",
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: colors.textPrimary),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            const SizedBox(
+            SizedBox(
               width: 78,
               child: Text(
                 "بلد الخدمة",
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: colors.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -951,22 +979,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildIraqiCitiesTile() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: colors.textPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.location_city_outlined,
-                  color: Colors.white70,
+                  color: colors.textSecondary,
                   size: 18,
                 ),
                 const SizedBox(width: 10),
@@ -977,7 +1008,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       onPressed: _showIraqiCitiesPicker,
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.18),
+                          color: colors.textPrimary.withValues(alpha: 0.18),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -987,19 +1018,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         _selectedCities.isEmpty
                             ? "اختر مدن الخدمة"
                             : "تم اختيار ${_selectedCities.length} مدينة",
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: colors.textPrimary),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                const SizedBox(
+                SizedBox(
                   width: 78,
                   child: Text(
                     "مدن الخدمة",
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: colors.textSecondary,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1038,6 +1069,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _showIraqiCitiesPicker() async {
+    final theme = context.read<AppThemeService>();
+    final colors = theme.colors;
     final tempSelectedCities = {..._selectedCities};
     final searchController = TextEditingController();
     String searchQuery = '';
@@ -1045,13 +1078,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1B1F2A),
-      shape: const RoundedRectangleBorder(
+      backgroundColor: Color.lerp(colors.background, colors.surface, 0.78)!,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final theme = context.watch<AppThemeService>();
+            final colors = theme.colors;
+            final config = theme.config;
             return SafeArea(
               child: SizedBox(
                 height: MediaQuery.of(context).size.height * 0.72,
@@ -1066,10 +1102,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: const Text("إلغاء"),
                           ),
                           const Spacer(),
-                          const Text(
+                          Text(
                             "اختر مدن الخدمة",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1099,14 +1135,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             searchQuery = value.trim().toLowerCase();
                           });
                         },
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: colors.textPrimary),
                         decoration: InputDecoration(
                           hintText: "ابحث عن مدينة خدمة",
-                          hintStyle: const TextStyle(color: Colors.white38),
+                          hintStyle: TextStyle(color: colors.textTertiary.withValues(alpha: 0.7)),
                           prefixIcon:
-                              const Icon(Icons.search, color: Colors.white54),
+                              Icon(Icons.search, color: colors.textTertiary),
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.06),
+                          fillColor: colors.textPrimary.withValues(alpha: 0.06),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide.none,
@@ -1135,12 +1171,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           final isSelected = tempSelectedCities.contains(city);
                           return CheckboxListTile(
                             value: isSelected,
-                            activeColor: const Color(0xFF8E6BFF),
-                            checkColor: Colors.white,
+                            activeColor: colors.primary,
+                            checkColor: colors.textPrimary,
                             title: Text(
                               city,
                               textAlign: TextAlign.right,
-                              style: const TextStyle(color: Colors.white),
+                              style: TextStyle(color: colors.textPrimary),
                             ),
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (checked) {
@@ -1168,18 +1204,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _showCountryPicker() async {
+    final theme = context.read<AppThemeService>();
+    final colors = theme.colors;
     String searchQuery = '';
 
     final selectedCountry = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1B1F2A),
-      shape: const RoundedRectangleBorder(
+      backgroundColor: Color.lerp(colors.background, colors.surface, 0.78)!,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final theme = context.watch<AppThemeService>();
+            final colors = theme.colors;
+            final config = theme.config;
             return SafeArea(
               child: SizedBox(
                 height: MediaQuery.of(context).size.height * 0.78,
@@ -1194,10 +1235,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: const Text("إلغاء"),
                           ),
                           const Spacer(),
-                          const Text(
+                          Text(
                             "اختر بلد الخدمة",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1215,14 +1256,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             searchQuery = value.trim().toLowerCase();
                           });
                         },
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: colors.textPrimary),
                         decoration: InputDecoration(
                           hintText: "ابحث عن بلد الخدمة",
-                          hintStyle: const TextStyle(color: Colors.white38),
+                          hintStyle: TextStyle(color: colors.textTertiary.withValues(alpha: 0.7)),
                           prefixIcon:
-                              const Icon(Icons.search, color: Colors.white54),
+                              Icon(Icons.search, color: colors.textTertiary),
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.06),
+                          fillColor: colors.textPrimary.withValues(alpha: 0.06),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide.none,
@@ -1254,12 +1295,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           return ListTile(
                             title: Text(
                               country,
-                              style: const TextStyle(color: Colors.white),
+                              style: TextStyle(color: colors.textPrimary),
                             ),
                             trailing: isSelected
-                                ? const Icon(
+                                ? Icon(
                                     Icons.check_rounded,
-                                    color: Color(0xFF8E6BFF),
+                                    color: colors.primary,
                                   )
                                 : null,
                             onTap: () {
@@ -1291,42 +1332,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildCityInfoTile() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: colors.textPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Row(
+        child: Row(
           children: [
             Icon(
               Icons.info_outline_rounded,
-              color: Colors.white54,
+              color: colors.textTertiary,
               size: 18,
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 "يمكنك الآن اختيار مدن الخدمة عند تحديد العراق. في باقي الدول سيظهر بلد الخدمة فقط.",
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: Colors.white60,
+                  color: colors.textSecondary.withValues(alpha: 0.85),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             SizedBox(
               width: 78,
               child: Text(
                 "مدن الخدمة",
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: colors.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1346,19 +1390,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     int? maxLength,
     TextInputAction? textInputAction,
   }) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: colors.textPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           crossAxisAlignment:
               maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white70, size: 18),
+            Icon(icon, color: colors.textSecondary, size: 18),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
@@ -1379,8 +1426,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   maxLength,
                 }) =>
                     null,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1388,7 +1435,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   isDense: true,
                   border: InputBorder.none,
                   hintText: label,
-                  hintStyle: const TextStyle(color: Colors.white38),
+                  hintStyle: TextStyle(color: colors.textTertiary.withValues(alpha: 0.7)),
                 ),
               ),
             ),
@@ -1398,8 +1445,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: Text(
                 label,
                 textAlign: TextAlign.right,
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: colors.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1412,17 +1459,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildGenderTile() {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: colors.textPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
-            const Icon(Icons.wc_rounded, color: Colors.white70, size: 18),
+            Icon(Icons.wc_rounded, color: colors.textSecondary, size: 18),
             const SizedBox(width: 10),
             Expanded(
               child: Align(
@@ -1430,8 +1480,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _gender,
-                    dropdownColor: const Color(0xFF232938),
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    dropdownColor: colors.surface,
+                    style: TextStyle(color: colors.textPrimary, fontSize: 14),
                     items: const [
                       DropdownMenuItem(value: "Male", child: Text("ذكر")),
                       DropdownMenuItem(value: "Female", child: Text("أنثى")),
@@ -1446,13 +1496,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const SizedBox(
+            SizedBox(
               width: 78,
               child: Text(
                 "الجنس",
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: colors.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),

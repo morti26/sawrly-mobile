@@ -8,6 +8,8 @@ import '../../models/offer.dart';
 import '../../models/user.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/design/design_tokens.dart';
+import '../../core/theme/app_theme_service.dart';
+import '../../core/theme/app_theme_config.dart';
 import '../../core/services/media_service.dart';
 import '../../core/widgets/report_dialog.dart';
 import '../home/offer_details_screen.dart';
@@ -34,7 +36,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   static const int _maxFreeCreatorVideos = 4;
   static const int _maxMonthlyCreatorImages = 16;
   static const int _maxMonthlyCreatorVideos = 8;
-  static const int _maxFreeCreatorOffers = 2;
   static const int _maxFreeVideoDurationSeconds = 60;
 
   late TabController _tabController;
@@ -52,15 +53,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   @override
   void initState() {
     super.initState();
-    // Default length 4 for creators (Offers, Photo, Video, Event)
-    // We will update this in build based on role, but TabController needs length.
-    // For simplicity, we'll listen to the user in build and re-initialize if needed,
-    // or better, just default to 4 and hide/show content.
-    // Actually, checking role in initState is truncated if user loads later.
-    // But verify: user is passed in constructor or provider.
-    // Let's assume passed user or auth user is available.
-    // We'll initialize with 0 and re-init in didChangeDependencies or build if we want dynamic.
-    // Simpler: Just allow 2 tabs for clients.
     _tabController = TabController(length: 4, vsync: this);
 
     _loadFullProfile();
@@ -235,11 +227,13 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }
 
   void _showUploadLoadingDialog(BuildContext screenContext, String message) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     showDialog<void>(
       context: screenContext,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         content: Row(
           children: [
             const SizedBox(
@@ -252,7 +246,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
               child: Text(
                 message,
                 textAlign: TextAlign.right,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: colors.textPrimary),
               ),
             ),
           ],
@@ -266,11 +260,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     super.didChangeDependencies();
     final authService = context.read<AuthService>();
     final user = widget.user ?? authService.currentUser;
-    // Client has 2 tabs, Creator 4
     final length = (user?.role == UserRole.client) ? 2 : 4;
     if (_tabController.length != length) {
       _tabController.dispose();
-      // creator has 4 tabs, client has 2
       final newLength = (user?.role == UserRole.client) ? 2 : 4;
       _tabController = TabController(length: newLength, vsync: this);
     }
@@ -283,7 +275,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }
 
   void _handleUpload() {
-    // ... (Existing upload logic) ...
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     final screenContext = context;
     final messenger = ScaffoldMessenger.of(screenContext);
 
@@ -304,7 +297,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const Icon(Icons.local_offer, color: Colors.green),
+                  leading: Icon(Icons.local_offer, color: colors.success),
                   title: const Text("إنشاء عرض"),
                   onTap: () {
                     Navigator.pop(context);
@@ -316,7 +309,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.image, color: Colors.blue),
+                  leading: Icon(Icons.image, color: colors.info),
                   title: const Text("رفع صورة"),
                   onTap: () async {
                     Navigator.pop(context);
@@ -347,7 +340,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     }
                     final file = await mediaService.pickImage();
                     if (file != null) {
-                      // Show caption dialog
                       String caption = "";
                       if (!screenContext.mounted) return;
                       await showDialog(
@@ -401,7 +393,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.videocam, color: Colors.red),
+                  leading: Icon(Icons.videocam, color: colors.error),
                   title: const Text("رفع فيديو"),
                   onTap: () async {
                     Navigator.pop(context);
@@ -504,7 +496,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                 ),
                 ListTile(
                   leading:
-                      const Icon(Icons.calendar_month, color: Colors.purple),
+                      Icon(Icons.calendar_month, color: colors.primary),
                   title: const Text("إضافة إلى الجدول"),
                   onTap: () async {
                     Navigator.pop(context);
@@ -538,6 +530,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     final authService = context.watch<AuthService>();
     final currentUser = authService.currentUser;
     final effectiveUser = widget.user ?? currentUser;
@@ -548,16 +542,12 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     final bool isOwner = isLoggedIn &&
         (effectiveUser.id.toString() == currentUser.id.toString());
 
-    // Use the reactive currentUser from the provider if viewing own profile,
-    // otherwise use the fetched full profile or passed widget.user
     final User displayUser =
         isOwner ? currentUser : (_fullProfile ?? effectiveUser);
     final bool isCreator = displayUser.role == UserRole.creator;
 
-    // Show upload button ONLY if Owner AND Creator
     final bool showUpload = isOwner && isCreator;
 
-    // Determine Tabs based on role
     final List<Widget> tabs;
     final List<Widget> tabViews;
 
@@ -591,7 +581,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             refreshToken: _mediaReloadTick),
       ];
     } else {
-      // Client View
       tabs = const [
         Tab(text: "مشترياتي"),
         Tab(text: "محفوظات"),
@@ -629,10 +618,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     ];
     final serviceAreaLabel = serviceAreaParts.join(" - ");
 
-    // Hide stats for client if desired, or keep them if they can follow others
-    // For now, allow clients to follow/be followed (social feature)
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: NestedScrollView(
         physics: const ClampingScrollPhysics(),
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -642,7 +629,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
               floating: false,
               pinned: true,
               actions: [
-                // Follow Button for Clients to follow Creators (or anyone)
                 if (!isOwner && isLoggedIn)
                   Center(
                     child: Padding(
@@ -652,9 +638,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         onPressed: () => _toggleFollow(displayUser.id),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              _isFollowing ? Colors.grey[200] : Colors.blue,
+                              _isFollowing ? colors.textTertiary : colors.info,
                           foregroundColor:
-                              _isFollowing ? Colors.black : Colors.white,
+                              _isFollowing ? colors.background : colors.textPrimary,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20)),
@@ -670,24 +656,23 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                   Container(
                     margin: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: colors.background.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.flag_outlined, color: Colors.white),
+                      icon: Icon(Icons.flag_outlined, color: colors.textPrimary),
                       onPressed: () => _showProfileReportDialog(displayUser),
                     ),
                   ),
-                // Settings/Edit Profile - Show for everyone if it's their profile
                 if (isOwner)
                   Container(
                     margin: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: colors.background.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.settings, color: Colors.white),
+                      icon: Icon(Icons.settings, color: colors.textPrimary),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -704,19 +689,19 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         right: 8.0, top: 8.0, bottom: 8.0),
                     decoration: BoxDecoration(
                       color: _isReloadingBadge
-                          ? Colors.deepPurpleAccent.withValues(alpha: 0.55)
-                          : Colors.deepPurpleAccent.withValues(alpha: 0.35),
+                          ? colors.primaryDark.withValues(alpha: 0.55)
+                          : colors.primaryDark.withValues(alpha: 0.35),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
                       icon: _isReloadingBadge
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
+                                  strokeWidth: 2, color: colors.textPrimary),
                             )
-                          : const Icon(Icons.refresh, color: Colors.white),
+                          : Icon(Icons.refresh, color: colors.textPrimary),
                       tooltip: 'Reload superadmin badge',
                       onPressed:
                           _isReloadingBadge ? null : _forceReloadSuperadminBadge,
@@ -746,7 +731,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withValues(alpha: 0.7)
+                            colors.background.withValues(alpha: 0.7)
                           ],
                         ),
                       ),
@@ -773,7 +758,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border:
-                                    Border.all(color: Colors.white, width: 3),
+                                    Border.all(color: colors.textPrimary, width: 3),
                               ),
                               child: CircleAvatar(
                                 radius: 40,
@@ -797,8 +782,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                                 displayUser.name,
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: colors.textPrimary,
                                                   fontSize: 20,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -808,20 +793,20 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                             if ((displayUser.gender ?? '')
                                                 .trim()
                                                 .toLowerCase() == 'male')
-                                              const Icon(Icons.male,
-                                                  color: Colors.lightBlueAccent,
+                                              Icon(Icons.male,
+                                                  color: colors.primary,
                                                   size: 20)
                                             else if ((displayUser.gender ?? '')
                                                 .trim()
                                                 .toLowerCase() == 'female')
-                                              const Icon(Icons.female,
-                                                  color: Colors.pinkAccent,
+                                              Icon(Icons.female,
+                                                  color: colors.accentPink,
                                                   size: 20),
                                             if (displayUser.role == UserRole.creator)
                                               const SizedBox(width: 6),
                                             if (displayUser.role == UserRole.creator)
-                                              const Icon(Icons.verified,
-                                                  color: Colors.blue, size: 20),
+                                              Icon(Icons.verified,
+                                                  color: colors.info, size: 20),
                                           ],
                                         ),
                                       ),
@@ -829,7 +814,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                   ),
                                 Text(
                                   "@${displayUser.email.split('@')[0]}",
-                                  style: const TextStyle(color: Colors.white70),
+                                  style: TextStyle(color: colors.textSecondary),
                                 ),
                                   if ((displayUser.role == UserRole.creator &&
                                           (displayUser.creatorLevelName ?? '')
@@ -912,7 +897,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     const SizedBox(height: 8),
                     Text(bio,
                         style:
-                            const TextStyle(color: Colors.grey, height: 1.4)),
+                            TextStyle(color: colors.textTertiary, height: 1.4)),
                     if (serviceAreaLabel.isNotEmpty) ...[
                       const SizedBox(height: 14),
                       const Text(
@@ -925,14 +910,14 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined,
-                              size: 18, color: Colors.white70),
+                          Icon(Icons.location_on_outlined,
+                              size: 18, color: colors.textSecondary),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               serviceAreaLabel,
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: colors.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -956,24 +941,24 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         "resolved=${_debugLastNormalizedUrl ?? 'null'}\n"
                         "badgeReloadTick=$_badgeReloadTick\n"
                         "reloadStatus=${_badgeReloadStatus ?? 'idle'}",
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
                       ),
                       const SizedBox(height: 6),
                       OutlinedButton.icon(
                         icon: _isReloadingBadge
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 14,
                                 height: 14,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
+                                    strokeWidth: 2, color: colors.textPrimary),
                               )
-                            : const Icon(Icons.refresh, size: 14, color: Colors.white),
+                            : Icon(Icons.refresh, size: 14, color: colors.textPrimary),
                         label: Text(
                           _isReloadingBadge ? "Reloadar..." : "Force reload badge",
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: colors.textPrimary),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                          side: BorderSide(color: colors.textPrimary.withValues(alpha: 0.4)),
                         ),
                         onPressed:
                             _isReloadingBadge ? null : _forceReloadSuperadminBadge,
@@ -989,7 +974,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                 controller: _tabController,
                 showUpload: showUpload,
                 onUpload: _handleUpload,
-                tabs: tabs, // Pass tabs to delegate
+                tabs: tabs,
               ),
               pinned: true,
             ),
@@ -1030,12 +1015,14 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     required String icon,
     required String name,
   }) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
+        color: colors.textPrimary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+        border: Border.all(color: colors.textPrimary.withValues(alpha: 0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1044,8 +1031,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
           const SizedBox(width: 6),
           Text(
             name,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -1059,6 +1046,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     required String? iconUrl,
     required String? label,
   }) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     final normalizedUrl = _normalizePublicMediaUrl(iconUrl ?? '');
     final tooltip = (label ?? '').trim().isEmpty ? 'سوبر أدمن' : label!.trim();
     final cacheBuster = _badgeReloadTick > 0 ? '?t=$_badgeReloadTick' : '';
@@ -1105,7 +1094,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       height: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white70,
+                        color: colors.textSecondary,
                         value: progress.expectedTotalBytes == null
                             ? null
                             : progress.cumulativeBytesLoaded /
@@ -1121,9 +1110,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     "[DEBUG] superadmin badge image B: error url=$imageUrl error=$error",
                   );
                   // #endregion
-                  return const Icon(
+                  return Icon(
                     Icons.shield_rounded,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     size: 22,
                   );
                 },
@@ -1136,9 +1125,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     "[DEBUG] superadmin badge image B: missing-url rawIconUrl=$iconUrl normalizedUrl=$normalizedUrl",
                   );
                   // #endregion
-                  return const Icon(
+                  return Icon(
                     Icons.shield_rounded,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     size: 22,
                   );
                 },
@@ -1151,22 +1140,24 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     required IconData icon,
     required String label,
   }) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.26),
+        color: colors.background.withValues(alpha: 0.26),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: colors.textPrimary.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.white70),
+          Icon(icon, size: 14, color: colors.textSecondary),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -1178,6 +1169,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
   Widget _buildStatItem(String label, String value,
       {IconData? icon, Color? iconColor, bool tappable = false}) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     return Column(
       children: [
         Row(
@@ -1187,7 +1180,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
-                  color: tappable ? Colors.blue[700] : null,
+                  color: tappable ? colors.primaryDark : null,
                 )),
             if (icon != null) ...[
               const SizedBox(width: 4),
@@ -1199,9 +1192,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(label,
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                style: TextStyle(color: colors.textTertiary, fontSize: 12)),
             if (tappable)
-              const Icon(Icons.arrow_forward_ios, size: 10, color: Colors.blue),
+              Icon(Icons.arrow_forward_ios, size: 10, color: colors.info),
           ],
         ),
       ],
@@ -1382,18 +1375,18 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     return Icons.event_available_rounded;
   }
 
-  Color _calendarStatusColor(dynamic raw) {
+  Color _calendarStatusColor(dynamic raw, RemoteThemeColors colors) {
     final status = raw?.toString().toLowerCase();
-    if (status == 'busy') return AppColors.warning;
-    if (status == 'booked') return AppColors.accentPink;
-    return AppColors.primaryLight;
+    if (status == 'busy') return colors.warning;
+    if (status == 'booked') return colors.accentPink;
+    return colors.primaryLight;
   }
 
-  Color _calendarStatusBackground(dynamic raw) {
+  Color _calendarStatusBackground(dynamic raw, RemoteThemeColors colors) {
     final status = raw?.toString().toLowerCase();
-    if (status == 'busy') return AppColors.warningBg;
-    if (status == 'booked') return AppColors.errorBg;
-    return AppColors.infoBg;
+    if (status == 'busy') return colors.warningBg;
+    if (status == 'booked') return colors.errorBg;
+    return colors.infoBg;
   }
 
   Widget _buildCalendarStatusChip({
@@ -1402,6 +1395,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     required String status,
     required String currentStatus,
     required VoidCallback onTap,
+    required RemoteThemeColors colors,
+    required AppThemeConfig config,
   }) {
     final isSelected = status == currentStatus;
     return InkWell(
@@ -1412,23 +1407,23 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          gradient: isSelected ? const LinearGradient(colors: AppColors.accentGradient) : null,
-          color: isSelected ? null : AppColors.surfaceLight,
+          gradient: isSelected ? config.effects.primaryGradient(colors.primary, colors.primaryDark) : null,
+          color: isSelected ? null : colors.surfaceLight,
           boxShadow: isSelected ? AppShadows.glowAccent : null,
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
-                : AppColors.border.withValues(alpha: 0.7),
+                : colors.border.withValues(alpha: 0.7),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: Colors.white),
+            Icon(icon, size: 16, color: colors.textPrimary),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -1448,14 +1443,14 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     return '$day/$month/$year';
   }
 
-  Color _calendarStatusCardColor(String status) {
-    if (status == 'busy') return AppColors.warningBg;
-    return AppColors.errorBg;
+  Color _calendarStatusCardColor(String status, RemoteThemeColors colors) {
+    if (status == 'busy') return colors.warningBg;
+    return colors.errorBg;
   }
 
-  Color _calendarStatusBorderColor(String status) {
-    if (status == 'busy') return AppColors.warning.withValues(alpha: 0.45);
-    return AppColors.accentPink.withValues(alpha: 0.45);
+  Color _calendarStatusBorderColor(String status, RemoteThemeColors colors) {
+    if (status == 'busy') return colors.warning.withValues(alpha: 0.45);
+    return colors.accentPink.withValues(alpha: 0.45);
   }
 
   List<Map<String, dynamic>> _eventsForDay(
@@ -1465,7 +1460,7 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     return grouped[_dayOnly(day)] ?? const [];
   }
 
-  Widget _buildEventPreviewThumb(Map<String, dynamic> item, {double size = 18}) {
+  Widget _buildEventPreviewThumb(Map<String, dynamic> item, {double size = 18, required RemoteThemeColors colors}) {
     final previewUrl = _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
     final isVideo = _isVideoUrl(previewUrl);
     if (previewUrl.isEmpty) {
@@ -1473,13 +1468,13 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: _calendarStatusBackground(item['calendar_status']),
+          color: _calendarStatusBackground(item['calendar_status'], colors),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(
           _calendarStatusIcon(item['calendar_status']),
           size: size * 0.65,
-          color: _calendarStatusColor(item['calendar_status']),
+          color: _calendarStatusColor(item['calendar_status'], colors),
         ),
       );
     }
@@ -1489,12 +1484,12 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: AppColors.darkGradient),
+          gradient: LinearGradient(colors: colors.darkGradient),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.play_circle_fill_rounded,
-          color: Colors.white,
+          color: colors.textPrimary,
           size: 14,
         ),
       );
@@ -1510,8 +1505,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
         errorBuilder: (_, __, ___) => Container(
           width: size,
           height: size,
-          color: AppColors.surfaceLight,
-          child: const Icon(Icons.image, color: Colors.white70, size: 12),
+          color: colors.surfaceLight,
+          child: Icon(Icons.image, color: colors.textSecondary, size: 12),
         ),
       ),
     );
@@ -1523,11 +1518,13 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     required bool isToday,
     required List<Map<String, dynamic>> events,
     required VoidCallback onTap,
+    required RemoteThemeColors colors,
+    required AppThemeConfig config,
   }) {
     final primaryEvent = events.isNotEmpty ? events.first : null;
     final statusColor = primaryEvent == null
         ? Colors.transparent
-        : _calendarStatusColor(primaryEvent['calendar_status']);
+        : _calendarStatusColor(primaryEvent['calendar_status'], colors);
     final hasEvent = primaryEvent != null;
 
     return Expanded(
@@ -1544,14 +1541,14 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.surfaceLight : AppColors.surface,
+                  color: isSelected ? colors.surfaceLight : colors.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
-                        ? AppColors.accentPink.withValues(alpha: 0.85)
+                        ? colors.accentPink.withValues(alpha: 0.85)
                         : hasEvent
                             ? statusColor.withValues(alpha: 0.45)
-                            : AppColors.borderLight,
+                            : colors.borderLight,
                     width: isSelected ? 1.4 : 1,
                   ),
                   boxShadow: isSelected ? AppShadows.glowAccent : null,
@@ -1568,16 +1565,16 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                         decoration: isToday
                             ? BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: const LinearGradient(
-                                  colors: AppColors.accentGradient,
+                                gradient: LinearGradient(
+                                  colors: colors.accentGradient,
                                 ),
                                 boxShadow: AppShadows.glowAccent,
                               )
                             : null,
                         child: Text(
                           '${day.day}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colors.textPrimary,
                             fontWeight: FontWeight.w800,
                             fontSize: 11,
                           ),
@@ -1593,7 +1590,7 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                         decoration: BoxDecoration(
                           color: hasEvent
                               ? statusColor
-                              : Colors.white.withValues(alpha: 0.05),
+                              : colors.textPrimary.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -1608,15 +1605,15 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     );
   }
 
-  Widget _buildSelectedDayPanel(List<Map<String, dynamic>> events) {
+  Widget _buildSelectedDayPanel(List<Map<String, dynamic>> events, RemoteThemeColors colors, AppThemeConfig config) {
     final selectedDay = _selectedDay ?? _dayOnly(DateTime.now());
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(color: colors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1627,10 +1624,10 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'تفاصيل اليوم',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1638,8 +1635,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                     const SizedBox(height: 4),
                     Text(
                       _fullDateLabel(selectedDay),
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: colors.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1659,13 +1656,13 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
+                color: colors.surfaceLight,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderLight),
+                border: Border.all(color: colors.borderLight),
               ),
-              child: const Text(
+              child: Text(
                 'لا توجد عناصر في هذا اليوم',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: colors.textSecondary),
               ),
             )
           else
@@ -1674,13 +1671,13 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                 final previewUrl =
                     _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
                 final isVideo = _isVideoUrl(previewUrl);
-                final statusColor = _calendarStatusColor(item['calendar_status']);
-                final statusBg = _calendarStatusBackground(item['calendar_status']);
+                final statusColor = _calendarStatusColor(item['calendar_status'], colors);
+                final statusBg = _calendarStatusBackground(item['calendar_status'], colors);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
+                    color: colors.surfaceLight,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: statusColor.withValues(alpha: 0.35),
@@ -1689,7 +1686,7 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildEventPreviewThumb(item, size: 54),
+                      _buildEventPreviewThumb(item, size: 54, colors: colors),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -1720,16 +1717,16 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                                 ),
                                 Text(
                                   _eventTimeLabel(item['date_time']),
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 if (isVideo)
-                                  const Icon(
+                                  Icon(
                                     Icons.videocam_rounded,
                                     size: 16,
-                                    color: Colors.white70,
+                                    color: colors.textSecondary,
                                   ),
                               ],
                             ),
@@ -1738,8 +1735,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                               item['title']?.toString().trim().isNotEmpty == true
                                   ? item['title'].toString().trim()
                                   : _calendarStatusLabel(item['calendar_status']),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1749,8 +1746,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                               const SizedBox(height: 6),
                               Text(
                                 item['location'].toString().trim(),
-                                style: const TextStyle(
-                                  color: AppColors.primaryLight,
+                                style: TextStyle(
+                                  color: colors.primaryLight,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1760,8 +1757,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                               const SizedBox(height: 6),
                               Text(
                                 item['notes'].toString().trim(),
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
+                                style: TextStyle(
+                                  color: colors.textSecondary,
                                   height: 1.35,
                                 ),
                               ),
@@ -1780,6 +1777,9 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
   }
 
   Future<void> _showCreateEventDialog({DateTime? initialDate}) async {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     final locationController = TextEditingController();
     final notesController = TextEditingController();
     DateTime selectedDate = initialDate ?? DateTime.now().add(const Duration(days: 1));
@@ -1801,9 +1801,9 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.borderLight),
+                    border: Border.all(color: colors.borderLight),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1823,6 +1823,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                             status: 'booked',
                             currentStatus: selectedStatus,
                             onTap: () => setDialogState(() => selectedStatus = 'booked'),
+                            colors: colors,
+                            config: config,
                           ),
                           _buildCalendarStatusChip(
                             label: "مشغول",
@@ -1830,6 +1832,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                             status: 'busy',
                             currentStatus: selectedStatus,
                             onTap: () => setDialogState(() => selectedStatus = 'busy'),
+                            colors: colors,
+                            config: config,
                           ),
                         ],
                       ),
@@ -1891,12 +1895,12 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             ListTile(
-                              leading: const Icon(Icons.image, color: Colors.blue),
+                              leading: Icon(Icons.image, color: colors.info),
                               title: const Text("رفع صورة"),
                               onTap: () => Navigator.pop(sheetContext, "image"),
                             ),
                             ListTile(
-                              leading: const Icon(Icons.videocam, color: Colors.red),
+                              leading: Icon(Icons.videocam, color: colors.error),
                               title: const Text("رفع فيديو"),
                               onTap: () => Navigator.pop(sheetContext, "video"),
                             ),
@@ -1940,17 +1944,17 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    color: _calendarStatusCardColor(selectedStatus),
+                    color: _calendarStatusCardColor(selectedStatus, colors),
                     border: Border.all(
-                      color: _calendarStatusBorderColor(selectedStatus),
+                      color: _calendarStatusBorderColor(selectedStatus, colors),
                     ),
                   ),
                   child: Text(
                     selectedStatus == 'booked'
                         ? "سيظهر هذا اليوم للعميل كـ محجوز"
                         : "سيظهر هذا اليوم للعميل كـ مشغول",
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -2020,6 +2024,9 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return PopScope<bool>(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -2027,11 +2034,11 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
         Navigator.pop(context, _didChange);
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         appBar: AppBar(
-          backgroundColor: AppColors.background,
+          backgroundColor: colors.background,
           elevation: 0,
-          foregroundColor: Colors.white,
+          foregroundColor: colors.textPrimary,
           title: const Text('الجدول'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -2054,7 +2061,7 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
               return Center(
                 child: Text(
                   snapshot.error.toString(),
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: colors.textSecondary),
                 ),
               );
             }
@@ -2076,9 +2083,9 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: AppColors.borderLight),
+                    border: Border.all(color: colors.borderLight),
                   ),
                   child: Column(
                     children: [
@@ -2093,15 +2100,15 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                                 _selectedDay = newWeek;
                               });
                             },
-                            icon: const Icon(Icons.chevron_left, color: Colors.white),
+                            icon: Icon(Icons.chevron_left, color: colors.textPrimary),
                           ),
                           Expanded(
                             child: Column(
                               children: [
                                 Text(
                                   'الأسبوع $weekNumber',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -2109,8 +2116,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                                 const SizedBox(height: 3),
                                 Text(
                                   _weekRangeLabel(_visibleWeekStart),
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -2127,7 +2134,7 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                                 _selectedDay = newWeek;
                               });
                             },
-                            icon: const Icon(Icons.chevron_right, color: Colors.white),
+                            icon: Icon(Icons.chevron_right, color: colors.textPrimary),
                           ),
                         ],
                       ),
@@ -2139,8 +2146,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                             alignment: Alignment.center,
                             child: Text(
                               '$weekNumber',
-                              style: const TextStyle(
-                                color: AppColors.primaryLight,
+                              style: TextStyle(
+                                color: colors.primaryLight,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -2151,8 +2158,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                               child: Center(
                                 child: Text(
                                   _weekdayShortLabel(day.weekday),
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -2177,6 +2184,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                                   _selectedDay = _dayOnly(day);
                                 });
                               },
+                              colors: colors,
+                              config: config,
                             ),
                         ],
                       ),
@@ -2184,7 +2193,7 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                _buildSelectedDayPanel(selectedDayEvents),
+                _buildSelectedDayPanel(selectedDayEvents, colors, config),
               ],
             );
           },
@@ -2237,18 +2246,14 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     return "حدث خطأ أثناء تحميل المحتوى";
   }
 
-  Widget _buildVideoTile() {
+  Widget _buildVideoTile(RemoteThemeColors colors, AppThemeConfig config) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF181A24),
-            Color(0xFF11131C),
-            Color(0xFF07080D),
-          ],
+          colors: colors.darkGradient,
         ),
       ),
       child: Stack(
@@ -2259,9 +2264,9 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
             child: Container(
               width: 84,
               height: 84,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0x24FF5252),
+                color: colors.error.withValues(alpha: 0.14),
               ),
             ),
           ),
@@ -2271,23 +2276,23 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
             child: Container(
               width: 96,
               height: 96,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0x0DFFFFFF),
+                color: colors.borderLight,
               ),
             ),
           ),
-          const Center(
+          Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.play_circle_fill_rounded,
-                    color: Colors.white, size: 52),
-                SizedBox(height: 10),
+                    color: colors.textPrimary, size: 52),
+                const SizedBox(height: 10),
                 Text(
                   "فيديو",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -2301,19 +2306,19 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0x59000000),
+                color: colors.background.withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0x1AFFFFFF)),
+                border: Border.all(color: colors.borderLight),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.videocam_rounded, color: Colors.white, size: 12),
-                  SizedBox(width: 4),
+                  Icon(Icons.videocam_rounded, color: colors.textPrimary, size: 12),
+                  const SizedBox(width: 4),
                   Text(
                     "HD",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.textPrimary,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
@@ -2407,21 +2412,21 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     return Icons.event;
   }
 
-  Color _calendarStatusColor(dynamic raw) {
+  Color _calendarStatusColorGrid(dynamic raw, RemoteThemeColors colors) {
     final status = raw?.toString().toLowerCase();
-    if (status == 'busy') return AppColors.warning;
-    if (status == 'booked') return AppColors.accentPink;
-    return AppColors.primaryLight;
+    if (status == 'busy') return colors.warning;
+    if (status == 'booked') return colors.accentPink;
+    return colors.primaryLight;
   }
 
-  Color _calendarStatusBackground(dynamic raw) {
+  Color _calendarStatusBackgroundGrid(dynamic raw, RemoteThemeColors colors) {
     final status = raw?.toString().toLowerCase();
-    if (status == 'busy') return AppColors.warningBg;
-    if (status == 'booked') return AppColors.errorBg;
-    return AppColors.infoBg;
+    if (status == 'busy') return colors.warningBg;
+    if (status == 'booked') return colors.errorBg;
+    return colors.infoBg;
   }
 
-  Widget _buildEventGridCard(dynamic rawItem) {
+  Widget _buildEventGridCard(dynamic rawItem, RemoteThemeColors colors, AppThemeConfig config) {
     final item = Map<String, dynamic>.from(rawItem as Map);
     final title = (item['title']?.toString().trim().isNotEmpty ?? false)
         ? item['title'].toString().trim()
@@ -2433,11 +2438,11 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
         _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
     final hasPreview = previewUrl.isNotEmpty;
     final isVideo = _isVideoUrl(previewUrl);
-    final badgeColor = _calendarStatusColor(item['calendar_status']);
-    final badgeBackground = _calendarStatusBackground(item['calendar_status']);
+    final badgeColor = _calendarStatusColorGrid(item['calendar_status'], colors);
+    final badgeBackground = _calendarStatusBackgroundGrid(item['calendar_status'], colors);
 
     return Card(
-      color: AppColors.surface,
+      color: colors.surface,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
@@ -2454,11 +2459,11 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
             Container(
               height: 118,
               width: double.infinity,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: AppColors.darkGradient,
+                  colors: colors.darkGradient,
                 ),
               ),
               child: Stack(
@@ -2466,7 +2471,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                   if (hasPreview)
                     Positioned.fill(
                       child: isVideo
-                          ? _buildVideoTile()
+                          ? _buildVideoTile(colors, config)
                           : Image.network(
                               previewUrl,
                               fit: BoxFit.cover,
@@ -2532,9 +2537,9 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: colors.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -2543,8 +2548,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                             const SizedBox(height: 6),
                             Text(
                               formattedDate,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
+                              style: TextStyle(
+                                color: colors.textSecondary,
                                 fontSize: 12,
                               ),
                               maxLines: 1,
@@ -2555,8 +2560,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                             const SizedBox(height: 6),
                             Text(
                               location,
-                              style: const TextStyle(
-                                color: AppColors.primaryLight,
+                              style: TextStyle(
+                                color: colors.primaryLight,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -2568,8 +2573,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                             const SizedBox(height: 6),
                             Text(
                               notes,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
+                              style: TextStyle(
+                                color: colors.textSecondary,
                                 fontSize: 12,
                                 height: 1.35,
                               ),
@@ -2582,10 +2587,10 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                     ),
                     if (widget.isOwner)
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.more_vert,
                           size: 20,
-                          color: Colors.white70,
+                          color: colors.textSecondary,
                         ),
                         onPressed: () => _showItemOptions(context, item),
                         padding: EdgeInsets.zero,
@@ -2638,6 +2643,9 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     return FutureBuilder<List<dynamic>>(
       future: _loadFuture,
       builder: (context, snapshot) {
@@ -2661,7 +2669,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                           ? Icons.bookmark_border
                           : Icons.perm_media_outlined,
                   size: 48,
-                  color: Colors.grey[400]),
+                  color: colors.textTertiary),
               const SizedBox(height: 16),
               Text(
                   widget.type == "Purchased"
@@ -2669,7 +2677,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                       : widget.type == "Saved"
                           ? "No saved items"
                           : "No ${widget.type} items yet",
-                  style: TextStyle(color: Colors.grey[600])),
+                  style: TextStyle(color: colors.textTertiary)),
             ],
           ));
         }
@@ -2694,9 +2702,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
           itemBuilder: (context, index) {
             final item = items[index];
             if (widget.type == "Event") {
-              return _buildEventGridCard(item);
+              return _buildEventGridCard(item, colors, config);
             }
-            // Normalize data fields
             String imageUrl = "";
             String previewUrl = "";
             String title = "";
@@ -2745,7 +2752,6 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                 }
               }
             } else if (widget.type == "Photo" || widget.type == "Video") {
-              // ... existing logic ...
               String path = item['url'] ?? "";
               previewUrl = _normalizeMediaUrl(path);
               if (widget.type == "Video") {
@@ -2811,7 +2817,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                           }
                         },
                         child: isGridVideo
-                            ? _buildVideoTile()
+                            ? _buildVideoTile(colors, config)
                             : Stack(
                                 fit: StackFit.expand,
                                 children: [
@@ -2830,22 +2836,22 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: const Color(0x59000000),
+                                          color: colors.background.withValues(alpha: 0.35),
                                           borderRadius:
                                               BorderRadius.circular(999),
                                           border: Border.all(
-                                              color: const Color(0x1AFFFFFF)),
+                                              color: colors.borderLight),
                                         ),
-                                        child: const Row(
+                                        child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(Icons.videocam_rounded,
-                                                color: Colors.white, size: 12),
-                                            SizedBox(width: 4),
+                                                color: colors.textPrimary, size: 12),
+                                            const SizedBox(width: 4),
                                             Text(
                                               "HD",
                                               style: TextStyle(
-                                                color: Colors.white,
+                                                color: colors.textPrimary,
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
                                               ),
@@ -2878,8 +2884,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                               if (subtitle.isNotEmpty)
                                 Text(
                                   subtitle,
-                                  style: const TextStyle(
-                                      color: Colors.green, fontSize: 12),
+                                  style: TextStyle(
+                                      color: colors.success, fontSize: 12),
                                 ),
                             ],
                           ),
@@ -2898,16 +2904,16 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                         else if (!widget.isOwner &&
                             (widget.type == "Photo" || widget.type == "Video"))
                           IconButton(
-                            icon: const Icon(Icons.flag_outlined,
-                                size: 20, color: Colors.redAccent),
+                            icon: Icon(Icons.flag_outlined,
+                                size: 20, color: colors.error),
                             onPressed: () => _showReportDialog(item),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           )
                         else if (!widget.isOwner && isOfferGrid)
                           IconButton(
-                            icon: const Icon(Icons.flag_outlined,
-                                size: 20, color: Colors.redAccent),
+                            icon: Icon(Icons.flag_outlined,
+                                size: 20, color: colors.error),
                             onPressed: () => _showOfferReportDialog(item),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -2925,9 +2931,11 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
   }
 
   void _showItemOptions(BuildContext context, dynamic item) {
+    final theme = this.context.watch<AppThemeService>();
+    final colors = theme.colors;
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2942,14 +2950,14 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: colors.textSecondary,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               ListTile(
                 leading: const Icon(Icons.edit),
                 title: const Text("تعديل",
-                    style: TextStyle(fontWeight: FontWeight.bold)), // Edit
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(context);
                   _handleEdit(item);
@@ -2957,17 +2965,17 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text("حذف",
+                leading: Icon(Icons.delete, color: colors.error),
+                title: Text("حذف",
                     style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold)), // Delete
+                        color: colors.error,
+                        fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(context);
                   _handleDelete(item);
                 },
               ),
-              const SizedBox(height: 10), // Extra space at bottom
+              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -3058,6 +3066,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
   }
 
   void _handleDelete(dynamic item) async {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     final mediaService = context.read<MediaService>();
     final messenger = ScaffoldMessenger.of(context);
     final confirm = await showDialog<bool>(
@@ -3073,7 +3083,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("حذف", style: TextStyle(color: Colors.red)),
+            child: Text("حذف", style: TextStyle(color: colors.error)),
           ),
         ],
       ),
@@ -3109,7 +3119,6 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     }
   }
 
-  // Helper methods to get actual error strings
   Future<String?> _deleteOfferWithResult(
       MediaService service, String id) async {
     try {
@@ -3206,15 +3215,15 @@ class _ProfileMediaPreviewScreenState
     setState(() {});
   }
 
-  Widget _buildVideo() {
+  Widget _buildVideo(RemoteThemeColors colors) {
     return FutureBuilder<void>(
       future: _initializeFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done ||
             _controller == null ||
             !_controller!.value.isInitialized) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+          return Center(
+            child: CircularProgressIndicator(color: colors.textPrimary),
           );
         }
 
@@ -3233,13 +3242,13 @@ class _ProfileMediaPreviewScreenState
                 Container(
                   width: 72,
                   height: 72,
-                  decoration: const BoxDecoration(
-                    color: Colors.black54,
+                  decoration: BoxDecoration(
+                    color: colors.background.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.play_arrow_rounded,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     size: 44,
                   ),
                 ),
@@ -3250,7 +3259,7 @@ class _ProfileMediaPreviewScreenState
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(RemoteThemeColors colors) {
     return InteractiveViewer(
       minScale: 0.8,
       maxScale: 4,
@@ -3260,11 +3269,11 @@ class _ProfileMediaPreviewScreenState
           fit: BoxFit.contain,
           loadingBuilder: (context, child, progress) {
             if (progress == null) return child;
-            return const CircularProgressIndicator(color: Colors.white);
+            return CircularProgressIndicator(color: colors.textPrimary);
           },
-          errorBuilder: (context, error, stackTrace) => const Icon(
+          errorBuilder: (context, error, stackTrace) => Icon(
             Icons.broken_image_outlined,
-            color: Colors.white,
+            color: colors.textPrimary,
             size: 56,
           ),
         ),
@@ -3274,11 +3283,13 @@ class _ProfileMediaPreviewScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: colors.background,
+        foregroundColor: colors.textPrimary,
         title: Text(
           widget.title.isEmpty
               ? (widget.isVideo ? 'فيديو' : 'صورة')
@@ -3287,7 +3298,7 @@ class _ProfileMediaPreviewScreenState
       ),
       body: SafeArea(
         child: Center(
-          child: widget.isVideo ? _buildVideo() : _buildImage(),
+          child: widget.isVideo ? _buildVideo(colors) : _buildImage(colors),
         ),
       ),
     );
@@ -3298,7 +3309,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final TabController controller;
   final bool showUpload;
   final VoidCallback? onUpload;
-  final List<Widget> tabs; // Added tabs list
+  final List<Widget> tabs;
 
   _SliverAppBarDelegate(
       {required this.controller,
@@ -3307,13 +3318,16 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
       required this.tabs});
 
   @override
-  double get minExtent => 48.0 + 1; // Standard TabBar height + border
+  double get minExtent => 48.0 + 1;
   @override
   double get maxExtent => 48.0 + 1;
 
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final config = theme.config;
     const double actionSlotWidth = 60;
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -3328,24 +3342,19 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                         padding: const EdgeInsets.only(left: 8.0, right: 4.0),
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF9B59F5),
-                                Color(0xFF6D5BFF),
-                              ],
-                            ),
+                            gradient: config.effects.primaryGradient(colors.primary, colors.primaryDark),
                             borderRadius: BorderRadius.circular(14),
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
-                                color: Color(0x409B59F5),
+                                color: colors.primary.withValues(alpha: 0.25),
                                 blurRadius: 16,
-                                offset: Offset(0, 6),
+                                offset: const Offset(0, 6),
                               ),
                             ],
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.add_rounded,
-                                color: Colors.white, size: 24),
+                            icon: Icon(Icons.add_rounded,
+                                color: colors.textPrimary, size: 24),
                             tooltip: 'إضافة',
                             onPressed: onUpload,
                             splashRadius: 22,
@@ -3357,11 +3366,11 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
               Expanded(
                 child: TabBar(
                   controller: controller,
-                  labelColor: const Color(0xFFBC83FF),
-                  unselectedLabelColor: Colors.white70,
-                  indicatorColor: const Color(0xFF9B59F5),
+                  labelColor: colors.primaryLight,
+                  unselectedLabelColor: colors.textSecondary,
+                  indicatorColor: colors.primary,
                   overlayColor: WidgetStateProperty.all(
-                    const Color(0x1A7A3EED),
+                    colors.primaryDark.withValues(alpha: 0.10),
                   ),
                   physics: const BouncingScrollPhysics(),
                   isScrollable: false,
