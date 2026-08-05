@@ -2699,6 +2699,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
               final normalizedMedia = offer.mediaItems
                   .map(
                     (m) => OfferMediaItem(
+                      rawUrl: m.rawUrl,
                       url: _normalizeMediaUrl(m.url),
                       type: m.type,
                     ),
@@ -2708,7 +2709,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
               showVideoBadge = normalizedMedia.any((m) => m.isVideo);
               final firstImage = normalizedMedia.firstWhere(
                 (m) => !m.isVideo && m.url.trim().isNotEmpty,
-                orElse: () => const OfferMediaItem(url: '', type: ''),
+                orElse: () => const OfferMediaItem(rawUrl: '', url: '', type: 'image'),
               );
 
               if (firstImage.url.trim().isNotEmpty) {

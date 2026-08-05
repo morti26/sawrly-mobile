@@ -517,7 +517,21 @@ class _OfferCardMediaState extends State<_OfferCardMedia> {
       fit: BoxFit.cover,
       cacheWidth: cacheWidth,
       cacheHeight: cacheHeight,
-      errorBuilder: (context, error, stackTrace) => _buildFallback(context),
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint(
+            "❌ OfferCard IMAGE LOAD ERROR → URL='${widget.mediaUrl}' ERROR=$error");
+        return _buildFallback(context);
+      },
     );
   }
 }

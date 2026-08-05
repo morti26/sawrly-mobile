@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -669,16 +670,33 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     } else if (widget.offer.imageUrl.trim().isNotEmpty) {
       final url = widget.offer.imageUrl.trim();
       _mediaItems = [
-        OfferMediaItem(url: url, type: _isVideoUrl(url) ? 'video' : 'image'),
+        OfferMediaItem(
+          rawUrl: url,
+          url: normalizePublicMediaUrl(url),
+          type: _isVideoUrl(url) ? 'video' : 'image',
+        ),
       ];
     } else {
       final primary = widget.offer.primaryMediaUrl.trim();
       if (primary.isNotEmpty) {
         _mediaItems = [
-          OfferMediaItem(url: primary, type: _isVideoUrl(primary) ? 'video' : 'image'),
+          OfferMediaItem(
+            rawUrl: primary,
+            url: normalizePublicMediaUrl(primary),
+            type: _isVideoUrl(primary) ? 'video' : 'image',
+          ),
         ];
       } else {
         _mediaItems = const [];
+      }
+    }
+    if (kDebugMode) {
+      debugPrint(
+          "DEBUG OfferDetailsScreen [${widget.offer.id}] mediaItems.final.len=${_mediaItems.length}");
+      for (int i = 0; i < _mediaItems.length; i++) {
+        final m = _mediaItems[i];
+        debugPrint(
+            "  ... media[$i] final type=${m.type} raw='${m.rawUrl}' normalized='${m.url}'");
       }
     }
     _isSaved = widget.offer.likedByMe;
@@ -828,9 +846,10 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   Widget _buildMediaFor(int index) {
     if (_mediaItems.isEmpty) {
       return Container(
-        color: Colors.grey.shade200,
+        color: const Color(0x801E1E2D),
         alignment: Alignment.center,
-        child: const Icon(Icons.image_not_supported, size: 48),
+        child: const Icon(Icons.image_not_supported,
+            size: 48, color: Colors.white54),
       );
     }
 
@@ -840,9 +859,10 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
 
     if (url.isEmpty) {
       return Container(
-        color: Colors.grey.shade200,
+        color: const Color(0x801E1E2D),
         alignment: Alignment.center,
-        child: const Icon(Icons.image_not_supported, size: 48),
+        child: const Icon(Icons.image_not_supported,
+            size: 48, color: Colors.white54),
       );
     }
 
@@ -868,12 +888,16 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
               Image.network(
                 normalized,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: Colors.black,
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.videocam_rounded,
-                      color: Colors.white, size: 56),
-                ),
+                errorBuilder: (context, err, stack) {
+                  debugPrint(
+                      "❌ OfferDetails VIDEO-THUMB [$index] LOAD ERROR → URL='$normalized' (raw='${item.rawUrl}') ERROR=$err");
+                  return Container(
+                    color: const Color(0x801E1E2D),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.videocam_rounded,
+                        color: Colors.white70, size: 56),
+                  );
+                },
               ),
             Container(
               color: Colors.black12,
@@ -921,16 +945,21 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
         return Container(
-          color: Colors.grey.shade200,
+          color: const Color(0x801E1E2D),
           alignment: Alignment.center,
-          child: const CircularProgressIndicator(),
+          child: const CircularProgressIndicator(color: Colors.white),
         );
       },
-      errorBuilder: (_, __, ___) => Container(
-        color: Colors.grey.shade200,
-        alignment: Alignment.center,
-        child: const Icon(Icons.image_not_supported, size: 48),
-      ),
+      errorBuilder: (context, err, stack) {
+        debugPrint(
+            "❌ OfferDetails IMAGE [$index] LOAD ERROR → URL='$url' (raw='${item.rawUrl}') ERROR=$err");
+        return Container(
+          color: const Color(0x801E1E2D),
+          alignment: Alignment.center,
+          child: const Icon(Icons.image_not_supported,
+              size: 48, color: Colors.white60),
+        );
+      },
     );
   }
 

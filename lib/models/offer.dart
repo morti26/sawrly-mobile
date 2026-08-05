@@ -1,20 +1,67 @@
 import 'package:flutter/foundation.dart';
 
-class OfferMediaItem {
-  final String url;
-  final String type;
+String normalizePublicMediaUrl(String raw) {
+  final String value = raw.toString().trim();
+  if (value.isEmpty) return '';
+  String url = value;
 
-  const OfferMediaItem({required this.url, required this.type});
+  if (url.startsWith('/')) {
+    url = 'https://sawrly.com$url';
+  } else if (url.startsWith('uploads/') ||
+      url.startsWith('images/') ||
+      url.startsWith('media/') ||
+      url.startsWith('videos/')) {
+    url = 'https://sawrly.com/$url';
+  } else if (url.startsWith('http://10.0.2.2:') ||
+      url.startsWith('http://localhost:')) {
+    url = url.replaceFirst(
+        RegExp(r'http://(10\.0\.2\.2|localhost):\d+'), 'https://sawrly.com');
+  } else if (url.startsWith('http://sawrly.com')) {
+    url = url.replaceFirst('http://', 'https://');
+  } else if (!url.startsWith('http')) {
+    url = 'https://sawrly.com/$url';
+  }
+
+  try {
+    Uri.parse(url);
+    return url;
+  } catch (_) {
+    try {
+      return Uri.encodeFull(url);
+    } catch (_) {
+      return '';
+    }
+  }
+}
+
+class OfferMediaItem {
+  final String rawUrl;
+  final String type;
+  final String url;
+
+  const OfferMediaItem({
+    required this.rawUrl,
+    required this.type,
+    required this.url,
+  });
 
   bool get isVideo => type == 'video';
 
   factory OfferMediaItem.fromJson(dynamic json) {
     if (json is Map) {
-      final url = (json['url'] ?? json['Url'] ?? '').toString().trim();
-      final type = (json['type'] ?? json['Type'] ?? '').toString().trim();
-      return OfferMediaItem(url: url, type: type);
+      final rawUrl =
+          (json['url'] ?? json['Url'] ?? json['image_url'] ?? json['mediaUrl'] ?? '')
+              .toString()
+              .trim();
+      final type = (json['type'] ?? json['Type'] ?? 'image').toString().trim();
+      final normalized = normalizePublicMediaUrl(rawUrl);
+      return OfferMediaItem(
+        rawUrl: rawUrl,
+        type: type,
+        url: normalized,
+      );
     }
-    return const OfferMediaItem(url: '', type: '');
+    return const OfferMediaItem(rawUrl: '', type: 'image', url: '');
   }
 }
 
@@ -165,7 +212,8 @@ class Offer {
             json, const ['image_url', 'imageUrl', 'ImageUrl']) ??
         '')
         .toString();
-    String effectiveImageUrl = legacyImageUrl;
+    final normalizedLegacyImageUrl = normalizePublicMediaUrl(legacyImageUrl);
+    String effectiveImageUrl = normalizedLegacyImageUrl;
     if (parsedMediaItems.isNotEmpty) {
       final firstImage = parsedMediaItems.firstWhere(
         (item) => !item.isVideo && item.url.trim().isNotEmpty,
@@ -179,7 +227,12 @@ class Offer {
     final parsedId = (_pick<dynamic>(json, const ['id', 'Id']) ?? '').toString();
     if (kDebugMode) {
       debugPrint(
-          "DEBUG Offer.fromJson [$parsedId] → legacyImageUrl='$legacyImageUrl' (from image_url/imageUrl), mediaItems.len=${parsedMediaItems.length}, effectiveImageUrl='$effectiveImageUrl'");
+          "DEBUG Offer.fromJson [$parsedId] → raw='$legacyImageUrl' → normalizedLegacy='$normalizedLegacyImageUrl' | mediaItems.len=${parsedMediaItems.length}");
+      for (int i = 0; i < parsedMediaItems.length && i < 6; i++) {
+        final m = parsedMediaItems[i];
+        debugPrint("  ... media[$i] type=${m.type} raw='${m.rawUrl}' normalized='${m.url}'");
+      }
+      debugPrint("  ... effectiveImageUrl='$effectiveImageUrl'");
     }
 
     return Offer(
