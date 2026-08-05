@@ -37,6 +37,16 @@ class StatusService extends ChangeNotifier {
 
       _statusList = data.map((json) {
         return CreatorStatus.fromJson(json);
+      }).where((status) {
+        // Punkt 12: Visa endast statusar som inte gått ut (max 24h)
+        final now = DateTime.now();
+        final valid = status.expiresAt.isAfter(now) &&
+            status.createdAt.difference(now).inHours.abs() <= 25;
+        if (!valid) {
+          debugPrint(
+              'STORYDBG filtered EXPIRED status id=${status.id} createdAt=${status.createdAt} expiresAt=${status.expiresAt} now=$now');
+        }
+        return valid;
       }).toList();
       debugPrint('STORYDBG fetchStatuses ok count=${_statusList.length}');
       for (final s in _statusList.take(5)) {

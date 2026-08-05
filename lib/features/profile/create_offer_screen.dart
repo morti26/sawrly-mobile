@@ -5,6 +5,9 @@ import '../../core/auth/auth_service.dart';
 import '../../core/design/design_tokens.dart';
 import '../../core/services/media_service.dart';
 
+// Punkt 7: Status för varje uppladdningsfil (laddningslista)
+enum _StepStatus { waiting, uploading, success, error }
+
 class CreateOfferScreen extends StatefulWidget {
   final Map<String, dynamic>? initialItem;
 
@@ -43,6 +46,272 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   List<dynamic>? _initialMediaItems;
   String? _initialImageUrl;
   bool _isPublishing = false;
+
+  List<Map<String, dynamic>> _publishQueue = [];
+  String _publishStage = '';
+
+  void _preparePublishQueue() {
+    _publishQueue = [];
+    int sortOrder = 0;
+    for (final img in _selectedImages) {
+      final len = img.lengthSync();
+      _publishQueue.add({
+        'name': img.path.split(Platform.pathSeparator).last,
+        'type': 'image',
+        'sizeBytes': len,
+        'sizeMb': (len / (1024 * 1024)).toStringAsFixed(2),
+        'status': _StepStatus.waiting,
+        'order': sortOrder++,
+      });
+    }
+    final vid = _selectedVideo;
+    if (vid != null) {
+      final len = vid.lengthSync();
+      _publishQueue.add({
+        'name': vid.path.split(Platform.pathSeparator).last,
+        'type': 'video',
+        'sizeBytes': len,
+        'sizeMb': (len / (1024 * 1024)).toStringAsFixed(2),
+        'status': _StepStatus.waiting,
+        'order': sortOrder++,
+      });
+    }
+    _publishQueue.sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
+  }
+
+  // Punkt 7: Uppdatera status för kö-poster
+  void _setQueueItemStatusAt(int order, _StepStatus status) {
+    if (order < 0 || order >= _publishQueue.length) return;
+    _publishQueue[order]['status'] = status;
+    if (mounted) setState(() {});
+  }
+
+  void _setAllQueueStatus(String type, _StepStatus status) {
+    for (int i = 0; i < _publishQueue.length; i++) {
+      if (_publishQueue[i]['type'] == type) {
+        _publishQueue[i]['status'] = status;
+      }
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _updatePublishStage(String text) {
+    _publishStage = text;
+    if (mounted) setState(() {});
+  }
+
+  // Punkt 7: Bygg widget för varje rad i laddningslistan
+  Widget _buildQueueRow(Map<String, dynamic> item) {
+    final _StepStatus status = item['status'] as _StepStatus;
+    final bool isImage = item['type'] == 'image';
+    Color bg = Colors.grey.withValues(alpha: 0.10);
+    IconData icon = Icons.help_outline;
+    String statusText = "-";
+    Color iconColor = Colors.grey;
+    final bool isUploading = status == _StepStatus.uploading;
+    if (status == _StepStatus.waiting) {
+      bg = Colors.orange.withValues(alpha: 0.12);
+      icon = Icons.hourglass_empty;
+      statusText = "في الانتظار";
+      iconColor = Colors.orangeAccent;
+    } else if (status == _StepStatus.uploading) {
+      bg = Colors.blue.withValues(alpha: 0.14);
+      icon = Icons.upload_file_rounded;
+      statusText = "جاري الرفع...";
+      iconColor = Colors.blueAccent;
+    } else if (status == _StepStatus.success) {
+      bg = Colors.green.withValues(alpha: 0.12);
+      icon = Icons.check_circle;
+      statusText = "تم";
+      iconColor = Colors.greenAccent;
+    } else if (status == _StepStatus.error) {
+      bg = Colors.red.withValues(alpha: 0.12);
+      icon = Icons.error_outline;
+      statusText = "فشل";
+      iconColor = Colors.redAccent;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: isImage
+                  ? Colors.blue.withValues(alpha: 0.20)
+                  : Colors.red.withValues(alpha: 0.20),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              isImage ? Icons.image : Icons.videocam_rounded,
+              size: 18,
+              color: isImage ? Colors.blueAccent : Colors.redAccent,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['name'],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  "${isImage ? 'صورة' : 'فيديو'} • ${item['sizeMb']} MB • $statusText",
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            icon,
+            color: iconColor,
+            size: 22,
+          ),
+          if (isUploading) ...[
+            const SizedBox(width: 6),
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.blueAccent,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Punkt 7: Dialog med lista över alla uppladdningsfiler
+  Widget _buildPublishQueueDialog() {
+    return Dialog(
+      backgroundColor: _surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 30),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [_accentPink, _accentPurple],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.cloud_upload_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "جاري النشر",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "يرجى عدم إغلاق الشاشة",
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            if (_publishQueue.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Center(child: CircularProgressIndicator(color: Colors.white70)),
+              )
+            else
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _publishQueue.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 9),
+                  itemBuilder: (ctx, idx) => _buildQueueRow(_publishQueue[idx]),
+                ),
+              ),
+            if (_publishStage.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: _accentPink,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _publishStage,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -747,17 +1016,39 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     final mediaService = dialogContext.read<MediaService>();
 
     setState(() => _isPublishing = true);
+
+    // Punkt 7: Förbered kön och visa laddningslista
+    _preparePublishQueue();
+    _updatePublishStage("جاري التحضير...");
     showDialog(
       context: dialogContext,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => _buildPublishQueueDialog(),
     );
 
     try {
       String description = _descriptionController.text;
       if (_offerType != null) description = "Type: $_offerType\n$description";
 
+      // Punkt 7: Markera bilder som laddas upp (om det finns några)
+      if (_selectedImages.isNotEmpty) {
+        _setAllQueueStatus('image', _StepStatus.uploading);
+        _updatePublishStage("جاري رفع الصور...");
+        await Future.delayed(const Duration(milliseconds: 250));
+      }
+
+      // Punkt 7: Markera video som laddas upp
+      if (_selectedVideo != null) {
+        _setAllQueueStatus('video', _StepStatus.uploading);
+        _updatePublishStage(_selectedImages.isNotEmpty
+            ? "جاري رفع الفيديو..."
+            : "جاري رفع الفيديو...");
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+
       String? error;
+      _updatePublishStage(isEditing ? "جاري تحديث العرض..." : "جاري إرسال العرض إلى السيرفر...");
+
       if (isEditing) {
         error = await mediaService.updateOffer(
           id: widget.initialItem!['id'].toString(),
@@ -787,6 +1078,17 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         );
       }
 
+      // Punkt 7: Uppdatera slutlig status
+      if (error == null) {
+        _setAllQueueStatus('image', _StepStatus.success);
+        _setAllQueueStatus('video', _StepStatus.success);
+        _updatePublishStage("اكتمل بنجاح");
+        await Future.delayed(const Duration(milliseconds: 400));
+      } else {
+        _setAllQueueStatus('image', _StepStatus.error);
+        _setAllQueueStatus('video', _StepStatus.error);
+      }
+
       if (mounted) Navigator.pop(context); // Dismiss loading
 
       if (error == null && mounted) {
@@ -799,6 +1101,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
             .showSnackBar(SnackBar(content: Text("فشل: $error")));
       }
     } catch (e) {
+      // Punkt 7: Markera som error
+      _setAllQueueStatus('image', _StepStatus.error);
+      _setAllQueueStatus('video', _StepStatus.error);
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context)

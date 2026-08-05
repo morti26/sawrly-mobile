@@ -13,6 +13,7 @@ import '../../core/services/cart_service.dart';
 import '../../core/services/media_service.dart';
 import '../../core/widgets/report_dialog.dart';
 import '../navigation/main_navigation.dart';
+import '../profile/creator_profile_screen.dart';
 
 class OfferDetailsScreen extends StatefulWidget {
   final Offer offer;
@@ -1054,25 +1055,47 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                   ),
                   if (widget.offer.creatorName.trim().isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline_rounded,
-                          size: 18,
-                          color: Colors.white70,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.offer.creatorName,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        final cid = widget.offer.creatorId.trim();
+                        if (cid.isEmpty) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CreatorProfileScreen(userId: cid),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 4, horizontal: 2),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.person_outline_rounded,
+                              size: 18,
                               color: Colors.white70,
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.offer.creatorName,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blueAccent,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: Colors.blueAccent,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.white38),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ],
                   const SizedBox(height: 8),

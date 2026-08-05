@@ -454,11 +454,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
         child: Column(
           children: [
             _buildMediaSection(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildSectionCard(
               children: [
                 _buildServiceAreaIntroTile(),
@@ -485,7 +485,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -559,15 +559,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildSectionCard({required List<Widget> children}) {
+    // Lägg till konsekventa mellanrum mellan varje barn automatiskt
+    final spaced = <Widget>[];
+    for (int i = 0; i < children.length; i++) {
+      if (i > 0) {
+        spaced.add(const SizedBox(height: 12));
+      }
+      spaced.add(children[i]);
+    }
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1B1F2A),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: Column(children: children),
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: spaced),
     );
   }
 

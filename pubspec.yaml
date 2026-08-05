@@ -1,7 +1,7 @@
 name: fotgraf_mobile
-description: "Sawrly - صورلي - Kundrelease v1.1.0: Bilder FIXADE, betalning + veckoschema, Phosphor ikoner, admin-teman"
+description: "Sawrly - صورلي - Kundrelease v1.2.0: Alla 15 kundkrav genomgångna. Rapportera-knappar, favoriter, kön-ikon, land+stad, 8b/4v/2o gränser, Story TTL 24h, Skapare-namn i erbjudande, Laddningslista, Redigera profil fält ordnade"
 publish_to: 'none'
-version: 1.1.0+4
+version: 1.2.0+5
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

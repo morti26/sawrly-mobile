@@ -1,3 +1,5 @@
+import 'offer.dart' show normalizePublicMediaUrl;
+
 class CreatorStatus {
   final String id;
   final String creatorId;
@@ -29,41 +31,33 @@ class CreatorStatus {
     this.imageUrl,
   });
 
-  static String _normalizeUrl(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return '';
-    final value = raw.trim();
-    if (value.startsWith('/uploads/')) {
-      final rest = value.substring('/uploads/'.length);
-      return "https://sawrly.com/api/uploads/$rest";
-    }
-    if (value.startsWith('/')) {
-      return "https://sawrly.com$value";
-    }
-    if (!value.startsWith('http://') && !value.startsWith('https://')) {
-      return "https://sawrly.com/$value";
-    }
-    final uri = Uri.tryParse(value);
-    if (uri != null && uri.hasAuthority) {
-      final legacyHost = ['ph', 'sitely24', 'com'].join('.');
-      if (uri.host == legacyHost) {
-        return uri.replace(scheme: 'https', host: 'sawrly.com', port: null).toString();
-      }
-    }
-    if (value.startsWith('http://sawrly.com')) {
-      return value.replaceFirst('http://', 'https://');
-    }
-    return value;
-  }
-
   factory CreatorStatus.fromJson(Map<String, dynamic> json) {
     final mediaType = json['media_type'] ?? 'image';
-    final mediaUrl = _normalizeUrl(json['media_url']?.toString());
-    final avatarUrl = _normalizeUrl(json['creator_avatar']?.toString());
+    final mediaUrl =
+        normalizePublicMediaUrl(json['media_url']?.toString() ?? '');
+    final avatarUrl =
+        normalizePublicMediaUrl(json['creator_avatar']?.toString() ?? '');
     final creatorImage = avatarUrl.isNotEmpty
         ? avatarUrl
         : (mediaType == 'image' && mediaUrl.isNotEmpty
             ? mediaUrl
             : "https://via.placeholder.com/150");
+
+    final createdAtRaw = json['created_at']?.toString();
+    final expiresAtRaw = json['expires_at']?.toString();
+    final now = DateTime.now();
+    final fallbackCreatedAt = now;
+    final fallbackExpiresAt = now.add(const Duration(hours: 24));
+    final createdAt = createdAtRaw != null
+        ? (DateTime.tryParse(createdAtRaw) ?? fallbackCreatedAt)
+        : fallbackCreatedAt;
+    DateTime expiresAt = expiresAtRaw != null
+        ? (DateTime.tryParse(expiresAtRaw) ?? fallbackExpiresAt)
+        : fallbackExpiresAt;
+
+    // Säkerställ alltid max 24h TTL (punkt 12)
+    final maxExpires = createdAt.add(const Duration(hours: 24));
+    if (expiresAt.isAfter(maxExpires)) expiresAt = maxExpires;
 
     return CreatorStatus(
       id: json['id'],
@@ -73,8 +67,8 @@ class CreatorStatus {
       isOnline: false,
       hasStory: true,
       mediaType: mediaType,
-      createdAt: DateTime.parse(json['created_at']),
-      expiresAt: DateTime.parse(json['expires_at']),
+      createdAt: createdAt,
+      expiresAt: expiresAt,
       imageUrl: mediaUrl,
       videoUrl: mediaType == 'video' ? mediaUrl : null,
       likeCount:

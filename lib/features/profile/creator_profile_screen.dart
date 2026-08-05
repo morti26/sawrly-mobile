@@ -20,8 +20,9 @@ String? _debugLastImageStatus;
 
 class CreatorProfileScreen extends StatefulWidget {
   final User? user;
+  final String? userId;
 
-  const CreatorProfileScreen({super.key, this.user});
+  const CreatorProfileScreen({super.key, this.user, this.userId});
 
   @override
   State<CreatorProfileScreen> createState() => _CreatorProfileScreenState();
@@ -29,10 +30,11 @@ class CreatorProfileScreen extends StatefulWidget {
 
 class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     with TickerProviderStateMixin {
-  static const int _maxFreeCreatorImages = 12;
+  static const int _maxFreeCreatorImages = 8;
   static const int _maxFreeCreatorVideos = 4;
   static const int _maxMonthlyCreatorImages = 16;
   static const int _maxMonthlyCreatorVideos = 8;
+  static const int _maxFreeCreatorOffers = 2;
   static const int _maxFreeVideoDurationSeconds = 60;
 
   late TabController _tabController;
@@ -65,12 +67,14 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }
 
   Future<void> _loadFullProfile({bool bypassCache = false}) async {
-    final user = widget.user ?? context.read<AuthService>().currentUser;
+    final String? targetId = widget.userId ?? widget.user?.id ?? context.read<AuthService>().currentUser?.id;
+    if (targetId == null || targetId.trim().isEmpty) return;
+    final user = widget.user ?? (targetId.isNotEmpty ? User(id: targetId, name: '', email: '', role: UserRole.creator) : null);
     if (user == null) return;
 
     setState(() => _isLoadingProfile = true);
     final fullProfile =
-        await context.read<AuthService>().fetchUserProfile(user.id, bypassCache: bypassCache);
+        await context.read<AuthService>().fetchUserProfile(targetId, bypassCache: bypassCache);
     // #region debug-point D:full-profile-loaded
     debugPrint(
       "[DEBUG] _loadFullProfile D: requestedUserId=${user.id} bypassCache=$bypassCache "
@@ -801,6 +805,20 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                               ),
                                             ),
                                             const SizedBox(width: 8),
+                                            if ((displayUser.gender ?? '')
+                                                .trim()
+                                                .toLowerCase() == 'male')
+                                              const Icon(Icons.male,
+                                                  color: Colors.lightBlueAccent,
+                                                  size: 20)
+                                            else if ((displayUser.gender ?? '')
+                                                .trim()
+                                                .toLowerCase() == 'female')
+                                              const Icon(Icons.female,
+                                                  color: Colors.pinkAccent,
+                                                  size: 20),
+                                            if (displayUser.role == UserRole.creator)
+                                              const SizedBox(width: 6),
                                             if (displayUser.role == UserRole.creator)
                                               const Icon(Icons.verified,
                                                   color: Colors.blue, size: 20),
@@ -2755,18 +2773,35 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
-                          if (isOfferGrid) {
-                            final offer = Offer.fromJson(
-                              Map<String, dynamic>.from(item as Map),
-                            );
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OfferDetailsScreen(offer: offer),
-                              ),
-                            );
-                            return;
-                          }
+                            if (isOfferGrid) {
+                              try {
+                                final offer = Offer.fromJson(
+                                  Map<String, dynamic>.from(item as Map),
+                                );
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => OfferDetailsScreen(offer: offer),
+                                  ),
+                                );
+                              } catch (e, stack) {
+                                debugPrint(
+                                    "❌ CreatorProfile grid Offer open error: $e\n$stack");
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text(
+                                        "تعذر فتح العرض. الرجاء تحديث الصفحة."),
+                                    action: SnackBarAction(
+                                        label: 'تحديث',
+                                        onPressed: () => setState(() {
+                                              _loadFuture = _loadData();
+                                            })),
+                                    duration: const Duration(seconds: 4),
+                                  ),
+                                );
+                              }
+                              return;
+                            }
                           if (canPreview) {
                             _openMediaPreview(
                               mediaUrl: previewUrl,
@@ -3078,9 +3113,12 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
   Future<String?> _deleteOfferWithResult(
       MediaService service, String id) async {
     try {
+      debugPrint("🔄 DELETE Offer id=$id → calling service.deleteOffer...");
       final res = await service.deleteOffer(id);
-      return res ? null : "Unauthorized or not found";
+      debugPrint("✅ DELETE Offer id=$id → result success=$res");
+      return res ? null : "Unauthorized or not found (API returned false).";
     } catch (e) {
+      debugPrint("❌ DELETE Offer id=$id EXCEPTION: $e");
       return e.toString();
     }
   }
