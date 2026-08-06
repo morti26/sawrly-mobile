@@ -1006,8 +1006,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
                   width: uploadSlotWidth,
@@ -1042,6 +1043,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         )
                       : const SizedBox.shrink(),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TabBar(
                     controller: controller,
@@ -1053,15 +1055,13 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     ),
                     physics: const BouncingScrollPhysics(),
                     isScrollable: false,
-                    labelPadding:
-                        const EdgeInsets.symmetric(horizontal: 2.0),
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 2),
                     labelStyle: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600),
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        fontSize: 13, fontWeight: FontWeight.w700),
+                    padding: EdgeInsets.zero,
                     tabs: tabs,
                   ),
                 ),
-                const SizedBox(width: 8),
               ],
             ),
           ),
