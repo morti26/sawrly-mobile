@@ -1,7 +1,7 @@
 name: fotgraf_mobile
-description: "Sawrly - صورلي - Kundrelease v1.2.2 HOTFIX: context.watch → context.read i callbacks. Fixade '+' knappen i Kreatörsprofil, delete-erbjudande, schemalägg-event, uppladdningsmodal."
+description: "Sawrly - صورلي - v1.2.3 PHOTO GRID FIX: Ersatte 2 lokala _normalizeMediaUrl → global normalizePublicMediaUrl. Fixade /api/uploads 404-bugg på kreatörens Bilder/Videor-flikar (الصور/ديوهات) som gav error-ikoner."
 publish_to: 'none'
-version: 1.2.2+7
+version: 1.2.3+8
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
