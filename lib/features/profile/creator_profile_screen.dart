@@ -39,6 +39,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   static const int _maxFreeVideoDurationSeconds = 60;
 
   late TabController _tabController;
+  late VoidCallback _tabListener;
 
   bool _isLoadingProfile = false;
   bool _isReloadingBadge = false;
@@ -54,6 +55,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabListener = () { setState(() {}); };
+    _tabController.addListener(_tabListener);
 
     _loadFullProfile();
   }
@@ -262,14 +265,17 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     final user = widget.user ?? authService.currentUser;
     final length = (user?.role == UserRole.client) ? 2 : 4;
     if (_tabController.length != length) {
+      _tabController.removeListener(_tabListener);
       _tabController.dispose();
       final newLength = (user?.role == UserRole.client) ? 2 : 4;
       _tabController = TabController(length: newLength, vsync: this);
+      _tabController.addListener(_tabListener);
     }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_tabListener);
     _tabController.dispose();
     super.dispose();
   }
@@ -980,9 +986,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             ),
           ];
         },
-        body: TabBarView(
-          controller: _tabController,
-          children: tabViews,
+        body: SafeArea(
+          top: false,
+          child: tabViews[_tabController.index],
         ),
       ),
     );
