@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/auth_service.dart';
+import '../../../core/theme/app_theme_service.dart';
 import '../../notifications/notification_screen.dart';
 import '../../support/support_chat_screen.dart';
 import '../../qa/feature_test_screen.dart';
@@ -138,8 +139,11 @@ class _HomeHeaderState extends State<HomeHeader> {
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<AuthService>().currentUser;
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final effects = theme.effects;
     final isSuperAdmin = currentUser?.isSuperadmin == true;
-    final iconColor = Colors.white.withValues(alpha: 0.85);
+    final iconColor = colors.textPrimary.withValues(alpha: 0.9);
     final logoFuture = _logoFuture;
 
     return Padding(
@@ -148,10 +152,10 @@ class _HomeHeaderState extends State<HomeHeader> {
         height: 58,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF141C28).withValues(alpha: 0.95),
+          gradient: effects.primaryGradient(colors.primary, colors.primaryDark),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: colors.border,
             width: 1,
           ),
         ),
@@ -192,12 +196,12 @@ class _HomeHeaderState extends State<HomeHeader> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'صورلي',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                   ),
                 ),
               ],

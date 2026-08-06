@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/design/design_tokens.dart';
+import '../../core/theme/app_theme_service.dart';
 import '../../core/network/api_client.dart';
 import '../../models/user.dart';
 import '../profile/creator_profile_screen.dart';
@@ -97,15 +97,17 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
         titleSpacing: 12,
         title: Container(
           height: 42,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: colors.surfaceLight,
             borderRadius: BorderRadius.circular(12),
           ),
           child: TextField(
@@ -114,12 +116,12 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
             autofocus: false,
             decoration: InputDecoration(
               hintText: 'ابحث عن منشئين أو عروض...',
-              hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+              hintStyle: TextStyle(color: colors.textTertiary, fontSize: 14),
               prefixIcon:
-                  const Icon(Icons.search, color: Colors.grey, size: 20),
+                  Icon(Icons.search, color: colors.textSecondary, size: 20),
               suffixIcon: _query.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
+                      icon: Icon(Icons.clear, size: 18, color: colors.textSecondary),
                       onPressed: () {
                         _searchController.clear();
                         _onSearchChanged('');
@@ -132,9 +134,9 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.blue,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.blue,
+          labelColor: colors.primary,
+          unselectedLabelColor: colors.textSecondary,
+          indicatorColor: colors.primary,
           tabs: [
             Tab(
                 text:
@@ -146,26 +148,26 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildCreatorsList(),
-          _buildOffersList(),
+          _buildCreatorsList(colors),
+          _buildOffersList(colors),
         ],
       ),
     );
   }
 
-  Widget _buildCreatorsList() {
+  Widget _buildCreatorsList(RemoteThemeColors colors) {
     if (_isLoadingCreators) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_creators.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_search, size: 60, color: Colors.grey),
-            SizedBox(height: 12),
+            Icon(Icons.person_search, size: 60, color: colors.textTertiary),
+            const SizedBox(height: 12),
             Text('لم يتم العثور على منشئين',
-                style: TextStyle(color: Colors.grey)),
+                style: TextStyle(color: colors.textTertiary)),
           ],
         ),
       );
@@ -196,10 +198,10 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           ),
           title:
               Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: const Text('منشئ محتوى',
-              style: TextStyle(color: Colors.grey, fontSize: 12)),
+          subtitle: Text('منشئ محتوى',
+              style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           trailing:
-              const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+              Icon(Icons.arrow_forward_ios, size: 14, color: colors.textSecondary),
           onTap: () {
             final user = User(
               id: id,
@@ -219,19 +221,19 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
     );
   }
 
-  Widget _buildOffersList() {
+  Widget _buildOffersList(RemoteThemeColors colors) {
     if (_isLoadingOffers) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_offers.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.local_offer_outlined, size: 60, color: Colors.grey),
-            SizedBox(height: 12),
+            Icon(Icons.local_offer_outlined, size: 60, color: colors.textTertiary),
+            const SizedBox(height: 12),
             Text('لم يتم العثور على عروض',
-                style: TextStyle(color: Colors.grey)),
+                style: TextStyle(color: colors.textTertiary)),
           ],
         ),
       );
@@ -262,7 +264,6 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           clipBehavior: Clip.antiAlias,
           child: Row(
             children: [
-              // Thumbnail
               SizedBox(
                 width: 90,
                 height: 90,
@@ -272,17 +273,17 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
                         fit: BoxFit.cover,
                         cacheWidth: thumbCache,
                         cacheHeight: thumbCache,
-                        errorBuilder: (_, __, ___) => const Center(
+                        errorBuilder: (_, __, ___) => Center(
                           child: Icon(
                             Icons.image_not_supported,
-                            color: Colors.grey,
+                            color: colors.textSecondary,
                           ),
                         ),
                       )
-                    : const ColoredBox(
-                        color: Color(0xFFEEEEEE),
+                    : ColoredBox(
+                        color: colors.surfaceLight,
                         child: Center(
-                            child: Icon(Icons.local_offer, color: Colors.grey)),
+                            child: Icon(Icons.local_offer, color: colors.textSecondary)),
                       ),
               ),
               const SizedBox(width: 12),
@@ -302,17 +303,17 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
                       if (price != null)
                         Text(
                           '${price.toString()} IQD',
-                          style: const TextStyle(
-                              color: Colors.green, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              color: colors.success, fontWeight: FontWeight.w600),
                         ),
                     ],
                   ),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(right: 12),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
                 child:
-                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                    Icon(Icons.arrow_forward_ios, size: 14, color: colors.textSecondary),
               )
             ],
           ),

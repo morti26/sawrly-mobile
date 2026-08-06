@@ -1,7 +1,7 @@
 name: fotgraf_mobile
 description: "Sawrly - صورلي - v1.2.4 Grid Fix: Inga tomma ytor under ProfileMediaGrids (Offer/Photo/Video). shrinkWrap + NeverScrollPhysics + arabisk empty-state istallet for engelska."
 publish_to: 'none'
-version: 1.2.13+18
+version: 1.2.14+19
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
