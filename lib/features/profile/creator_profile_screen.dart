@@ -2706,7 +2706,24 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
         final bool isOfferGrid =
             widget.type == "Offer" || widget.type == "Saved";
 
-        return GridView.builder(
+        final sw = MediaQuery.sizeOf(context).width;
+        const cols = 2;
+        const padL = 8.0, padR = 8.0, padTop = 6.0, padBot = 20.0;
+        const crossSpc = 8.0, mainSpc = 8.0;
+        final cardW = (sw - (padL + padR + crossSpc * (cols - 1))) / cols;
+        final aspect = isOfferGrid
+            ? 0.95
+            : widget.type == "Event"
+                ? 0.86
+                : 0.75;
+        final cardH = cardW / aspect;
+        final rows = (items.length + cols - 1) ~/ cols;
+        final totH = padTop +
+            padBot +
+            rows * cardH +
+            (rows > 1 ? (rows - 1) * mainSpc : 0.0);
+
+        return SizedBox(height: totH, child: GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(8, 6, 8, 20),
@@ -2947,7 +2964,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
               ),
             );
           },
-        );
+        )); // GridView.builder + SizedBox(height: totH) STÄNGNING
       },
     );
   }
