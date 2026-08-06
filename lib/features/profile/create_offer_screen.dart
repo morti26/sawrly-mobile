@@ -362,7 +362,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
   }
 
   Future<void> _pickMedia() async {
-    final theme = context.watch<AppThemeService>();
+    final theme = context.read<AppThemeService>();
     final colors = theme.colors;
     final config = theme.config;
     final selection = await showModalBottomSheet<String>(

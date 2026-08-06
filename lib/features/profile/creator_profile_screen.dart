@@ -227,7 +227,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }
 
   void _showUploadLoadingDialog(BuildContext screenContext, String message) {
-    final theme = context.watch<AppThemeService>();
+    final theme = context.read<AppThemeService>();
     final colors = theme.colors;
     showDialog<void>(
       context: screenContext,
@@ -275,7 +275,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }
 
   void _handleUpload() {
-    final theme = context.watch<AppThemeService>();
+    final theme = context.read<AppThemeService>();
     final colors = theme.colors;
     final screenContext = context;
     final messenger = ScaffoldMessenger.of(screenContext);
@@ -1777,7 +1777,7 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
   }
 
   Future<void> _showCreateEventDialog({DateTime? initialDate}) async {
-    final theme = context.watch<AppThemeService>();
+    final theme = context.read<AppThemeService>();
     final colors = theme.colors;
     final config = theme.config;
     final locationController = TextEditingController();
@@ -2931,7 +2931,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
   }
 
   void _showItemOptions(BuildContext context, dynamic item) {
-    final theme = this.context.watch<AppThemeService>();
+    final theme = this.context.read<AppThemeService>();
     final colors = theme.colors;
     showModalBottomSheet(
       context: context,
@@ -3066,7 +3066,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
   }
 
   void _handleDelete(dynamic item) async {
-    final theme = context.watch<AppThemeService>();
+    final theme = context.read<AppThemeService>();
     final colors = theme.colors;
     final mediaService = context.read<MediaService>();
     final messenger = ScaffoldMessenger.of(context);
