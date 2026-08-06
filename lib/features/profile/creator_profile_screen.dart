@@ -1000,60 +1000,70 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     VoidCallback? onUpload,
     required List<Widget> tabs,
   }) {
-    const double actionSlotWidth = 60;
+    const double uploadSlotWidth = 48;
     return Container(
       color: colors.background,
       child: Column(
         children: [
-          Row(
-            children: [
-              SizedBox(
-                width: actionSlotWidth,
-                child: showUpload
-                    ? Padding(
-                        padding: const EdgeInsets.only(left: 8.0, right: 4.0),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: config.effects.primaryGradient(colors.primary, colors.primaryDark),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.primary.withValues(alpha: 0.25),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: uploadSlotWidth,
+                  child: showUpload
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: config.effects.primaryGradient(colors.primary, colors.primaryDark),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.primary.withValues(alpha: 0.22),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: SizedBox(
+                              height: 40,
+                              child: IconButton(
+                                icon: Icon(Icons.add_rounded,
+                                    color: colors.textPrimary, size: 20),
+                                tooltip: 'إضافة',
+                                onPressed: onUpload,
+                                splashRadius: 18,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
                               ),
-                            ],
+                            ),
                           ),
-                          child: IconButton(
-                            icon: Icon(Icons.add_rounded,
-                                color: colors.textPrimary, size: 24),
-                            tooltip: 'إضافة',
-                            onPressed: onUpload,
-                            splashRadius: 22,
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              Expanded(
-                child: TabBar(
-                  controller: controller,
-                  labelColor: colors.primaryLight,
-                  unselectedLabelColor: colors.textSecondary,
-                  indicatorColor: colors.primary,
-                  overlayColor: WidgetStateProperty.all(
-                    colors.primaryDark.withValues(alpha: 0.10),
-                  ),
-                  physics: const BouncingScrollPhysics(),
-                  isScrollable: false,
-                  labelPadding:
-                      const EdgeInsets.symmetric(horizontal: 8.0),
-                  padding: EdgeInsets.zero,
-                  tabs: tabs,
+                        )
+                      : const SizedBox.shrink(),
                 ),
-              ),
-              const SizedBox(width: actionSlotWidth),
-            ],
+                Expanded(
+                  child: TabBar(
+                    controller: controller,
+                    labelColor: colors.primaryLight,
+                    unselectedLabelColor: colors.textSecondary,
+                    indicatorColor: colors.primary,
+                    overlayColor: WidgetStateProperty.all(
+                      colors.primaryDark.withValues(alpha: 0.10),
+                    ),
+                    physics: const BouncingScrollPhysics(),
+                    isScrollable: false,
+                    labelPadding:
+                        const EdgeInsets.symmetric(horizontal: 2.0),
+                    labelStyle: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600),
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    tabs: tabs,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
           ),
           const Divider(height: 1),
         ],

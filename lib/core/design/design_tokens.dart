@@ -81,7 +81,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 20,
     fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
+    color: AppColors.textPrimary,C:\Users\Morti\StudioProjects\sawrly\sawrly-mobile\pubspec.yaml
     height: 1.3,
   );
 
