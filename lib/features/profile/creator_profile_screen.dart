@@ -2650,7 +2650,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                 ? "اضغط على زر الجمع في علامة الجدول لإضافة مواعيد للحجوزات."
                 : "لا توجد حجوزات لعرضها حاليا.",
           };
-          final known = const ['Purchased','Saved','Offer','Photo','Video','Event'];
+          const known = ['Purchased','Saved','Offer','Photo','Video','Event'];
           final typeKey = known.contains(widget.type) ? widget.type : 'Photo';
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
