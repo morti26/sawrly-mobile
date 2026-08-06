@@ -6,10 +6,41 @@ import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import 'app_theme_config.dart';
 
-class AppThemeService extends ChangeNotifier {
+class AppThemeService extends ChangeNotifier with WidgetsBindingObserver {
   final ApiClient _apiClient;
 
-  AppThemeService(this._apiClient);
+  AppThemeService(this._apiClient) {
+    scheduleMicrotask(attachLifecycleObserver);
+  }
+
+  void attachLifecycleObserver() {
+    try {
+      final binding = WidgetsBinding.instance;
+      binding.addObserver(this);
+    } catch (e) {
+      debugPrint('[ThemeService] attachLifecycleObserver error: $e');
+    }
+  }
+
+  void detachLifecycleObserver() {
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      unawaited(loadFromServer(forceRefresh: true));
+    }
+  }
+
+  @override
+  void dispose() {
+    detachLifecycleObserver();
+    super.dispose();
+  }
 
   static const RemoteThemeColors _defaultColors = RemoteThemeColors(
     primary: Color(0xFF9B4DFF),
@@ -58,7 +89,7 @@ class AppThemeService extends ChangeNotifier {
   RemoteThemeEffects get effects => _config.effects;
   bool get isLoading => _isLoading;
 
-  static const _cacheTtl = Duration(seconds: 60);
+  static const _cacheTtl = Duration(seconds: 10);
 
   Future<void> loadFromServer({bool forceRefresh = false}) async {
     if (_isLoading) return;
@@ -69,6 +100,7 @@ class AppThemeService extends ChangeNotifier {
       return;
     }
     _isLoading = true;
+    notifyListeners();
     try {
       final response = await _apiClient.client.get(
         '/config/public',
@@ -96,6 +128,7 @@ class AppThemeService extends ChangeNotifier {
       debugPrint('[ThemeService] loadFromServer error: $e');
     } finally {
       _isLoading = false;
+      notifyListeners();
     }
   }
 }

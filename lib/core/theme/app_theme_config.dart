@@ -185,30 +185,126 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
     map = Map<String, dynamic>.from(raw);
   }
   if (map == null) return defaults;
-  Color pick(String key, Color fallback) {
-    final Object? v = map![key];
-    return _parseHexColor(v) ?? fallback;
+  Color? maybe(String key) => _parseHexColor(map![key]);
+
+  final primary = maybe('primary');
+  final primaryLight = maybe('primaryLight');
+  final primaryDark = maybe('primaryDark');
+
+  final hasCustomPrimary = primary != null || primaryLight != null || primaryDark != null;
+  final effectivePrimary = primary ?? defaults.primary;
+  final effectivePrimaryLight = primaryLight ?? _lighten(effectivePrimary, 0.18);
+  final effectivePrimaryDark = primaryDark ?? _darken(effectivePrimary, 0.18);
+
+  final Color effectiveAccentPink = maybe('accentPink') ??
+      Color.lerp(effectivePrimary, const Color(0xFFFF4DA6), 0.5) ??
+      const Color(0xFFFF4DA6);
+
+  final Color effectiveBackground;
+  if (maybe('background') case final bg?) {
+    effectiveBackground = bg;
+  } else if (hasCustomPrimary) {
+    effectiveBackground = _darken(_desaturate(effectivePrimary, 0.35), 0.45);
+  } else {
+    effectiveBackground = defaults.background;
+  }
+
+  final Color effectiveSurface;
+  if (maybe('surface') case final s?) {
+    effectiveSurface = s;
+  } else if (hasCustomPrimary) {
+    effectiveSurface = _lighten(effectiveBackground, 0.12);
+  } else {
+    effectiveSurface = defaults.surface;
+  }
+
+  final Color effectiveSurfaceLight;
+  if (maybe('surfaceLight') case final sl?) {
+    effectiveSurfaceLight = sl;
+  } else if (hasCustomPrimary) {
+    effectiveSurfaceLight = _lighten(effectiveSurface, 0.12);
+  } else {
+    effectiveSurfaceLight = defaults.surfaceLight;
+  }
+
+  final Color effectiveMenuBackground;
+  if (maybe('menuBackground') case final mb?) {
+    effectiveMenuBackground = mb;
+  } else if (hasCustomPrimary) {
+    effectiveMenuBackground = _darken(effectiveBackground, 0.06);
+  } else {
+    effectiveMenuBackground = defaults.menuBackground;
+  }
+
+  final effectiveTextPrimary = maybe('textPrimary') ?? defaults.textPrimary;
+  final effectiveTextSecondary = maybe('textSecondary') ??
+      (hasCustomPrimary
+          ? effectiveTextPrimary.withValues(alpha: 0.72)
+          : defaults.textSecondary);
+  final effectiveTextTertiary = maybe('textTertiary') ??
+      (hasCustomPrimary
+          ? effectiveTextPrimary.withValues(alpha: 0.48)
+          : defaults.textTertiary);
+  final effectiveSuccess = maybe('success') ?? defaults.success;
+  final effectiveWarning = maybe('warning') ?? defaults.warning;
+  final effectiveError = maybe('error') ?? defaults.error;
+  final effectiveInfo = maybe('info') ?? defaults.info;
+
+  final Color effectiveBorder;
+  if (maybe('border') case final b?) {
+    effectiveBorder = b;
+  } else if (hasCustomPrimary) {
+    effectiveBorder = _lighten(_desaturate(effectivePrimaryDark, 0.2), 0.08);
+  } else {
+    effectiveBorder = defaults.border;
+  }
+
+  final Color effectiveBorderLight;
+  if (maybe('borderLight') case final bl?) {
+    effectiveBorderLight = bl;
+  } else if (hasCustomPrimary) {
+    effectiveBorderLight = _lighten(effectiveBorder, 0.18);
+  } else {
+    effectiveBorderLight = defaults.borderLight;
   }
 
   return RemoteThemeColors(
-    primary: pick('primary', defaults.primary),
-    primaryLight: pick('primaryLight', defaults.primaryLight),
-    primaryDark: pick('primaryDark', defaults.primaryDark),
-    accentPink: pick('accentPink', defaults.accentPink),
-    background: pick('background', defaults.background),
-    surface: pick('surface', defaults.surface),
-    surfaceLight: pick('surfaceLight', defaults.surfaceLight),
-    menuBackground: pick('menuBackground', defaults.menuBackground),
-    textPrimary: pick('textPrimary', defaults.textPrimary),
-    textSecondary: pick('textSecondary', defaults.textSecondary),
-    textTertiary: pick('textTertiary', defaults.textTertiary),
-    success: pick('success', defaults.success),
-    warning: pick('warning', defaults.warning),
-    error: pick('error', defaults.error),
-    info: pick('info', defaults.info),
-    border: pick('border', defaults.border),
-    borderLight: pick('borderLight', defaults.borderLight),
+    primary: effectivePrimary,
+    primaryLight: effectivePrimaryLight,
+    primaryDark: effectivePrimaryDark,
+    accentPink: effectiveAccentPink,
+    background: effectiveBackground,
+    surface: effectiveSurface,
+    surfaceLight: effectiveSurfaceLight,
+    menuBackground: effectiveMenuBackground,
+    textPrimary: effectiveTextPrimary,
+    textSecondary: effectiveTextSecondary,
+    textTertiary: effectiveTextTertiary,
+    success: effectiveSuccess,
+    warning: effectiveWarning,
+    error: effectiveError,
+    info: effectiveInfo,
+    border: effectiveBorder,
+    borderLight: effectiveBorderLight,
   );
+}
+
+Color _darken(Color c, double amount) {
+  final hsl = HSLColor.fromColor(c);
+  final l = (hsl.lightness - amount).clamp(0.0, 1.0);
+  return hsl.withLightness(l).toColor();
+}
+
+Color _lighten(Color c, double amount) {
+  final hsl = HSLColor.fromColor(c);
+  final l = (hsl.lightness + amount).clamp(0.0, 1.0);
+  return hsl.withLightness(l).toColor();
+}
+
+Color _desaturate(Color c, double amount) {
+  final hsl = HSLColor.fromColor(c);
+  final s = (hsl.saturation - amount).clamp(0.0, 1.0);
+  return hsl.withSaturation(s).toColor();
 }
 
 RemoteNavIcons parseRemoteNavIcons(dynamic raw) {
