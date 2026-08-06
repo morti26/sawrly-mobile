@@ -626,370 +626,437 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: NestedScrollView(
+      appBar: AppBar(
+        backgroundColor: colors.background,
+        elevation: 0,
+        iconTheme: IconThemeData(color: colors.textPrimary),
+        actions: [
+          if (!isOwner && isLoggedIn)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                    right: 8.0, top: 8.0, bottom: 8.0),
+                child: ElevatedButton(
+                  onPressed: () => _toggleFollow(displayUser.id),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        _isFollowing ? colors.textTertiary : colors.info,
+                    foregroundColor:
+                        _isFollowing ? colors.background : colors.textPrimary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                  ),
+                  child: Text(_isFollowing ? "إلغاء المتابعة" : "متابعة",
+                      style:
+                          const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ),
+          if (!isOwner && isLoggedIn)
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colors.background.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.flag_outlined, color: colors.textPrimary),
+                onPressed: () => _showProfileReportDialog(displayUser),
+              ),
+            ),
+          if (isOwner)
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colors.background.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.settings, color: colors.textPrimary),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            EditProfileScreen(user: displayUser)),
+                  );
+                },
+              ),
+            ),
+          if (isOwner && displayUser.isSuperadmin)
+            Container(
+              margin: const EdgeInsets.only(
+                  right: 8.0, top: 8.0, bottom: 8.0),
+              decoration: BoxDecoration(
+                color: _isReloadingBadge
+                    ? colors.primaryDark.withValues(alpha: 0.55)
+                    : colors.primaryDark.withValues(alpha: 0.35),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: _isReloadingBadge
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: colors.textPrimary),
+                      )
+                    : Icon(Icons.refresh, color: colors.textPrimary),
+                tooltip: 'Reload superadmin badge',
+                onPressed:
+                    _isReloadingBadge ? null : _forceReloadSuperadminBadge,
+              ),
+            )
+        ],
+      ),
+      body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              expandedHeight: 280.0,
-              floating: false,
-              pinned: true,
-              actions: [
-                if (!isOwner && isLoggedIn)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                          right: 8.0, top: 8.0, bottom: 8.0),
-                      child: ElevatedButton(
-                        onPressed: () => _toggleFollow(displayUser.id),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              _isFollowing ? colors.textTertiary : colors.info,
-                          foregroundColor:
-                              _isFollowing ? colors.background : colors.textPrimary,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                        ),
-                        child: Text(_isFollowing ? "إلغاء المتابعة" : "متابعة",
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 280,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  GestureDetector(
+                      onTap: isOwner
+                          ? () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        EditProfileScreen(user: displayUser)),
+                              );
+                            }
+                          : null,
+                      child: Image.network(coverImage, fit: BoxFit.cover)),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          colors.background.withValues(alpha: 0.7)
+                        ],
                       ),
                     ),
                   ),
-                if (!isOwner && isLoggedIn)
-                  Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.background.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.flag_outlined, color: colors.textPrimary),
-                      onPressed: () => _showProfileReportDialog(displayUser),
-                    ),
-                  ),
-                if (isOwner)
-                  Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.background.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.settings, color: colors.textPrimary),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  EditProfileScreen(user: displayUser)),
-                        );
-                      },
-                    ),
-                  ),
-                if (isOwner && displayUser.isSuperadmin)
-                  Container(
-                    margin: const EdgeInsets.only(
-                        right: 8.0, top: 8.0, bottom: 8.0),
-                    decoration: BoxDecoration(
-                      color: _isReloadingBadge
-                          ? colors.primaryDark.withValues(alpha: 0.55)
-                          : colors.primaryDark.withValues(alpha: 0.35),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: _isReloadingBadge
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: colors.textPrimary),
-                            )
-                          : Icon(Icons.refresh, color: colors.textPrimary),
-                      tooltip: 'Reload superadmin badge',
-                      onPressed:
-                          _isReloadingBadge ? null : _forceReloadSuperadminBadge,
-                    ),
-                  )
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    GestureDetector(
-                        onTap: isOwner
-                            ? () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          EditProfileScreen(user: displayUser)),
-                                );
-                              }
-                            : null,
-                        child: Image.network(coverImage, fit: BoxFit.cover)),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            colors.background.withValues(alpha: 0.7)
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 20,
-                      left: 20,
-                      right: 20,
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: isOwner
-                                ? () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              EditProfileScreen(
-                                                  user: displayUser)),
-                                    );
-                                  }
-                                : null,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: colors.textPrimary, width: 3),
-                              ),
-                              child: CircleAvatar(
-                                radius: 40,
-                                backgroundImage: NetworkImage(profileImage),
-                              ),
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: isOwner
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            EditProfileScreen(
+                                                user: displayUser)),
+                                  );
+                                }
+                              : null,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: colors.textPrimary, width: 3),
+                            ),
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundImage: NetworkImage(profileImage),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                displayUser.name,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  color: colors.textPrimary,
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              displayUser.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: colors.textPrimary,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            if ((displayUser.gender ?? '')
-                                                .trim()
-                                                .toLowerCase() == 'male')
-                                              Icon(Icons.male,
-                                                  color: colors.primary,
-                                                  size: 20)
-                                            else if ((displayUser.gender ?? '')
-                                                .trim()
-                                                .toLowerCase() == 'female')
-                                              Icon(Icons.female,
-                                                  color: colors.accentPink,
-                                                  size: 20),
-                                            if (displayUser.role == UserRole.creator)
-                                              const SizedBox(width: 6),
-                                            if (displayUser.role == UserRole.creator)
-                                              Icon(Icons.verified,
-                                                  color: colors.info, size: 20),
-                                          ],
-                                        ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          if ((displayUser.gender ?? '')
+                                              .trim()
+                                              .toLowerCase() == 'male')
+                                            Icon(Icons.male,
+                                                color: colors.primary,
+                                                size: 20)
+                                          else if ((displayUser.gender ?? '')
+                                              .trim()
+                                              .toLowerCase() == 'female')
+                                            Icon(Icons.female,
+                                                color: colors.accentPink,
+                                                size: 20),
+                                          if (displayUser.role == UserRole.creator)
+                                            const SizedBox(width: 6),
+                                          if (displayUser.role == UserRole.creator)
+                                            Icon(Icons.verified,
+                                                color: colors.info, size: 20),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                Text(
-                                  "@${displayUser.email.split('@')[0]}",
-                                  style: TextStyle(color: colors.textSecondary),
-                                ),
-                                  if ((displayUser.role == UserRole.creator &&
-                                          (displayUser.creatorLevelName ?? '')
-                                              .trim()
-                                              .isNotEmpty &&
-                                          (displayUser.creatorLevelIcon ?? '')
-                                              .trim()
-                                              .isNotEmpty) ||
-                                      displayUser.isSuperadmin) ...[
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        if (displayUser.role == UserRole.creator &&
-                                            (displayUser.creatorLevelName ?? '')
-                                                .trim()
-                                                .isNotEmpty &&
-                                            (displayUser.creatorLevelIcon ?? '')
-                                                .trim()
-                                                .isNotEmpty)
-                                          _buildCreatorLevelBadge(
-                                            icon: displayUser.creatorLevelIcon!.trim(),
-                                            name: displayUser.creatorLevelName!.trim(),
-                                          ),
-                                        if (displayUser.isSuperadmin)
-                                          _buildSuperadminBadgeIcon(
-                                            iconUrl: displayUser.superadminBadgeIconUrl,
-                                            label: displayUser.superadminBadgeLabel,
-                                          ),
-                                      ],
                                     ),
                                   ],
-                                if (serviceAreaLabel.isNotEmpty) ...[
+                                ),
+                              Text(
+                                "@${displayUser.email.split('@')[0]}",
+                                style: TextStyle(color: colors.textSecondary),
+                              ),
+                                if ((displayUser.role == UserRole.creator &&
+                                        (displayUser.creatorLevelName ?? '')
+                                            .trim()
+                                            .isNotEmpty &&
+                                        (displayUser.creatorLevelIcon ?? '')
+                                            .trim()
+                                            .isNotEmpty) ||
+                                    displayUser.isSuperadmin) ...[
                                   const SizedBox(height: 8),
                                   Wrap(
                                     spacing: 8,
                                     runSpacing: 8,
                                     children: [
-                                      _buildProfileMetaChip(
-                                        icon: Icons.location_on_outlined,
-                                        label: serviceAreaLabel,
-                                      ),
+                                      if (displayUser.role == UserRole.creator &&
+                                          (displayUser.creatorLevelName ?? '')
+                                              .trim()
+                                              .isNotEmpty &&
+                                          (displayUser.creatorLevelIcon ?? '')
+                                              .trim()
+                                              .isNotEmpty)
+                                        _buildCreatorLevelBadge(
+                                          icon: displayUser.creatorLevelIcon!.trim(),
+                                          name: displayUser.creatorLevelName!.trim(),
+                                        ),
+                                      if (displayUser.isSuperadmin)
+                                        _buildSuperadminBadgeIcon(
+                                          iconUrl: displayUser.superadminBadgeIconUrl,
+                                          label: displayUser.superadminBadgeLabel,
+                                        ),
                                     ],
                                   ),
                                 ],
+                              if (serviceAreaLabel.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _buildProfileMetaChip(
+                                      icon: Icons.location_on_outlined,
+                                      label: serviceAreaLabel,
+                                    ),
+                                  ],
+                                ),
                               ],
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isCreator) ...[
-                      if (_isLoadingProfile)
-                        const Center(child: CircularProgressIndicator())
-                      else
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildStatItem(
-                                "متابعون", _followersCount.toString()),
-                            _buildStatItem("متابع", _followingCount.toString()),
-                          ],
-                        ),
-                      const SizedBox(height: 20),
-                    ],
-                    const Text("نبذة تعريفية",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Text(bio,
-                        style:
-                            TextStyle(color: colors.textTertiary, height: 1.4)),
-                    if (serviceAreaLabel.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      const Text(
-                        "نطاق الخدمة",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isCreator) ...[
+                    if (_isLoadingProfile)
+                      const Center(child: CircularProgressIndicator())
+                    else
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 18, color: colors.textSecondary),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              serviceAreaLabel,
-                              style: TextStyle(
-                                color: colors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
+                          _buildStatItem(
+                              "متابعون", _followersCount.toString()),
+                          _buildStatItem("متابع", _followingCount.toString()),
                         ],
                       ),
-                    ],
-                    if (isOwner && displayUser.isSuperadmin) ...[
-                      const SizedBox(height: 14),
-                      const Text(
-                        "Superadmin badge debug",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        "imageStatus=${_debugLastImageStatus ?? 'not-rendered-yet'}\n"
-                        "raw=${displayUser.superadminBadgeIconUrl ?? 'null'}\n"
-                        "resolved=${_debugLastNormalizedUrl ?? 'null'}\n"
-                        "badgeReloadTick=$_badgeReloadTick\n"
-                        "reloadStatus=${_badgeReloadStatus ?? 'idle'}",
-                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                      ),
-                      const SizedBox(height: 6),
-                      OutlinedButton.icon(
-                        icon: _isReloadingBadge
-                            ? SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: colors.textPrimary),
-                              )
-                            : Icon(Icons.refresh, size: 14, color: colors.textPrimary),
-                        label: Text(
-                          _isReloadingBadge ? "Reloadar..." : "Force reload badge",
-                          style: TextStyle(color: colors.textPrimary),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: colors.textPrimary.withValues(alpha: 0.4)),
-                        ),
-                        onPressed:
-                            _isReloadingBadge ? null : _forceReloadSuperadminBadge,
-                      ),
-                    ],
                     const SizedBox(height: 20),
                   ],
+                  const Text("نبذة تعريفية",
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Text(bio,
+                      style:
+                          TextStyle(color: colors.textTertiary, height: 1.4)),
+                  if (serviceAreaLabel.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    const Text(
+                      "نطاق الخدمة",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined,
+                            size: 18, color: colors.textSecondary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            serviceAreaLabel,
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (isOwner && displayUser.isSuperadmin) ...[
+                    const SizedBox(height: 14),
+                    const Text(
+                      "Superadmin badge debug",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SelectableText(
+                      "imageStatus=${_debugLastImageStatus ?? 'not-rendered-yet'}\n"
+                      "raw=${displayUser.superadminBadgeIconUrl ?? 'null'}\n"
+                      "resolved=${_debugLastNormalizedUrl ?? 'null'}\n"
+                      "badgeReloadTick=$_badgeReloadTick\n"
+                      "reloadStatus=${_badgeReloadStatus ?? 'idle'}",
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                    ),
+                    const SizedBox(height: 6),
+                    OutlinedButton.icon(
+                      icon: _isReloadingBadge
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: colors.textPrimary),
+                            )
+                          : Icon(Icons.refresh, size: 14, color: colors.textPrimary),
+                      label: Text(
+                        _isReloadingBadge ? "Reloadar..." : "Force reload badge",
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: colors.textPrimary.withValues(alpha: 0.4)),
+                      ),
+                      onPressed:
+                          _isReloadingBadge ? null : _forceReloadSuperadminBadge,
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+            _buildProfileTabBarRow(
+              controller: _tabController,
+              colors: colors,
+              config: theme.config,
+              showUpload: showUpload,
+              onUpload: _handleUpload,
+              tabs: tabs,
+            ),
+            tabViews[_tabController.index],
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileTabBarRow({
+    required TabController controller,
+    required dynamic colors,
+    required dynamic config,
+    required bool showUpload,
+    VoidCallback? onUpload,
+    required List<Widget> tabs,
+  }) {
+    const double actionSlotWidth = 60;
+    return Container(
+      color: colors.background,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: actionSlotWidth,
+                child: showUpload
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 8.0, right: 4.0),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: config.effects.primaryGradient(colors.primary, colors.primaryDark),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.primary.withValues(alpha: 0.25),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            icon: Icon(Icons.add_rounded,
+                                color: colors.textPrimary, size: 24),
+                            tooltip: 'إضافة',
+                            onPressed: onUpload,
+                            splashRadius: 22,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              Expanded(
+                child: TabBar(
+                  controller: controller,
+                  labelColor: colors.primaryLight,
+                  unselectedLabelColor: colors.textSecondary,
+                  indicatorColor: colors.primary,
+                  overlayColor: WidgetStateProperty.all(
+                    colors.primaryDark.withValues(alpha: 0.10),
+                  ),
+                  physics: const BouncingScrollPhysics(),
+                  isScrollable: false,
+                  labelPadding:
+                      const EdgeInsets.symmetric(horizontal: 8.0),
+                  padding: EdgeInsets.zero,
+                  tabs: tabs,
                 ),
               ),
-            ),
-            SliverPersistentHeader(
-              delegate: _SliverAppBarDelegate(
-                controller: _tabController,
-                showUpload: showUpload,
-                onUpload: _handleUpload,
-                tabs: tabs,
-              ),
-              pinned: true,
-            ),
-          ];
-        },
-        body: SafeArea(
-          top: false,
-          child: tabViews[_tabController.index],
-        ),
+              const SizedBox(width: actionSlotWidth),
+            ],
+          ),
+          const Divider(height: 1),
+        ],
       ),
     );
   }
