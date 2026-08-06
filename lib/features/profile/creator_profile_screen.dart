@@ -2618,36 +2618,98 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
 
         final items = snapshot.data ?? [];
         if (items.isEmpty) {
-          return Center(
-              child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                  widget.type == "Purchased"
-                      ? Icons.shopping_bag_outlined
-                      : widget.type == "Saved"
-                          ? Icons.bookmark_border
-                          : Icons.perm_media_outlined,
-                  size: 48,
-                  color: colors.textTertiary),
-              const SizedBox(height: 16),
-              Text(
-                  widget.type == "Purchased"
-                      ? "You haven't purchased anything yet"
-                      : widget.type == "Saved"
-                          ? "No saved items"
-                          : "No ${widget.type} items yet",
-                  style: TextStyle(color: colors.textTertiary)),
-            ],
-          ));
+          final emptyIcons = <String, IconData>{
+            'Purchased': Icons.shopping_bag_outlined,
+            'Saved': Icons.bookmark_border_rounded,
+            'Offer': Icons.sell_outlined,
+            'Photo': Icons.photo_library_outlined,
+            'Video': Icons.ondemand_video_outlined,
+            'Event': Icons.event_available_outlined,
+          };
+          final emptyTitlesAr = <String, String>{
+            'Purchased': "لا توجد مشتريات بعد",
+            'Saved': "لا توجد عناصر محفوظة حتى الآن",
+            'Offer': "لا توجد عروض حتى الآن",
+            'Photo': "لا توجد صور مرفوعة حتى الآن",
+            'Video': "لا توجد فيديوهات مرفوعة حتى الآن",
+            'Event': "لا توجد حجوزات مجدولة حتى الآن",
+          };
+          final emptyHintsAr = <String, String>{
+            'Purchased': "ستظهر عروضك التي قمت بشرائها هنا.",
+            'Saved': "اضغط على زر الحفظ داخل أي عرض لحفظه هنا.",
+            'Offer': widget.isOwner
+                ? "اضغط على زر الجمع بالأعلى لإنشاء أول عرض لك."
+                : "لم يقم هذا المبدع بنشر أي عرض بعد.",
+            'Photo': widget.isOwner
+                ? "اضغط على زر الجمع بالأعلى لرفع أول صورة لك."
+                : "لم يقم هذا المبدع برفع أي صور بعد.",
+            'Video': widget.isOwner
+                ? "اضغط على زر الجمع بالأعلى لرفع أول فيديو لك."
+                : "لم يقم هذا المبدع برفع أي فيديوهات بعد.",
+            'Event': widget.isOwner
+                ? "اضغط على زر الجمع في علامة الجدول لإضافة مواعيد للحجوزات."
+                : "لا توجد حجوزات لعرضها حاليا.",
+          };
+          final known = const ['Purchased','Saved','Offer','Photo','Video','Event'];
+          final typeKey = known.contains(widget.type) ? widget.type : 'Photo';
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+            child: Center(
+                child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.borderLight),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withValues(alpha: 0.10),
+                        blurRadius: 18,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                      emptyIcons[typeKey] ?? Icons.perm_media_outlined,
+                      size: 44,
+                      color: colors.primary),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                    emptyTitlesAr[typeKey] ?? "لا يوجد محتوى بعد",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    )),
+                const SizedBox(height: 10),
+                Text(
+                    emptyHintsAr[typeKey] ?? "",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      height: 1.55,
+                    )),
+              ],
+            )),
+          );
         }
 
         final bool isOfferGrid =
             widget.type == "Offer" || widget.type == "Saved";
 
         return GridView.builder(
-          padding: const EdgeInsets.all(8),
-          physics: const ClampingScrollPhysics(),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(8, 6, 8, 20),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             childAspectRatio: isOfferGrid
