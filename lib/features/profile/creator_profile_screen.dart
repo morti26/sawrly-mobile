@@ -559,26 +559,26 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         Tab(text: "الجدول"),
       ];
       tabViews = [
-        ProfileMediaGrid(
+        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
             userId: displayUser.id,
             type: "Offer",
             isOwner: isOwner,
-            refreshToken: _mediaReloadTick),
-        ProfileMediaGrid(
+            refreshToken: _mediaReloadTick)),
+        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
             userId: displayUser.id,
             type: "Photo",
             isOwner: isOwner,
-            refreshToken: _mediaReloadTick),
-        ProfileMediaGrid(
+            refreshToken: _mediaReloadTick)),
+        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
             userId: displayUser.id,
             type: "Video",
             isOwner: isOwner,
-            refreshToken: _mediaReloadTick),
-        ProfileMediaGrid(
+            refreshToken: _mediaReloadTick)),
+        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
             userId: displayUser.id,
             type: "Event",
             isOwner: isOwner,
-            refreshToken: _mediaReloadTick),
+            refreshToken: _mediaReloadTick)),
       ];
     } else {
       tabs = const [
@@ -586,16 +586,16 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         Tab(text: "محفوظات"),
       ];
       tabViews = [
-        ProfileMediaGrid(
+        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
             userId: displayUser.id,
             type: "Purchased",
             isOwner: isOwner,
-            refreshToken: _mediaReloadTick),
-        ProfileMediaGrid(
+            refreshToken: _mediaReloadTick)),
+        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
             userId: displayUser.id,
             type: "Saved",
             isOwner: isOwner,
-            refreshToken: _mediaReloadTick),
+            refreshToken: _mediaReloadTick)),
       ];
     }
 
