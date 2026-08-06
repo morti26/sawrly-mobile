@@ -14,6 +14,7 @@ import '../../core/services/media_service.dart';
 import '../../core/widgets/report_dialog.dart';
 import '../home/offer_details_screen.dart';
 import 'edit_profile_screen.dart';
+import 'profile_settings_screen.dart';
 import 'create_offer_screen.dart';
 
 // Used by runtime debug evidence logging below.
@@ -680,7 +681,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     context,
                     MaterialPageRoute(
                         builder: (context) =>
-                            EditProfileScreen(user: displayUser)),
+                            ProfileSettingsScreen(user: displayUser)),
                   );
                 },
               ),
