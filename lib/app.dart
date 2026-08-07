@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -19,8 +20,23 @@ class FotgrafApp extends StatelessWidget {
         final buttonRadius = BorderRadius.circular(e.buttonRadius);
         final cardShadowOpacity = e.cardShadowOpacity.clamp(0.0, 1.0);
 
+        final colorScheme = ColorScheme.fromSeed(
+          seedColor: c.primary,
+          brightness: Brightness.dark,
+          surface: c.surface,
+          primary: c.primary,
+          onPrimary: c.textPrimary,
+          onSurface: c.textPrimary,
+        );
+
+        final smallLabel = AppTextStyles.label.copyWith(
+          fontSize: 10,
+          height: 1.2,
+          letterSpacing: 0.2,
+        );
+
         return MaterialApp(
-          title: 'صورلي',
+          title: 'Ã˜ÂµÃ™Ë†Ã˜Â±Ã™â€žÃ™Å ',
           debugShowCheckedModeBanner: false,
           locale: const Locale('ar', ''),
           localizationsDelegates: const [
@@ -34,14 +50,7 @@ class FotgrafApp extends StatelessWidget {
           themeMode: ThemeMode.dark,
           darkTheme: ThemeData(
             fontFamily: AppTextStyles.fontFamily,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: c.primary,
-              brightness: Brightness.dark,
-              surface: c.surface,
-              primary: c.primary,
-              onPrimary: c.textPrimary,
-              onSurface: c.textPrimary,
-            ),
+            colorScheme: colorScheme,
             scaffoldBackgroundColor: c.background,
             appBarTheme: AppBarTheme(
               backgroundColor: c.background.withValues(alpha: e.surfaceOpacity.clamp(0.5, 1.0)),
@@ -121,6 +130,48 @@ class FotgrafApp extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: buttonRadius),
                 textStyle: AppTextStyles.button,
               ),
+            ),
+            navigationBarTheme: NavigationBarThemeData(
+              backgroundColor: c.surface.withValues(alpha: e.surfaceOpacity),
+              elevation: 0,
+              shadowColor: Colors.black.withValues(alpha: e.navShadowOpacity.clamp(0, 1)),
+              surfaceTintColor: Colors.transparent,
+              indicatorColor: c.primary.withValues(alpha: 0.22),
+              height: 68,
+              labelTextStyle: WidgetStatePropertyAll(smallLabel.copyWith(color: c.textSecondary)),
+              iconTheme: WidgetStatePropertyAll(
+                IconThemeData(color: c.textSecondary, size: 24),
+              ),
+            ),
+            badgeTheme: BadgeThemeData(
+              backgroundColor: colorScheme.tertiary,
+              textColor: colorScheme.onTertiary,
+              smallSize: 8,
+              largeSize: 18,
+              textStyle: smallLabel.copyWith(
+                color: colorScheme.onTertiary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            snackBarTheme: SnackBarThemeData(
+              backgroundColor: c.surfaceLight,
+              contentTextStyle: AppTextStyles.bodySmall.copyWith(
+                color: c.textPrimary,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: cardRadius),
+              behavior: SnackBarBehavior.floating,
+              elevation: 4,
+              actionTextColor: c.primary,
+              closeIconColor: c.textPrimary,
+            ),
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+              },
             ),
             useMaterial3: true,
           ),

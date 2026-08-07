@@ -1,3 +1,4 @@
+import '../../core/theme/app_theme_config.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme_service.dart';
@@ -115,7 +116,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
             onChanged: _onSearchChanged,
             autofocus: false,
             decoration: InputDecoration(
-              hintText: 'ابحث عن منشئين أو عروض...',
+              hintText: 'Ø§Ø¨Ø­Ø« Ø¹Ù† Ù…Ù†Ø´Ø¦ÙŠÙ† Ø£Ùˆ Ø¹Ø±ÙˆØ¶...',
               hintStyle: TextStyle(color: colors.textTertiary, fontSize: 14),
               prefixIcon:
                   Icon(Icons.search, color: colors.textSecondary, size: 20),
@@ -140,8 +141,8 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           tabs: [
             Tab(
                 text:
-                    'المنشئون${_creators.isEmpty ? '' : ' (${_creators.length})'}'),
-            Tab(text: 'العروض${_offers.isEmpty ? '' : ' (${_offers.length})'}'),
+                    'Ø§Ù„Ù…Ù†Ø´Ø¦ÙˆÙ†${_creators.isEmpty ? '' : ' (${_creators.length})'}'),
+            Tab(text: 'Ø§Ù„Ø¹Ø±ÙˆØ¶${_offers.isEmpty ? '' : ' (${_offers.length})'}'),
           ],
         ),
       ),
@@ -166,7 +167,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           children: [
             Icon(Icons.person_search, size: 60, color: colors.textTertiary),
             const SizedBox(height: 12),
-            Text('لم يتم العثور على منشئين',
+            Text('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ù…Ù†Ø´Ø¦ÙŠÙ†',
                 style: TextStyle(color: colors.textTertiary)),
           ],
         ),
@@ -198,7 +199,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           ),
           title:
               Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text('منشئ محتوى',
+          subtitle: Text('Ù…Ù†Ø´Ø¦ Ù…Ø­ØªÙˆÙ‰',
               style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           trailing:
               Icon(Icons.arrow_forward_ios, size: 14, color: colors.textSecondary),
@@ -232,7 +233,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           children: [
             Icon(Icons.local_offer_outlined, size: 60, color: colors.textTertiary),
             const SizedBox(height: 12),
-            Text('لم يتم العثور على عروض',
+            Text('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø¹Ø±ÙˆØ¶',
                 style: TextStyle(color: colors.textTertiary)),
           ],
         ),
