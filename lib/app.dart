@@ -36,7 +36,7 @@ class FotgrafApp extends StatelessWidget {
         );
 
         return MaterialApp(
-          title: 'Ã˜ÂµÃ™Ë†Ã˜Â±Ã™â€žÃ™Å ',
+          title: 'صورلي',
           debugShowCheckedModeBanner: false,
           locale: const Locale('ar', ''),
           localizationsDelegates: const [
