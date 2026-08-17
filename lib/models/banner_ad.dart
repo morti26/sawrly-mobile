@@ -4,14 +4,15 @@ class BannerSlide {
   final String? title;
   final String? linkUrl;
 
-  BannerSlide({required this.url, required this.type, this.title, this.linkUrl});
+  BannerSlide(
+      {required this.url, required this.type, this.title, this.linkUrl});
 
   factory BannerSlide.fromJson(Map<String, dynamic> json) {
     return BannerSlide(
-      url: json['url'] as String,
-      type: json['type'] as String? ?? 'image',
-      title: json['title'] as String?,
-      linkUrl: json['link_url'] as String?,
+      url: json['url']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'image',
+      title: json['title']?.toString(),
+      linkUrl: json['link_url']?.toString(),
     );
   }
 
@@ -20,7 +21,7 @@ class BannerSlide {
 
 class BannerAd {
   final int id;
-  final String imageUrl;    // kept for backwards compat
+  final String imageUrl; // kept for backwards compat
   final String? linkUrl;
   final String title;
   final List<BannerSlide> slides;
@@ -37,20 +38,30 @@ class BannerAd {
     List<BannerSlide> slides = [];
     if (json['slides'] != null && json['slides'] is List) {
       slides = (json['slides'] as List)
-          .map((s) => BannerSlide.fromJson(s as Map<String, dynamic>))
+          .whereType<Map>()
+          .map((s) => BannerSlide.fromJson(Map<String, dynamic>.from(s)))
+          .where((slide) => slide.url.isNotEmpty)
           .toList();
     }
     // Fallback: if no slides, wrap image_url
     if (slides.isEmpty && json['image_url'] != null) {
-      slides = [BannerSlide(url: json['image_url'] as String, type: 'image')];
+      slides = [
+        BannerSlide(url: json['image_url'].toString(), type: 'image'),
+      ];
     }
 
     return BannerAd(
-      id: json['id'] as int,
-      imageUrl: json['image_url'] as String? ?? '',
-      linkUrl: json['link_url'] as String?,
-      title: json['title'] as String? ?? '',
+      id: _parseInt(json['id']),
+      imageUrl: json['image_url']?.toString() ?? '',
+      linkUrl: json['link_url']?.toString(),
+      title: json['title']?.toString() ?? '',
       slides: slides,
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }
