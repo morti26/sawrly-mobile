@@ -1,13 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'features/navigation/main_navigation.dart';
 import 'core/design/design_tokens.dart';
 import 'core/theme/app_theme_service.dart';
+import 'core/theme/app_theme_background.dart';
 
 class FotgrafApp extends StatelessWidget {
-  const FotgrafApp({super.key});
+  final int initialPreviewTab;
+
+  const FotgrafApp({super.key, this.initialPreviewTab = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +19,9 @@ class FotgrafApp extends StatelessWidget {
       builder: (context, themeService, child) {
         final c = themeService.colors;
         final e = themeService.effects;
-        final chipRadius = BorderRadius.circular(e.chipRadius >= 999 ? 9999 : e.chipRadius);
+        final premium = PremiumDesignTokens.from(themeService.config);
+        final chipRadius =
+            BorderRadius.circular(e.chipRadius >= 999 ? 9999 : e.chipRadius);
         final cardRadius = BorderRadius.circular(e.cardRadius);
         final buttonRadius = BorderRadius.circular(e.buttonRadius);
         final cardShadowOpacity = e.cardShadowOpacity.clamp(0.0, 1.0);
@@ -23,10 +29,10 @@ class FotgrafApp extends StatelessWidget {
         final colorScheme = ColorScheme.fromSeed(
           seedColor: c.primary,
           brightness: Brightness.dark,
-          surface: c.surface,
-          primary: c.primary,
-          onPrimary: c.textPrimary,
-          onSurface: c.textPrimary,
+          surface: premium.surfacePrimary,
+          primary: premium.accentPrimary,
+          onPrimary: premium.textPrimary,
+          onSurface: premium.textPrimary,
         );
 
         final smallLabel = AppTextStyles.label.copyWith(
@@ -51,49 +57,54 @@ class FotgrafApp extends StatelessWidget {
           darkTheme: ThemeData(
             fontFamily: AppTextStyles.fontFamily,
             colorScheme: colorScheme,
-            scaffoldBackgroundColor: c.background,
+            // The shared AppThemeBackground renders behind every route.
+            // Scaffolds stay transparent so they cannot hide the selected
+            // Theme Composer gradient on non-home screens.
+            scaffoldBackgroundColor: Colors.transparent,
             appBarTheme: AppBarTheme(
-              backgroundColor: c.background.withValues(alpha: e.surfaceOpacity.clamp(0.5, 1.0)),
-              foregroundColor: c.textPrimary,
+              backgroundColor: premium.glassSurface
+                  .withValues(alpha: e.surfaceOpacity.clamp(0.5, 1.0)),
+              foregroundColor: premium.textPrimary,
               elevation: 0,
               scrolledUnderElevation: 0,
               shadowColor: Colors.black.withValues(alpha: cardShadowOpacity),
               surfaceTintColor: Colors.transparent,
             ),
             cardTheme: CardThemeData(
-              color: c.surface.withValues(alpha: e.surfaceOpacity),
+              color: premium.surfaceSecondary.withValues(alpha: .94),
               elevation: 0,
               shadowColor: Colors.black.withValues(alpha: cardShadowOpacity),
               surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: cardRadius,
-                side: BorderSide(color: c.borderLight.withValues(alpha: e.borderOpacity)),
+                side: BorderSide(color: premium.borderSubtle),
               ),
             ),
             chipTheme: ChipThemeData(
-              backgroundColor: c.surfaceLight.withValues(alpha: e.surfaceOpacity),
-              selectedColor: c.primary.withValues(alpha: 0.18),
-              labelStyle: AppTextStyles.bodySmall.copyWith(color: c.textPrimary),
+              backgroundColor: premium.surfaceSecondary,
+              selectedColor: premium.accentPrimary.withValues(alpha: 0.18),
+              labelStyle:
+                  AppTextStyles.bodySmall.copyWith(color: c.textPrimary),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               shape: RoundedRectangleBorder(borderRadius: chipRadius),
               side: BorderSide(
-                color: c.borderLight.withValues(alpha: e.borderOpacity.clamp(0, 0.8)),
+                color: premium.borderSubtle,
               ),
             ),
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
-              fillColor: c.surface.withValues(alpha: e.surfaceOpacity),
+              fillColor: premium.surfaceSecondary.withValues(alpha: .92),
               border: OutlineInputBorder(
                 borderRadius: cardRadius,
-                borderSide: BorderSide(color: c.border.withValues(alpha: e.borderOpacity)),
+                borderSide: BorderSide(color: premium.borderSubtle),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: cardRadius,
-                borderSide: BorderSide(color: c.border.withValues(alpha: e.borderOpacity)),
+                borderSide: BorderSide(color: premium.borderSubtle),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: cardRadius,
-                borderSide: BorderSide(color: c.primary, width: 2),
+                borderSide: BorderSide(color: premium.accentPrimary, width: 2),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: cardRadius,
@@ -104,10 +115,10 @@ class FotgrafApp extends StatelessWidget {
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
-                backgroundColor: c.primary,
-                foregroundColor: c.textPrimary,
+                backgroundColor: premium.accentPrimary,
+                foregroundColor: premium.textPrimary,
                 elevation: 0,
-                shadowColor: c.primary.withValues(alpha: 0.45),
+                shadowColor: premium.accentPrimary.withValues(alpha: 0.28),
                 shape: RoundedRectangleBorder(borderRadius: buttonRadius),
                 textStyle: AppTextStyles.button,
                 padding: const EdgeInsets.symmetric(
@@ -118,29 +129,31 @@ class FotgrafApp extends StatelessWidget {
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: c.primary,
+                foregroundColor: premium.accentPrimary,
                 shape: RoundedRectangleBorder(borderRadius: buttonRadius),
                 textStyle: AppTextStyles.button,
               ),
             ),
             outlinedButtonTheme: OutlinedButtonThemeData(
               style: OutlinedButton.styleFrom(
-                foregroundColor: c.primary,
-                side: BorderSide(color: c.border.withValues(alpha: e.borderOpacity)),
+                foregroundColor: premium.accentPrimary,
+                side: BorderSide(color: premium.borderSubtle),
                 shape: RoundedRectangleBorder(borderRadius: buttonRadius),
                 textStyle: AppTextStyles.button,
               ),
             ),
             navigationBarTheme: NavigationBarThemeData(
-              backgroundColor: c.surface.withValues(alpha: e.surfaceOpacity),
+              backgroundColor: premium.glassSurface.withValues(alpha: .96),
               elevation: 0,
-              shadowColor: Colors.black.withValues(alpha: e.navShadowOpacity.clamp(0, 1)),
+              shadowColor: Colors.black
+                  .withValues(alpha: e.navShadowOpacity.clamp(0, 1)),
               surfaceTintColor: Colors.transparent,
-              indicatorColor: c.primary.withValues(alpha: 0.22),
+              indicatorColor: premium.accentPrimary.withValues(alpha: 0.22),
               height: 68,
-              labelTextStyle: WidgetStatePropertyAll(smallLabel.copyWith(color: c.textSecondary)),
+              labelTextStyle: WidgetStatePropertyAll(
+                  smallLabel.copyWith(color: premium.textSecondary)),
               iconTheme: WidgetStatePropertyAll(
-                IconThemeData(color: c.textSecondary, size: 24),
+                IconThemeData(color: premium.textSecondary, size: 24),
               ),
             ),
             badgeTheme: BadgeThemeData(
@@ -154,15 +167,15 @@ class FotgrafApp extends StatelessWidget {
               ),
             ),
             snackBarTheme: SnackBarThemeData(
-              backgroundColor: c.surfaceLight,
+              backgroundColor: premium.surfaceElevated,
               contentTextStyle: AppTextStyles.bodySmall.copyWith(
                 color: c.textPrimary,
               ),
               shape: RoundedRectangleBorder(borderRadius: cardRadius),
               behavior: SnackBarBehavior.floating,
               elevation: 4,
-              actionTextColor: c.primary,
-              closeIconColor: c.textPrimary,
+              actionTextColor: premium.accentPrimary,
+              closeIconColor: premium.textPrimary,
             ),
             pageTransitionsTheme: const PageTransitionsTheme(
               builders: {
@@ -176,15 +189,39 @@ class FotgrafApp extends StatelessWidget {
             useMaterial3: true,
           ),
           builder: (context, child) {
-            return Directionality(
-              textDirection: TextDirection.ltr,
-              child: child!,
+            final isAndroid =
+                Theme.of(context).platform == TargetPlatform.android;
+            final deepTone = HSLColor.fromColor(premium.backgroundDeep);
+            final systemNavigationSurface = isAndroid
+                ? deepTone
+                    .withLightness((deepTone.lightness * 1.4).clamp(0.0, 1.0))
+                    .toColor()
+                : premium.backgroundDeep;
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.light,
+                statusBarBrightness: Brightness.dark,
+                // Home renders this exact final gradient tone at the bottom.
+                // Matching it removes the visible seam around Samsung's
+                // persistent three-button navigation area.
+                systemNavigationBarColor: systemNavigationSurface,
+                systemNavigationBarDividerColor: Colors.transparent,
+                systemNavigationBarIconBrightness: Brightness.light,
+                systemNavigationBarContrastEnforced: false,
+              ),
+              child: AppThemeBackground(
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: child!,
+                ),
+              ),
             );
           },
           home: child,
         );
       },
-      child: const MainNavigation(),
+      child: MainNavigation(initialIndex: initialPreviewTab),
     );
   }
 }

@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/auth/auth_service.dart';
+import '../../../core/design/design_tokens.dart';
 import '../../../core/services/cart_service.dart';
 import '../../../core/services/media_service.dart';
+import '../../../core/theme/app_theme_service.dart';
 import '../offer_details_screen.dart';
 
 class OfferCard extends StatefulWidget {
@@ -74,30 +76,30 @@ class _OfferCardState extends State<OfferCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isInCart =
-        context.select<CartService, bool>((cart) => cart.contains(widget.offer.id));
+    final theme = context.watch<AppThemeService>();
+    final premium = PremiumDesignTokens.from(theme.config);
+    final isInCart = context
+        .select<CartService, bool>((cart) => cart.contains(widget.offer.id));
     final currentUser = context.watch<AuthService>().currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
     final resolvedCardWidth =
         widget.cardWidth ?? (screenWidth * 0.40).clamp(130.0, 170.0).toDouble();
-    final resolvedImageHeight =
-        widget.imageHeight ??
-            (resolvedCardWidth * 0.52).clamp(68.0, 90.0).toDouble();
+    final resolvedImageHeight = widget.imageHeight ??
+        (resolvedCardWidth * 0.52).clamp(68.0, 90.0).toDouble();
     final description = widget.offer.displayDescription;
     final mediaUrl = _normalizeUrl(widget.offer.primaryMediaUrl);
     if (mediaUrl.isEmpty) {
       debugPrint(
           "DEBUG OfferCard [${widget.offer.id}/${widget.offer.title}] → primaryMediaUrl EMPTY! widget.offer.imageUrl='${widget.offer.imageUrl}', mediaItems.len=${widget.offer.mediaItems.length}");
     }
-    final showVideoStats =
-        widget.showEngagementStats && _isVideoUrl(mediaUrl);
+    final showVideoStats = widget.showEngagementStats && _isVideoUrl(mediaUrl);
     final canSave = currentUser != null &&
         currentUser.id.trim() != widget.offer.creatorId.trim();
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(premium.radiusMedium),
         onTap: () {
           Navigator.push(
             context,
@@ -108,191 +110,211 @@ class _OfferCardState extends State<OfferCard> {
         child: Ink(
           width: resolvedCardWidth,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x26000000),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
-            border: isInCart ? Border.all(color: Colors.green, width: 2) : null,
+            gradient: premium.cardGradient,
+            borderRadius: BorderRadius.circular(premium.radiusMedium),
+            boxShadow: premium.cardShadow,
+            border: Border.all(
+              color: isInCart ? theme.colors.success : premium.borderSubtle,
+              width: isInCart ? 2 : 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            // Image
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(8)),
-                  child: _OfferCardMedia(
-                    mediaUrl: mediaUrl,
-                    height: resolvedImageHeight,
-                    width: resolvedCardWidth,
-                  ),
-                ),
-                if (widget.showDiscountBadge && widget.offer.hasDiscount)
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '-${widget.offer.discountPercent}%',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+              // Image
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(premium.radiusMedium - 1),
+                    ),
+                    child: _OfferCardMedia(
+                      mediaUrl: mediaUrl,
+                      height: resolvedImageHeight,
+                      width: resolvedCardWidth,
                     ),
                   ),
-                if (canSave)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Material(
-                      color: const Color(0xAA10131A),
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: _isSaving ? null : _toggleSaved,
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: _isSaving
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  _isSaved
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  size: 18,
-                                  color: _isSaved
-                                      ? Colors.redAccent
-                                      : Colors.white,
-                                ),
+                  if (widget.showDiscountBadge && widget.offer.hasDiscount)
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.error,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '-${widget.offer.discountPercent}%',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onError,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                if (showVideoStats)
-                  Positioned(
-                    top: 6,
-                    right: canSave ? 40 : 6,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildMetricBadge(
-                          icon: Icons.favorite_rounded,
-                          value: widget.offer.likeCount,
-                          iconColor: const Color(0xFFFF5C8A),
-                        ),
-                        const SizedBox(width: 4),
-                        _buildMetricBadge(
-                          icon: Icons.shopping_bag_rounded,
-                          value: widget.offer.orderCount,
-                          iconColor: const Color(0xFFFFA726),
-                        ),
-                      ],
+                  if (showVideoStats)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildMetricBadge(
+                            icon: Icons.favorite_rounded,
+                            value: widget.offer.likeCount,
+                            iconColor: const Color(0xFFFF5C8A),
+                          ),
+                          const SizedBox(width: 4),
+                          _buildMetricBadge(
+                            icon: Icons.shopping_bag_rounded,
+                            value: widget.offer.orderCount,
+                            iconColor: const Color(0xFFFFA726),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
 
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(7, 5, 7, 1),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Title
-                        Text(
-                          widget.offer.title,
-                          textDirection: TextDirection.rtl,
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 11),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (widget.offer.creatorName.trim().isNotEmpty) ...[
-                          const SizedBox(height: 3),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(11, 10, 11, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title
                           Text(
-                            widget.offer.creatorName,
+                            widget.offer.title,
                             textDirection: TextDirection.rtl,
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              fontSize: 9.5,
-                              color: Colors.white60,
-                              fontWeight: FontWeight.w600,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: premium.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                        if (description.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            description,
-                            textDirection: TextDirection.rtl,
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              fontSize: 9.5,
-                              height: 1.25,
-                              color: Colors.white70,
+                          if (widget.offer.creatorName.trim().isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              widget.offer.creatorName,
+                              textDirection: TextDirection.rtl,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                color: premium.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          ],
+                          if (description.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              description,
+                              textDirection: TextDirection.rtl,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                height: 1.35,
+                                color: premium.textSecondary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                    // Price (pushed to the bottom of the card)
-                    Row(
-                      children: [
-                        Text(
-                          '${widget.offer.price.toStringAsFixed(0)} IQD',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: Color(0xFFFFA726)),
-                        ),
-                        if (widget.offer.hasDiscount &&
-                            widget.offer.originalPrice != null) ...[
-                          const SizedBox(width: 4),
-                          Text(
-                            widget.offer.originalPrice!.toStringAsFixed(0),
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: Colors.grey,
-                              decoration: TextDecoration.lineThrough,
+                      ),
+                      // Price (pushed to the bottom of the card)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    '${widget.offer.price.toStringAsFixed(0)} IQD',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                      color: premium.priceColor,
+                                    ),
+                                  ),
+                                ),
+                                if (widget.offer.hasDiscount &&
+                                    widget.offer.originalPrice != null) ...[
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    widget.offer.originalPrice!
+                                        .toStringAsFixed(0),
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color: premium.textMuted,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
+                          if (canSave)
+                            Material(
+                              color: premium.surfaceElevated
+                                  .withValues(alpha: .55),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: premium.borderHighlight,
+                                ),
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: _isSaving ? null : _toggleSaved,
+                                child: SizedBox(
+                                  width: 34,
+                                  height: 34,
+                                  child: Center(
+                                    child: _isSaving
+                                        ? SizedBox(
+                                            width: 15,
+                                            height: 15,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: premium.textPrimary,
+                                            ),
+                                          )
+                                        : Icon(
+                                            _isSaved
+                                                ? Icons.favorite
+                                                : Icons.favorite_border,
+                                            size: 20,
+                                            color: _isSaved
+                                                ? premium.accentPrimary
+                                                : premium.textSecondary,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
             ],
           ),
         ),
@@ -383,7 +405,8 @@ class _OfferCardMediaState extends State<_OfferCardMedia> {
   Future<void> _initVideo() async {
     try {
       final uri = Uri.parse(widget.mediaUrl);
-      _videoController = VideoPlayerController.networkUrl(uri)..setLooping(true);
+      _videoController = VideoPlayerController.networkUrl(uri)
+        ..setLooping(true);
       _videoInitFuture = _videoController!.initialize().then((_) {
         if (!mounted) return;
         setState(() => _videoReady = true);
@@ -477,7 +500,8 @@ class _OfferCardMediaState extends State<_OfferCardMedia> {
                 color: Color(0xCCFFFFFF),
                 size: 34,
                 shadows: [
-                  BoxShadow(color: Colors.black38, blurRadius: 6, spreadRadius: 1),
+                  BoxShadow(
+                      color: Colors.black38, blurRadius: 6, spreadRadius: 1),
                 ],
               ),
             ),

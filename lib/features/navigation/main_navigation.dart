@@ -1,15 +1,19 @@
 import 'dart:ui';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_theme_service.dart';
+
+import '../../core/design/design_tokens.dart';
 import '../../core/theme/app_theme_config.dart';
-import '../home/home_screen.dart';
-import '../search/global_search_screen.dart';
-import '../categories/categories_screen.dart';
-import '../profile/profile_screen.dart';
+import '../../core/theme/app_theme_service.dart';
 import '../auth/protected_screen.dart';
+import '../categories/categories_screen.dart';
+import '../home/home_screen.dart';
 import '../orders/orders_screen.dart';
+import '../profile/profile_screen.dart';
+import '../search/global_search_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   final int initialIndex;
@@ -23,17 +27,18 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation>
     with WidgetsBindingObserver {
   int _currentIndex = 0;
+  int? _pressedIndex;
 
   final List<Widget> _screens = [
     const HomeScreen(),
     const GlobalSearchScreen(),
     const CategoriesScreen(),
     const ProtectedScreen(
-      title: 'حجوزاتي',
+      title: '\u062d\u062c\u0648\u0632\u0627\u062a\u064a',
       child: OrdersScreen(),
     ),
     const ProtectedScreen(
-      title: 'البروفايل',
+      title: '\u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644',
       child: ProfileScreen(),
     ),
   ];
@@ -46,45 +51,80 @@ class _MainNavigationState extends State<MainNavigation>
     PhosphorIconsRegular.user,
   ];
 
-  static const int _fabIndex = 2;
+  final List<IconData> _webIcons = [
+    Icons.home_outlined,
+    Icons.search_rounded,
+    Icons.grid_view_rounded,
+    Icons.shopping_bag_outlined,
+    Icons.person_outline_rounded,
+  ];
 
-  String? _navIconUrlForIndex(RemoteNavIcons navIcons, int index, {required bool active}) {
+  final List<String> _labels = const [
+    '\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629',
+    '\u0628\u062d\u062b',
+    '\u0627\u0644\u0623\u0642\u0633\u0627\u0645',
+    '\u062d\u062c\u0648\u0632\u0627\u062a\u064a',
+    '\u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644',
+  ];
+
+  IconData _fallbackIcon(int index) =>
+      kIsWeb ? _webIcons[index] : _icons[index];
+
+  String? _navIconUrlForIndex(RemoteNavIcons navIcons, int index,
+      {required bool active}) {
     switch (index) {
       case 0:
         return active ? navIcons.homeActive ?? navIcons.home : navIcons.home;
       case 1:
-        return active ? navIcons.searchActive ?? navIcons.search : navIcons.search;
+        return active
+            ? navIcons.searchActive ?? navIcons.search
+            : navIcons.search;
       case 2:
         return active
             ? navIcons.categoriesActive ?? navIcons.categories
             : navIcons.categories;
       case 3:
-        return active ? navIcons.ordersActive ?? navIcons.orders : navIcons.orders;
+        return active
+            ? navIcons.ordersActive ?? navIcons.orders
+            : navIcons.orders;
       case 4:
-        return active ? navIcons.profileActive ?? navIcons.profile : navIcons.profile;
+        return active
+            ? navIcons.profileActive ?? navIcons.profile
+            : navIcons.profile;
     }
     return null;
   }
 
-  String? _navIconIdForIndex(RemoteNavIcons navIcons, int index, {required bool active}) {
+  String? _navIconIdForIndex(RemoteNavIcons navIcons, int index,
+      {required bool active}) {
     switch (index) {
       case 0:
-        return active ? navIcons.homeActiveId ?? navIcons.homeId : navIcons.homeId;
+        return active
+            ? navIcons.homeActiveId ?? navIcons.homeId
+            : navIcons.homeId;
       case 1:
-        return active ? navIcons.searchActiveId ?? navIcons.searchId : navIcons.searchId;
+        return active
+            ? navIcons.searchActiveId ?? navIcons.searchId
+            : navIcons.searchId;
       case 2:
         return active
             ? navIcons.categoriesActiveId ?? navIcons.categoriesId
             : navIcons.categoriesId;
       case 3:
-        return active ? navIcons.ordersActiveId ?? navIcons.ordersId : navIcons.ordersId;
+        return active
+            ? navIcons.ordersActiveId ?? navIcons.ordersId
+            : navIcons.ordersId;
       case 4:
-        return active ? navIcons.profileActiveId ?? navIcons.profileId : navIcons.profileId;
+        return active
+            ? navIcons.profileActiveId ?? navIcons.profileId
+            : navIcons.profileId;
     }
     return null;
   }
 
-  IconData? _resolveNavIcon(RemoteNavIcons navIcons, int index, {required bool active}) {
+  IconData? _resolveNavIcon(RemoteNavIcons navIcons, int index,
+      {required bool active}) {
+    if (kIsWeb) return null;
     final rawId = _navIconIdForIndex(navIcons, index, active: active);
     if (rawId == null) return null;
     final parsed = parsePhosphorIconId(rawId);
@@ -132,312 +172,268 @@ class _MainNavigationState extends State<MainNavigation>
   Widget build(BuildContext context) {
     return Consumer<AppThemeService>(
       builder: (context, themeService, child) {
+        final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
         return Scaffold(
-          extendBody: true,
-          body: IndexedStack(
-            index: _currentIndex,
-            children: _screens,
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              IndexedStack(
+                index: _currentIndex,
+                children: _screens,
+              ),
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: bottomInset + 5,
+                child: _buildVersionNineNavBar(themeService),
+              ),
+            ],
           ),
-          bottomNavigationBar: _buildFloatingNavBar(themeService),
         );
       },
     );
   }
 
-  Widget _buildFloatingNavBar(AppThemeService theme) {
-    final c = theme.colors;
-    final e = theme.effects;
-    final navRadius = BorderRadius.circular(14);
-    final activeOpacity = e.activeGlowOpacity.clamp(0.0, 1.0);
-    final navShadow = e.navShadowOpacity.clamp(0.0, 1.0);
-
-    final activeGlow = [
-      BoxShadow(
-        color: c.primary.withValues(alpha: activeOpacity * 0.7),
-        blurRadius: 18,
-        spreadRadius: 1,
-        offset: const Offset(0, 6),
-      ),
-      BoxShadow(
-        color: c.primaryLight.withValues(alpha: activeOpacity * 0.4),
-        blurRadius: 10,
-        offset: const Offset(0, 2),
-      ),
-    ];
-
-    final navOuterShadow = [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: navShadow),
-        blurRadius: 26,
-        offset: const Offset(0, -8),
-      ),
-      BoxShadow(
-        color: c.primary.withValues(alpha: navShadow * 0.4),
-        blurRadius: 14,
-        offset: const Offset(0, -2),
-      ),
-    ];
-
-    return SafeArea(
-      bottom: true,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 22, right: 22, bottom: 16),
-        child: RepaintBoundary(
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  borderRadius: navRadius,
-                  boxShadow: navOuterShadow,
-                ),
-                child: ClipRRect(
-                  borderRadius: navRadius,
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: e.glassBlur,
-                      sigmaY: e.glassBlur,
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: c.menuBackground.withValues(alpha: e.surfaceOpacity),
-                        borderRadius: navRadius,
-                        border: Border.all(
-                          color: c.primaryLight.withValues(alpha: e.borderOpacity.clamp(0, 0.8)),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: List.generate(
-                          _icons.length,
-                          (i) => i == _fabIndex
-                              ? const SizedBox(width: 56, height: 64)
-                              : _buildNavItem(theme, i, activeGlow),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: -22,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: _buildCenterFab(theme),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCenterFab(AppThemeService theme) {
-    final c = theme.colors;
-    final isPressed = _currentIndex == _fabIndex;
-    final pressedScale = isPressed ? 0.94 : 1.0;
-    return GestureDetector(
-      onTap: () {
-        setState(() => _currentIndex = _fabIndex);
-      },
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        scale: pressedScale,
+  /// The original version-9 menu. Its geometry and navigation stay intact;
+  /// only its material treatment follows the active premium theme.
+  Widget _buildVersionNineNavBar(AppThemeService theme) {
+    final premium = PremiumDesignTokens.from(theme.config);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(premium.radiusFloating),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
         child: Container(
-          width: 58,
-          height: 58,
+          height: 54,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
               colors: [
-                c.primaryLight,
-                c.primary,
-                c.primaryDark,
+                Color.alphaBlend(
+                  Colors.white.withValues(alpha: .18),
+                  premium.glassSurface,
+                ).withValues(alpha: .38),
+                Color.alphaBlend(
+                  Colors.white.withValues(alpha: .08),
+                  premium.backgroundDeep,
+                ).withValues(alpha: .24),
               ],
             ),
+            borderRadius: BorderRadius.circular(premium.radiusFloating),
             border: Border.all(
-              color: c.primaryLight.withValues(alpha: 0.7),
-              width: 1.4,
+              color: Colors.white.withValues(alpha: .13),
+              width: .8,
             ),
             boxShadow: [
               BoxShadow(
-                color: c.primary.withValues(alpha: 0.55),
-                blurRadius: 16,
-                spreadRadius: 2,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: c.primaryLight.withValues(alpha: 0.3),
-                blurRadius: 22,
-                spreadRadius: 1,
+                color: premium.shadowColor.withValues(alpha: .12),
+                blurRadius: 14,
+                spreadRadius: -5,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Icon(
-            isPressed ? PhosphorIconsFill.squaresFour : PhosphorIconsBold.plus,
-            color: Colors.white,
-            size: isPressed ? 24 : 28,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(
+              _icons.length,
+              (index) => _buildVersionNineItem(theme, index),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(AppThemeService theme, int index, List<BoxShadow> activeGlow) {
+  Widget _buildVersionNineItem(AppThemeService theme, int index) {
+    final premium = PremiumDesignTokens.from(theme.config);
     final isActive = _currentIndex == index;
-    return SizedBox(
-      width: 56,
-      height: 64,
-      child: InkWell(
-        onTap: () {
-          if (_currentIndex == index) {
-            return;
-          }
-          setState(() => _currentIndex = index);
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Center(
-          child: isActive
-              ? _buildActiveIcon(theme, index, activeGlow)
-              : _buildInactiveIcon(theme, index),
-        ),
-      ),
-    );
-  }
+    final label = _labels[index];
 
-  Widget _buildActiveIcon(AppThemeService theme, int index, List<BoxShadow> activeGlow) {
-    final c = theme.colors;
-    final e = theme.effects;
-    final navIcons = theme.navIcons;
-    final customUrl = _navIconUrlForIndex(navIcons, index, active: true);
-    final resolvedUrl = customUrl != null ? _normalizePublicUrl(customUrl) : null;
-    final resolvedIcon = _resolveNavIcon(navIcons, index, active: true);
-    final activeRadius = BorderRadius.circular(13);
-    const iconSize = 21.0;
-
-    Widget iconChild;
-    if (resolvedIcon != null) {
-      iconChild = Icon(
-        resolvedIcon,
-        color: c.primaryLight,
-        size: iconSize,
-      );
-    } else if (resolvedUrl != null) {
-      iconChild = Padding(
-        padding: const EdgeInsets.all(7),
-        child: Image.network(
-          resolvedUrl,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-          errorBuilder: (_, __, ___) => Icon(
-            _icons[index],
-            color: c.primaryLight,
-            size: iconSize,
-          ),
-          loadingBuilder: (_, child, progress) {
-            if (progress == null) return child;
-            return Center(
-              child: SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: c.primaryLight,
-                  value: progress.expectedTotalBytes == null
-                      ? null
-                      : progress.cumulativeBytesLoaded /
-                          (progress.expectedTotalBytes ?? 1),
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: isActive,
+        label: label,
+        child: Tooltip(
+          message: label,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (_) => setState(() => _pressedIndex = index),
+            onTapCancel: () => setState(() => _pressedIndex = null),
+            onTapUp: (_) {
+              setState(() {
+                _currentIndex = index;
+                _pressedIndex = null;
+              });
+            },
+            child: AnimatedScale(
+              scale: _pressedIndex == index ? .90 : 1,
+              duration: const Duration(milliseconds: 110),
+              curve: Curves.easeOutCubic,
+              child: AnimatedSlide(
+                offset: isActive ? const Offset(0, -.035) : Offset.zero,
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutBack,
+                child: SizedBox(
+                  height: 54,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 340),
+                        switchInCurve: Curves.easeOutBack,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: .72, end: 1)
+                                .animate(animation),
+                            child: child,
+                          ),
+                        ),
+                        child: isActive
+                            ? KeyedSubtree(
+                                key: ValueKey('active-$index'),
+                                child:
+                                    _buildVersionNineActiveIcon(theme, index),
+                              )
+                            : KeyedSubtree(
+                                key: ValueKey('inactive-$index'),
+                                child:
+                                    _buildVersionNineInactiveIcon(theme, index),
+                              ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          height: 1,
+                          fontWeight:
+                              isActive ? FontWeight.bold : FontWeight.w600,
+                          color: isActive
+                              ? premium.accentPrimary
+                              : premium.textPrimary.withValues(alpha: .68),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            );
-          },
+            ),
+          ),
         ),
-      );
-    } else {
-      iconChild = Icon(
-        _icons[index],
-        color: c.primaryLight,
-        size: iconSize,
-      );
-    }
-
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        gradient: e.primaryGradient(c.primary.withValues(alpha: 0.35), c.primaryDark.withValues(alpha: 0.18)),
-        borderRadius: activeRadius,
-        border: Border.all(
-          color: c.primaryLight.withValues(alpha: 0.72),
-          width: 1.3,
-        ),
-        boxShadow: activeGlow,
       ),
-      child: Center(child: iconChild),
     );
   }
 
-  Widget _buildInactiveIcon(AppThemeService theme, int index) {
-    final c = theme.colors;
+  Widget _buildVersionNineActiveIcon(AppThemeService theme, int index) {
+    final premium = PremiumDesignTokens.from(theme.config);
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: .07),
+            premium.accentPrimary.withValues(alpha: .24),
+            premium.accentSoft.withValues(alpha: .12),
+            premium.surfacePrimary.withValues(alpha: .42),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: premium.accentPrimary.withValues(alpha: .42),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: premium.accentPrimary.withValues(alpha: .14),
+            blurRadius: 13,
+            spreadRadius: -1,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: premium.accentSoft.withValues(alpha: .08),
+            blurRadius: 22,
+            spreadRadius: 1,
+            offset: const Offset(-2, -2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                left: 6,
+                right: 10,
+                top: 3,
+                child: Container(
+                  height: 7,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(99),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: .24),
+                        Colors.white.withValues(alpha: .02),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              _buildMenuGlyph(theme, index, active: true),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVersionNineInactiveIcon(AppThemeService theme, int index) {
+    return SizedBox(
+      width: 25,
+      height: 25,
+      child: Center(child: _buildMenuGlyph(theme, index, active: false)),
+    );
+  }
+
+  Widget _buildMenuGlyph(AppThemeService theme, int index,
+      {required bool active}) {
+    final premium = PremiumDesignTokens.from(theme.config);
+    final color = active
+        ? premium.accentPrimary
+        : premium.textPrimary.withValues(alpha: .68);
+    final size = active ? 23.0 : 22.0;
     final navIcons = theme.navIcons;
-    final customUrl = _navIconUrlForIndex(navIcons, index, active: false);
-    final resolvedUrl = customUrl != null ? _normalizePublicUrl(customUrl) : null;
-    final resolvedIcon = _resolveNavIcon(navIcons, index, active: false);
-    final iconColor = c.textPrimary.withValues(alpha: 0.55);
-    const iconSize = 22.0;
+    final customUrl = _navIconUrlForIndex(navIcons, index, active: active);
+    final resolvedUrl =
+        (!kIsWeb && customUrl != null) ? _normalizePublicUrl(customUrl) : null;
+    final resolvedIcon = _resolveNavIcon(navIcons, index, active: active);
 
     if (resolvedIcon != null) {
-      return Icon(
-        resolvedIcon,
-        color: iconColor,
-        size: iconSize,
-      );
+      return Icon(resolvedIcon, color: color, size: size);
     }
     if (resolvedUrl != null) {
-      return SizedBox(
-        width: 26,
-        height: 26,
-        child: Image.network(
-          resolvedUrl,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-          errorBuilder: (_, __, ___) => Icon(
-            _icons[index],
-            color: iconColor,
-            size: iconSize,
-          ),
-          loadingBuilder: (_, child, progress) {
-            if (progress == null) return child;
-            return Center(
-              child: SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: iconColor,
-                  value: progress.expectedTotalBytes == null
-                      ? null
-                      : progress.cumulativeBytesLoaded /
-                          (progress.expectedTotalBytes ?? 1),
-                ),
-              ),
-            );
-          },
-        ),
+      return Image.network(
+        resolvedUrl,
+        width: 22,
+        height: 22,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) =>
+            Icon(_fallbackIcon(index), color: color, size: size),
       );
     }
-    return Icon(
-      _icons[index],
-      color: iconColor,
-      size: iconSize,
-    );
+    return Icon(_fallbackIcon(index), color: color, size: size);
   }
 }

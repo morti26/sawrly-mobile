@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_theme_service.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_service.dart';
@@ -63,7 +64,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Color _availabilityColor(String? status) {
-    if (status == 'booked') return const Color(0xFFFF4DA6);
+    if (status == 'booked') return AppColors.accentPink;
     if (status == 'busy') return Colors.orangeAccent;
     return Colors.greenAccent;
   }
@@ -199,22 +200,30 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF2A2039)
-                      : const Color(0xFF161B27),
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.18)
+                      : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFFFF4DA6)
+                        ? Theme.of(context).colorScheme.primary
                         : hasStatus
                             ? color.withValues(alpha: 0.45)
-                            : Colors.white10,
+                            : Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withValues(alpha: 0.18),
                     width: isSelected ? 1.4 : 1,
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color:
-                                const Color(0xFFFF4DA6).withValues(alpha: 0.24),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.24),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
@@ -234,11 +243,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ? BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFFF4DA6), Color(0xFF7A3EED)],
+                                  colors: [
+                                    AppColors.accentPink,
+                                    AppColors.primaryDark,
+                                  ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFFF4DA6)
+                                    color: AppColors.accentPink
                                         .withValues(alpha: 0.24),
                                     blurRadius: 14,
                                     offset: const Offset(0, 6),
@@ -283,6 +295,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildCustomerSelectedDayPanel({
+    required BuildContext context,
     required Offer item,
     required DateTime selectedDay,
     required DateTime? selectedDateTime,
@@ -300,9 +313,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF141A26),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(
+            color:
+                Theme.of(context).colorScheme.outline.withValues(alpha: 0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,7 +376,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1B2030),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color:
@@ -376,8 +391,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               'busy'
                           ? Icons.block_rounded
                           : Icons.event_busy_rounded,
-                      color:
-                          _availabilityColor(event['calendar_status']?.toString()),
+                      color: _availabilityColor(
+                          event['calendar_status']?.toString()),
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -409,7 +424,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               child: ElevatedButton.icon(
                 onPressed: onPickTime,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF4DA6),
+                  backgroundColor: AppColors.accentPink,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(
@@ -485,7 +500,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF141824),
+      backgroundColor: context.watch<AppThemeService>().colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -546,17 +561,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               decoration: BoxDecoration(
                                 color: selected == portion
                                     ? const Color(0xFF2A2039)
-                                    : const Color(0xFF1B2030),
+                                    : AppColors.surface,
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
                                   color: selected == portion
-                                      ? const Color(0xFFFF4DA6)
+                                      ? AppColors.accentPink
                                       : Colors.white12,
                                 ),
                                 boxShadow: selected == portion
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFFFF4DA6)
+                                          color: AppColors.accentPink
                                               .withValues(alpha: 0.24),
                                           blurRadius: 16,
                                           offset: const Offset(0, 8),
@@ -571,7 +586,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                         ? Icons.radio_button_checked
                                         : Icons.radio_button_off,
                                     color: selected == portion
-                                        ? const Color(0xFFFF4DA6)
+                                        ? AppColors.accentPink
                                         : Colors.white38,
                                   ),
                                   const SizedBox(width: 12),
@@ -604,7 +619,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   Text(
                                     '${_calculatePaymentAmountForItems(items, portion).toStringAsFixed(0)} IQD',
                                     style: const TextStyle(
-                                      color: Color(0xFFBC83FF),
+                                      color: AppColors.primaryLight,
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
@@ -641,7 +656,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 Navigator.of(sheetContext).pop(selected),
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor: const Color(0xFFFF4DA6),
+                              backgroundColor: AppColors.accentPink,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -701,7 +716,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final result = await showModalBottomSheet<Map<String, DateTime>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF141824),
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -797,10 +812,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                         final creatorEvents =
                                             availability[item.creatorId] ??
                                                 const [];
-                                        final initialSelectedDay = selected !=
-                                                null
-                                            ? _dayOnly(selected)
-                                            : today;
+                                        final initialSelectedDay =
+                                            selected != null
+                                                ? _dayOnly(selected)
+                                                : today;
                                         final selectedDay =
                                             selectedDayByOfferId.putIfAbsent(
                                           item.id,
@@ -831,11 +846,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                               const EdgeInsets.only(bottom: 12),
                                           padding: const EdgeInsets.all(14),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF1B2030),
+                                            color: AppColors.surface,
                                             borderRadius:
                                                 BorderRadius.circular(18),
                                             border: Border.all(
-                                              color: Colors.white12,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .outline
+                                                  .withValues(alpha: 0.18),
                                             ),
                                           ),
                                           child: Column(
@@ -868,7 +886,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                   borderRadius:
                                                       BorderRadius.circular(18),
                                                   border: Border.all(
-                                                    color: Colors.white12,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .outline
+                                                        .withValues(
+                                                            alpha: 0.18),
                                                   ),
                                                 ),
                                                 child: Column(
@@ -989,7 +1011,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                             style:
                                                                 const TextStyle(
                                                               color: Color(
-                                                                  0xFFBC83FF),
+                                                                  0xFFFF326F),
                                                               fontSize: 11,
                                                               fontWeight:
                                                                   FontWeight
@@ -1036,8 +1058,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                               day,
                                                               selectedDay,
                                                             ),
-                                                            isToday:
-                                                                _isSameDay(
+                                                            isToday: _isSameDay(
                                                               day,
                                                               today,
                                                             ),
@@ -1077,6 +1098,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                               ),
                                               const SizedBox(height: 12),
                                               _buildCustomerSelectedDayPanel(
+                                                context: sheetContext,
                                                 item: item,
                                                 selectedDay: selectedDay,
                                                 selectedDateTime: selected,
@@ -1099,7 +1121,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       margin: const EdgeInsets.only(bottom: 12),
                                       padding: const EdgeInsets.all(14),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF1B2030),
+                                        color: AppColors.surface,
                                         borderRadius: BorderRadius.circular(18),
                                         border:
                                             Border.all(color: Colors.white12),
@@ -1140,10 +1162,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 onPressed: () =>
                                     Navigator.of(sheetContext).pop(),
                                 style: OutlinedButton.styleFrom(
-                                  side:
-                                      const BorderSide(color: Colors.white24),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 14),
+                                  side: const BorderSide(color: Colors.white24),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
@@ -1167,10 +1188,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                           ),
                                         ),
                                 style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 14),
-                                  backgroundColor:
-                                      const Color(0xFFFF4DA6),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  backgroundColor: AppColors.accentPink,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -1178,8 +1198,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 ),
                                 child: const Text(
                                   'تأكيد الموعد ثم الدفع',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -1414,12 +1433,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
       return false;
     }
 
-    final withScheme = normalized.startsWith('http://') ||
-            normalized.startsWith('https://')
-        ? normalized
-        : 'https://$normalized';
+    final withScheme =
+        normalized.startsWith('http://') || normalized.startsWith('https://')
+            ? normalized
+            : 'https://$normalized';
 
-    final uri = Uri.tryParse(withScheme) ?? Uri.tryParse(Uri.encodeFull(withScheme));
+    final uri =
+        Uri.tryParse(withScheme) ?? Uri.tryParse(Uri.encodeFull(withScheme));
     if (uri == null) {
       return false;
     }
@@ -1537,7 +1557,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage ?? 'Unable to prepare online payment link'),
+          content:
+              Text(errorMessage ?? 'Unable to prepare online payment link'),
         ),
       );
       return null;
@@ -1905,14 +1926,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF232838)
-                        : Colors.white12,
+                    color: isSelected ? AppColors.surface : Colors.white12,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: isSelected
-                          ? const Color(0x66FF4DA6)
-                          : Colors.white24,
+                      color:
+                          isSelected ? const Color(0x66FF4DA6) : Colors.white24,
                     ),
                     boxShadow: isSelected
                         ? [
@@ -1928,9 +1946,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     child: Text(
                       _tabLabel(tab),
                       style: TextStyle(
-                        color: isSelected
-                            ? const Color(0xFFFF8AD4)
-                            : Colors.white70,
+                        color:
+                            isSelected ? AppColors.accentPink : Colors.white70,
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
                       ),
@@ -2063,7 +2080,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           Text(
                             '${item.price.toStringAsFixed(0)} IQD',
                             style: const TextStyle(
-                              color: Color(0xFFBC83FF),
+                              color: AppColors.primaryLight,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -2131,7 +2148,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFBC83FF),
+                        color: AppColors.primaryLight,
                       ),
                     ),
                   ],
@@ -2142,7 +2159,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF232838),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: const Color(0x66FF4DA6)),
                     boxShadow: [
@@ -2152,8 +2169,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         offset: Offset(0, 8),
                       ),
                       BoxShadow(
-                        color: const Color(0xFF7A3EED)
-                            .withValues(alpha: 0.18),
+                        color: AppColors.primaryDark.withValues(alpha: 0.18),
                         blurRadius: 24,
                         offset: const Offset(0, 10),
                       ),
@@ -2211,7 +2227,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           Text(
                             _paymentPortionLabel(_paymentPortion),
                             style: const TextStyle(
-                              color: Color(0xFFFF8AD4),
+                              color: AppColors.accentPink,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -2239,21 +2255,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         colors: [
-                          Color(0xFFFF4DA6),
-                          Color(0xFF7A3EED),
+                          AppColors.accentPink,
+                          AppColors.primaryDark,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              const Color(0xFFFF4DA6).withValues(alpha: 0.38),
+                          color: AppColors.accentPink.withValues(alpha: 0.38),
                           blurRadius: 22,
                           offset: const Offset(0, 12),
                         ),
                         BoxShadow(
-                          color:
-                              const Color(0xFF7A3EED).withValues(alpha: 0.20),
+                          color: AppColors.primaryDark.withValues(alpha: 0.20),
                           blurRadius: 30,
                           offset: const Offset(0, 14),
                         ),
@@ -2504,13 +2518,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final activeTab = availableTabs[safeIndex];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text(
           'حجوزاتي',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppColors.background,
+        backgroundColor: context.watch<AppThemeService>().colors.background,
         elevation: 0,
         centerTitle: true,
       ),

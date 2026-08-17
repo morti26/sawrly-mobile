@@ -11,6 +11,7 @@ import '../../core/design/design_tokens.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/cart_service.dart';
 import '../../core/services/media_service.dart';
+import '../../core/theme/app_theme_service.dart';
 import '../../core/widgets/report_dialog.dart';
 import '../navigation/main_navigation.dart';
 import '../profile/creator_profile_screen.dart';
@@ -72,7 +73,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     return showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF161921),
+      backgroundColor: context.read<AppThemeService>().colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -173,8 +174,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: days.map((day) {
-                        final isSelected =
-                            day.year == selectedDate.year &&
+                        final isSelected = day.year == selectedDate.year &&
                             day.month == selectedDate.month &&
                             day.day == selectedDate.day;
                         return Expanded(
@@ -193,8 +193,14 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? const Color(0xFF7C3AED)
-                                      : const Color(0xFF232838),
+                                      ? PremiumDesignTokens.from(context
+                                              .watch<AppThemeService>()
+                                              .config)
+                                          .accentPrimary
+                                      : PremiumDesignTokens.from(context
+                                              .watch<AppThemeService>()
+                                              .config)
+                                          .surfaceSecondary,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Column(
@@ -245,7 +251,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF232838),
+                          color:
+                              context.watch<AppThemeService>().colors.surface,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -294,8 +301,14 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                               Navigator.pop(context, scheduled);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF7C3AED),
-                              foregroundColor: Colors.white,
+                              backgroundColor: context
+                                  .watch<AppThemeService>()
+                                  .colors
+                                  .primary,
+                              foregroundColor: context
+                                  .watch<AppThemeService>()
+                                  .colors
+                                  .textPrimary,
                               minimumSize: const Size.fromHeight(48),
                             ),
                             child: const Text('حسناً'),
@@ -324,7 +337,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     final result = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF161921),
+      backgroundColor: context.watch<AppThemeService>().colors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -375,7 +388,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF232838),
+                        color: context.watch<AppThemeService>().colors.surface,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -404,8 +417,10 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: isPartial
-                              ? const Color(0xFF232838)
-                              : const Color(0xFF7C3AED),
+                              ? context.watch<AppThemeService>().colors.surface
+                              : PremiumDesignTokens.from(
+                                      context.watch<AppThemeService>().config)
+                                  .accentPrimary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -433,8 +448,10 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: isPartial
-                              ? const Color(0xFF7C3AED)
-                              : const Color(0xFF232838),
+                              ? PremiumDesignTokens.from(
+                                      context.watch<AppThemeService>().config)
+                                  .accentPrimary
+                              : context.watch<AppThemeService>().colors.surface,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -455,7 +472,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: const Color(0xFF232838),
+                          fillColor:
+                              context.watch<AppThemeService>().colors.surface,
                           labelText: 'المبلغ (IQD)',
                           labelStyle: const TextStyle(color: Colors.white70),
                           border: OutlineInputBorder(
@@ -490,9 +508,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
-                              final amount = isPartial
-                                  ? parseController()
-                                  : maxAmount;
+                              final amount =
+                                  isPartial ? parseController() : maxAmount;
                               if (amount == null) {
                                 return;
                               }
@@ -502,8 +519,14 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                               Navigator.pop(context, amount);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF7C3AED),
-                              foregroundColor: Colors.white,
+                              backgroundColor: context
+                                  .watch<AppThemeService>()
+                                  .colors
+                                  .primary,
+                              foregroundColor: context
+                                  .watch<AppThemeService>()
+                                  .colors
+                                  .textPrimary,
                               minimumSize: const Size.fromHeight(48),
                             ),
                             child: const Text('متابعة'),
@@ -615,8 +638,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
       final onlinePayload = onlineRes.data;
       final checkoutUrl = onlinePayload is Map<String, dynamic>
           ? (onlinePayload['gatewayCheckoutUrl'] ??
-                    onlinePayload['checkoutUrl'])
-                ?.toString()
+                  onlinePayload['checkoutUrl'])
+              ?.toString()
           : null;
 
       if (checkoutUrl == null || checkoutUrl.trim().isEmpty) {
@@ -785,7 +808,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(liked ? 'تمت الإضافة إلى المحفوظات' : 'تمت الإزالة من المحفوظات'),
+          content: Text(
+              liked ? 'تمت الإضافة إلى المحفوظات' : 'تمت الإزالة من المحفوظات'),
         ),
       );
     } catch (_) {
@@ -891,7 +915,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                 color: Colors.white,
                 size: 64,
                 shadows: [
-                  BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 2)
+                  BoxShadow(
+                      color: Colors.black45, blurRadius: 10, spreadRadius: 2)
                 ],
               ),
             ),
@@ -949,6 +974,9 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final premium = PremiumDesignTokens.from(
+      context.watch<AppThemeService>().config,
+    );
     final cart = context.watch<CartService>();
     final auth = context.watch<AuthService>();
     final currentUser = auth.currentUser;
@@ -963,9 +991,9 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('تفاصيل العرض'),
-        backgroundColor: AppColors.background,
+        backgroundColor: premium.glassSurface.withValues(alpha: .96),
         elevation: 0,
-        foregroundColor: Colors.white,
+        foregroundColor: premium.textPrimary,
         systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
@@ -996,7 +1024,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
             ),
         ],
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1050,8 +1078,11 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                 children: [
                   Text(
                     widget.offer.title,
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: premium.textPrimary,
+                    ),
                   ),
                   if (widget.offer.creatorName.trim().isNotEmpty) ...[
                     const SizedBox(height: 6),
@@ -1081,12 +1112,19 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                             Expanded(
                               child: Text(
                                 widget.offer.creatorName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.blueAccent,
+                                  color: PremiumDesignTokens.from(context
+                                          .watch<AppThemeService>()
+                                          .config)
+                                      .accentPrimary,
                                   decoration: TextDecoration.underline,
-                                  decorationColor: Colors.blueAccent,
+                                  decorationColor: PremiumDesignTokens.from(
+                                          context
+                                              .watch<AppThemeService>()
+                                              .config)
+                                      .accentPrimary,
                                 ),
                               ),
                             ),
@@ -1101,10 +1139,10 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     '${widget.offer.price.toStringAsFixed(0)} IQD',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.success,
+                      color: premium.priceColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1112,10 +1150,14 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                     widget.offer.displayDescription.isEmpty
                         ? 'لا يوجد وصف متاح.'
                         : widget.offer.displayDescription,
-                    style: const TextStyle(fontSize: 15, height: 1.6),
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.6,
+                      color: premium.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  if (canPay) ...[
+                  if (false && canPay) ...[
                     SizedBox(
                       width: double.infinity,
                       child: Container(
@@ -1133,9 +1175,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
-                            onTap: _isStartingPayment
-                                ? null
-                                : _startOnlinePayment,
+                            onTap:
+                                _isStartingPayment ? null : _startOnlinePayment,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [

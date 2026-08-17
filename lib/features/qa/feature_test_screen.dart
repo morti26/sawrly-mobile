@@ -89,7 +89,7 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
     final currentUser = context.watch<AuthService>().currentUser;
     if (currentUser?.isSuperadmin != true) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text('Testsida'),
           backgroundColor: AppColors.background,
@@ -109,7 +109,7 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Testsida'),
         backgroundColor: AppColors.background,
@@ -180,7 +180,8 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
         number: 2,
         title: 'Spara erbjudande som favorit',
         status: _FeatureCheckStatus.done,
-        note: 'Finns i offertkort och offertdetaljer och läses via Mina sparade.',
+        note:
+            'Finns i offertkort och offertdetaljer och läses via Mina sparade.',
       ),
       const _FeatureCheck(
         number: 3,
@@ -192,13 +193,15 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
         number: 4,
         title: 'Mer ordnad redigera profil-sida',
         status: _FeatureCheckStatus.partial,
-        note: 'Fälten är komprimerade och mer ordnade, men inte separat godkända mot din exakta design.',
+        note:
+            'Fälten är komprimerade och mer ordnade, men inte separat godkända mot din exakta design.',
       ),
       const _FeatureCheck(
         number: 5,
         title: 'Ikon för man eller kvinna allmänt i profilen',
-          status: _FeatureCheckStatus.partial,
-          note: 'Adminsidans uppladdning för man/kvinna finns, men mobilprofilen visar ännu inte den uppladdade könsikonen allmänt i profilhuvudet.',
+        status: _FeatureCheckStatus.partial,
+        note:
+            'Adminsidans uppladdning för man/kvinna finns, men mobilprofilen visar ännu inte den uppladdade könsikonen allmänt i profilhuvudet.',
       ),
       _FeatureCheck(
         number: 6,
@@ -212,37 +215,43 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
         number: 7,
         title: 'Laddningslista vid uppladdning',
         status: _FeatureCheckStatus.partial,
-        note: 'Det finns ladd-dialog med spinner, men inte en riktig progresslista i procent.',
+        note:
+            'Det finns ladd-dialog med spinner, men inte en riktig progresslista i procent.',
       ),
       const _FeatureCheck(
         number: 8,
         title: 'Max 1 minut och max 4 videor',
         status: _FeatureCheckStatus.done,
-        note: 'Fri nivå stoppas vid 4 videor och 1 minut. Därefter används prenumerationslogik.',
+        note:
+            'Fri nivå stoppas vid 4 videor och 1 minut. Därefter används prenumerationslogik.',
       ),
       const _FeatureCheck(
         number: 9,
         title: 'Max 8 bilder',
         status: _FeatureCheckStatus.missing,
-        note: 'Nu är gränsen inte 8 i koden. Nu ligger den på 12 gratis och 16 för monthly.',
+        note:
+            'Nu är gränsen inte 8 i koden. Nu ligger den på 12 gratis och 16 för monthly.',
       ),
       const _FeatureCheck(
         number: 10,
         title: 'Max 2 erbjudanden',
         status: _FeatureCheckStatus.done,
-        note: 'Backend stoppar skapande när kreatören redan har 2 aktiva erbjudanden.',
+        note:
+            'Backend stoppar skapande när kreatören redan har 2 aktiva erbjudanden.',
       ),
       const _FeatureCheck(
         number: 11,
         title: 'Kreatören ska kunna radera eget erbjudande',
         status: _FeatureCheckStatus.partial,
-        note: 'Raderingsflödet och backend-fallback finns, men jag räknar det som delvis tills du live-testat det.',
+        note:
+            'Raderingsflödet och backend-fallback finns, men jag räknar det som delvis tills du live-testat det.',
       ),
       const _FeatureCheck(
         number: 12,
         title: 'Story ska visa publiceringstid och försvinna efter 24 timmar',
         status: _FeatureCheckStatus.done,
-        note: 'Publiceringstid visas i story-viewer och backend filtrerar bort utgångna stories efter 24 timmar.',
+        note:
+            'Publiceringstid visas i story-viewer och backend filtrerar bort utgångna stories efter 24 timmar.',
       ),
       const _FeatureCheck(
         number: 13,
@@ -260,14 +269,16 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
         number: 15,
         title: 'Rapportera profil',
         status: _FeatureCheckStatus.done,
-        note: 'Flaggknapp finns i profilhuvudet när man tittar på någon annans profil.',
+        note:
+            'Flaggknapp finns i profilhuvudet när man tittar på någon annans profil.',
       ),
     ];
   }
 
   Widget _buildOpinionCard(List<_FeatureCheck> checks) {
-    final doneCount =
-        checks.where((check) => check.status == _FeatureCheckStatus.done).length;
+    final doneCount = checks
+        .where((check) => check.status == _FeatureCheckStatus.done)
+        .length;
     final partialCount = checks
         .where((check) => check.status == _FeatureCheckStatus.partial)
         .length;
@@ -302,7 +313,8 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
                 '$partialCount delvis',
                 const Color(0xFFB78103),
               ),
-              _buildSummaryChip('$missingCount saknas', const Color(0xFFB63A3A)),
+              _buildSummaryChip(
+                  '$missingCount saknas', const Color(0xFFB63A3A)),
             ],
           ),
         ],
@@ -349,10 +361,12 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
   Widget _buildActionCard(_FeatureTestSnapshot data) {
     final currentUser = data.currentUser;
     final fullProfile = data.fullProfile;
-    final firstOwnOffer = data.ownOffers.isNotEmpty ? data.ownOffers.first : null;
+    final firstOwnOffer =
+        data.ownOffers.isNotEmpty ? data.ownOffers.first : null;
     final firstSavedOffer =
         data.savedOffers.isNotEmpty ? data.savedOffers.first : null;
-    final firstStory = data.allStories.isNotEmpty ? data.allStories.first : null;
+    final firstStory =
+        data.allStories.isNotEmpty ? data.allStories.first : null;
 
     return _buildCard(
       child: Column(
@@ -383,7 +397,8 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CreatorProfileScreen(user: fullProfile),
+                            builder: (_) =>
+                                CreatorProfileScreen(user: fullProfile),
                           ),
                         );
                       },
@@ -396,7 +411,8 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => EditProfileScreen(user: fullProfile),
+                            builder: (_) =>
+                                EditProfileScreen(user: fullProfile),
                           ),
                         );
                       },
@@ -409,7 +425,8 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => OfferDetailsScreen(offer: firstOwnOffer),
+                            builder: (_) =>
+                                OfferDetailsScreen(offer: firstOwnOffer),
                           ),
                         );
                       },
@@ -500,7 +517,7 @@ class _FeatureTestScreenState extends State<FeatureTestScreen> {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF7A3EED),
+        backgroundColor: AppColors.primaryDark,
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.white10,
         disabledForegroundColor: Colors.white38,

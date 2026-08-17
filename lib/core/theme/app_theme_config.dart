@@ -20,6 +20,9 @@ class RemoteThemeColors {
   final Color info;
   final Color border;
   final Color borderLight;
+  final Color heroStart;
+  final Color heroMid;
+  final Color heroEnd;
 
   const RemoteThemeColors({
     required this.primary,
@@ -39,11 +42,15 @@ class RemoteThemeColors {
     required this.info,
     required this.border,
     required this.borderLight,
+    required this.heroStart,
+    required this.heroMid,
+    required this.heroEnd,
   });
 
   List<Color> get primaryGradient => [primary, primaryDark];
   List<Color> get accentGradient => [accentPink, primaryDark];
   List<Color> get darkGradient => [background, primaryDark];
+  List<Color> get backgroundGradient => [heroStart, heroMid, heroEnd];
 
   Color get successBg => Color.lerp(background, success, 0.12) ?? background;
   Color get warningBg => Color.lerp(background, warning, 0.12) ?? background;
@@ -97,6 +104,46 @@ class RemoteNavIcons {
   });
 }
 
+class ThemeGlow {
+  final Color color;
+  final double x;
+  final double y;
+  final double radius;
+  final double opacity;
+  const ThemeGlow(
+      {required this.color,
+      required this.x,
+      required this.y,
+      required this.radius,
+      required this.opacity});
+}
+
+class RemoteThemeVisuals {
+  final bool meshEnabled;
+  final List<ThemeGlow> meshPoints;
+  final List<ThemeGlow> ambientGlows;
+  final Color cardTint;
+  final Color headerTint;
+  final Color navigationTint;
+  final String headerStyle;
+  final bool noiseEnabled;
+  final double noiseOpacity;
+  final bool vignetteEnabled;
+  final double vignetteStrength;
+  const RemoteThemeVisuals(
+      {this.meshEnabled = false,
+      this.meshPoints = const [],
+      this.ambientGlows = const [],
+      this.cardTint = Colors.transparent,
+      this.headerTint = Colors.transparent,
+      this.navigationTint = Colors.transparent,
+      this.headerStyle = 'gradient',
+      this.noiseEnabled = false,
+      this.noiseOpacity = 0.0,
+      this.vignetteEnabled = false,
+      this.vignetteStrength = 0.0});
+}
+
 class RemoteThemeEffects {
   final double primaryGradientAngle;
   final double cardRadius;
@@ -122,10 +169,13 @@ class RemoteThemeEffects {
     required this.borderOpacity,
   });
 
-  AlignmentGeometry get gradientBegin => _angleToAlignment(primaryGradientAngle).$1;
-  AlignmentGeometry get gradientEnd => _angleToAlignment(primaryGradientAngle).$2;
+  AlignmentGeometry get gradientBegin =>
+      _angleToAlignment(primaryGradientAngle).$1;
+  AlignmentGeometry get gradientEnd =>
+      _angleToAlignment(primaryGradientAngle).$2;
 
-  static (AlignmentGeometry, AlignmentGeometry) _angleToAlignment(double degrees) {
+  static (AlignmentGeometry, AlignmentGeometry) _angleToAlignment(
+      double degrees) {
     final rad = degrees * math.pi / 180;
     final dx = math.sin(rad);
     final dy = -math.cos(rad);
@@ -148,11 +198,13 @@ class AppThemeConfig {
   final RemoteThemeColors colors;
   final RemoteNavIcons navIcons;
   final RemoteThemeEffects effects;
+  final RemoteThemeVisuals visuals;
 
   const AppThemeConfig({
     required this.colors,
     required this.navIcons,
     required this.effects,
+    this.visuals = const RemoteThemeVisuals(),
   });
 }
 
@@ -162,14 +214,19 @@ Color? _parseHexColor(dynamic raw) {
   if (v.isEmpty) return null;
   if (!v.startsWith('#')) return null;
   final String body = v.substring(1);
+  // The web Theme Engine serializes colors as CSS hex: #RRGGBBAA.
+  // Flutter's Color(int) expects 0xAARRGGBB, so an 8-digit web color must be
+  // reordered. Passing it through unchanged turns the final alpha byte (often
+  // FF) into blue, which made unrelated presets render as the same blue theme.
+  final String argbBody = body.length == 8
+      ? '${body.substring(6, 8)}${body.substring(0, 6)}'
+      : body.length == 6
+          ? 'FF$body'
+          : body.length == 3
+              ? 'FF${body.split('').map((c) => '$c$c').join()}'
+              : '';
   final int? value = int.tryParse(
-    body.length == 3
-        ? body.split('').map((c) => '$c$c').join()
-        : body.length == 6
-            ? 'FF$body'
-            : body.length == 8
-                ? body
-                : '',
+    argbBody,
     radix: 16,
   );
   if (value == null) return null;
@@ -191,9 +248,11 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final primaryLight = maybe('primaryLight');
   final primaryDark = maybe('primaryDark');
 
-  final hasCustomPrimary = primary != null || primaryLight != null || primaryDark != null;
+  final hasCustomPrimary =
+      primary != null || primaryLight != null || primaryDark != null;
   final effectivePrimary = primary ?? defaults.primary;
-  final effectivePrimaryLight = primaryLight ?? _lighten(effectivePrimary, 0.18);
+  final effectivePrimaryLight =
+      primaryLight ?? _lighten(effectivePrimary, 0.18);
   final effectivePrimaryDark = primaryDark ?? _darken(effectivePrimary, 0.18);
 
   final Color effectiveAccentPink = maybe('accentPink') ??
@@ -286,6 +345,9 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
     info: effectiveInfo,
     border: effectiveBorder,
     borderLight: effectiveBorderLight,
+    heroStart: maybe('heroStart') ?? effectiveBackground,
+    heroMid: maybe('heroMid') ?? effectivePrimaryDark,
+    heroEnd: maybe('heroEnd') ?? effectiveAccentPink,
   );
 }
 
@@ -319,6 +381,7 @@ RemoteNavIcons parseRemoteNavIcons(dynamic raw) {
     final valid = RegExp(r'^[a-z0-9_.-]{1,80}$').hasMatch(lower);
     return valid ? lower : null;
   }
+
   if (map == null) return const RemoteNavIcons();
   return RemoteNavIcons(
     home: s(map['home']),
@@ -349,7 +412,8 @@ RemoteNavIcons parseRemoteNavIcons(dynamic raw) {
   final trimmed = raw.trim();
   if (trimmed.isEmpty) return null;
   final lower = trimmed.toLowerCase();
-  final parts = lower.split(RegExp(r'[.]+')).where((s) => s.isNotEmpty).toList();
+  final parts =
+      lower.split(RegExp(r'[.]+')).where((s) => s.isNotEmpty).toList();
   if (parts.isEmpty) return null;
   String name;
   String weight;
@@ -808,7 +872,8 @@ final Map<String, Map<String, IconData>> _phosphorCache = {};
 
 IconData? resolvePhosphorIcon(String name, String weight) {
   final key = '${weight}_$name';
-  final map = _phosphorCache.putIfAbsent(key, () => _buildPhosphorIconMap(weight));
+  final map =
+      _phosphorCache.putIfAbsent(key, () => _buildPhosphorIconMap(weight));
   return map[name];
 }
 
@@ -839,38 +904,106 @@ RemoteThemeEffects parseRemoteEffects(dynamic raw) {
   }
 
   return RemoteThemeEffects(
-    primaryGradientAngle: pick('primaryGradientAngle', defaults.primaryGradientAngle, min: 0, max: 360),
+    primaryGradientAngle: pick(
+        'primaryGradientAngle', defaults.primaryGradientAngle,
+        min: 0, max: 360),
     cardRadius: pick('cardRadius', defaults.cardRadius, min: 0, max: 60),
     chipRadius: pick('chipRadius', defaults.chipRadius, min: 0, max: 9999),
     buttonRadius: pick('buttonRadius', defaults.buttonRadius, min: 0, max: 60),
-    navShadowOpacity: pick('navShadowOpacity', defaults.navShadowOpacity, min: 0, max: 1),
-    cardShadowOpacity: pick('cardShadowOpacity', defaults.cardShadowOpacity, min: 0, max: 1),
-    activeGlowOpacity: pick('activeGlowOpacity', defaults.activeGlowOpacity, min: 0, max: 1),
+    navShadowOpacity:
+        pick('navShadowOpacity', defaults.navShadowOpacity, min: 0, max: 1),
+    cardShadowOpacity:
+        pick('cardShadowOpacity', defaults.cardShadowOpacity, min: 0, max: 1),
+    activeGlowOpacity:
+        pick('activeGlowOpacity', defaults.activeGlowOpacity, min: 0, max: 1),
     glassBlur: pick('glassBlur', defaults.glassBlur, min: 0, max: 60),
-    surfaceOpacity: pick('surfaceOpacity', defaults.surfaceOpacity, min: 0.2, max: 1),
-    borderOpacity: pick('borderOpacity', defaults.borderOpacity, min: 0, max: 1),
+    surfaceOpacity:
+        pick('surfaceOpacity', defaults.surfaceOpacity, min: 0.2, max: 1),
+    borderOpacity:
+        pick('borderOpacity', defaults.borderOpacity, min: 0, max: 1),
   );
 }
 
+RemoteThemeVisuals parseRemoteVisuals(dynamic raw) {
+  if (raw is! Map) return const RemoteThemeVisuals();
+  Map<String, dynamic> map = Map<String, dynamic>.from(raw);
+  ThemeGlow parseGlow(dynamic value) {
+    final item =
+        value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
+    return ThemeGlow(
+      color: _parseHexColor(item['color']) ?? Colors.transparent,
+      x: _parseDouble(item['x'], .5, min: 0, max: 1),
+      y: _parseDouble(item['y'], .5, min: 0, max: 1),
+      radius: _parseDouble(item['radius'], 320, min: 20, max: 800),
+      opacity: _parseDouble(item['opacity'], .12, min: 0, max: 1),
+    );
+  }
+
+  List<ThemeGlow> list(String key) => (map[key] is List)
+      ? (map[key] as List).map(parseGlow).toList()
+      : const [];
+  final mesh = map['backgroundMesh'] is Map
+      ? Map<String, dynamic>.from(map['backgroundMesh'])
+      : <String, dynamic>{};
+  final tint = map['surfaceTint'] is Map
+      ? Map<String, dynamic>.from(map['surfaceTint'])
+      : <String, dynamic>{};
+  final noise = map['noise'] is Map
+      ? Map<String, dynamic>.from(map['noise'])
+      : <String, dynamic>{};
+  final vignette = map['vignette'] is Map
+      ? Map<String, dynamic>.from(map['vignette'])
+      : <String, dynamic>{};
+  return RemoteThemeVisuals(
+      meshEnabled: mesh['enabled'] == true,
+      meshPoints: listFrom(mesh['points']),
+      ambientGlows: list('ambientGlows'),
+      cardTint: _parseHexColor(tint['card']) ?? Colors.transparent,
+      headerTint: _parseHexColor(tint['header']) ?? Colors.transparent,
+      navigationTint: _parseHexColor(tint['navigation']) ?? Colors.transparent,
+      headerStyle: (map['headerStyle'] as String?) ?? 'gradient',
+      noiseEnabled: noise['enabled'] == true,
+      noiseOpacity: _parseDouble(noise['opacity'], 0.0, min: 0, max: .1),
+      vignetteEnabled: vignette['enabled'] == true,
+      vignetteStrength:
+          _parseDouble(vignette['strength'], 0.0, min: 0, max: .3));
+}
+
+List<ThemeGlow> listFrom(dynamic value) => value is List
+    ? value.map((item) {
+        final map =
+            item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{};
+        return ThemeGlow(
+            color: _parseHexColor(map['color']) ?? Colors.transparent,
+            x: _parseDouble(map['x'], .5, min: 0, max: 1),
+            y: _parseDouble(map['y'], .5, min: 0, max: 1),
+            radius: _parseDouble(map['radius'], 320, min: 20, max: 800),
+            opacity: _parseDouble(map['opacity'], .12, min: 0, max: 1));
+      }).toList()
+    : const [];
+
 class _DefaultAppTheme {
   static const RemoteThemeColors colors = RemoteThemeColors(
-    primary: Color(0xFF9B4DFF),
-    primaryLight: Color(0xFFC48CFF),
-    primaryDark: Color(0xFF7230CC),
-    accentPink: Color(0xFFFF4DA6),
-    background: Color(0xFF46205A),
-    surface: Color(0xFF57246F),
-    surfaceLight: Color(0xFF6F2E8E),
-    menuBackground: Color(0xFF421B54),
+    primary: Color(0xFFD91F68),
+    primaryLight: Color(0xFFFF326F),
+    primaryDark: Color(0xFF76072E),
+    accentPink: Color(0xFFF0296B),
+    background: Color(0xFF200810),
+    surface: Color(0xFF35101A),
+    surfaceLight: Color(0xFF531020),
+    menuBackground: Color(0xFF250512),
     textPrimary: Color(0xFFFFFFFF),
-    textSecondary: Color(0xFFB0B0B0),
-    textTertiary: Color(0xFF707070),
+    textSecondary: Color(0xFFCBC3C6),
+    textTertiary: Color(0xFF9E9297),
     success: Color(0xFF22C55E),
     warning: Color(0xFFF59E0B),
     error: Color(0xFFEF4444),
     info: Color(0xFF3B82F6),
-    border: Color(0xFF7B469C),
-    borderLight: Color(0xFF5E2B79),
+    border: Color(0xFF8D2948),
+    borderLight: Color(0xFF5D1B31),
+    heroStart: Color(0xFF200810),
+    heroMid: Color(0xFF3E0A1B),
+    heroEnd: Color(0xFF0D0509),
   );
 
   static const RemoteThemeEffects effects = RemoteThemeEffects(

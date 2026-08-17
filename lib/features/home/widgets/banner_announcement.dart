@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/design/design_tokens.dart';
+import '../../../core/theme/app_theme_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../models/banner_ad.dart';
@@ -135,8 +138,11 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final colors = theme.colors;
+    final premium = PremiumDesignTokens.from(theme.config);
     final screenWidth = MediaQuery.of(context).size.width;
-    final bannerHeight = (screenWidth * 0.42).clamp(120.0, 170.0).toDouble();
+    final bannerHeight = (screenWidth * 0.52).clamp(174.0, 224.0).toDouble();
 
     // Fallback: no banner data
     if (_slides.isEmpty) {
@@ -147,7 +153,9 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
           height: bannerHeight,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(premium.radiusLarge),
+            border: Border.all(color: premium.borderSubtle),
+            boxShadow: premium.levelOneShadow,
             image: const DecorationImage(
               image: NetworkImage('https://picsum.photos/600/300?blur=2'),
               fit: BoxFit.cover,
@@ -159,80 +167,106 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: _launchUrl,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: SizedBox(
-            width: double.infinity,
-            height: bannerHeight,
-            child: Stack(
-              children: [
-                // ── Slides ──
-                PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: _onPageChanged,
-                  itemCount: _slides.length,
-                  itemBuilder: (context, index) {
-                    return _buildSlide(_slides[index], index, bannerHeight);
-                  },
-                ),
-
-                // ── Dot indicators (only when >1 slide) ──
-                if (_slides.length > 1)
-                  Positioned(
-                    bottom: 8,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_slides.length, (i) {
-                        final isActive = i == _currentPage;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          width: isActive ? 16 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? const Color(0xFFBC83FF)
-                                : Colors.white.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        );
-                      }),
-                    ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(premium.radiusLarge),
+          border: Border.all(color: premium.borderSubtle),
+          boxShadow: premium.levelOneShadow,
+        ),
+        child: GestureDetector(
+          onTap: _launchUrl,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(premium.radiusLarge - 1),
+            child: SizedBox(
+              width: double.infinity,
+              height: bannerHeight,
+              child: Stack(
+                children: [
+                  // ── Slides ──
+                  PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
+                    itemCount: _slides.length,
+                    itemBuilder: (context, index) {
+                      return _buildSlide(_slides[index], index, bannerHeight);
+                    },
                   ),
 
-                // ── Title overlay (per slide) ──
-                if (_slides.isNotEmpty &&
-                    _slides[_currentPage].title != null &&
-                    _slides[_currentPage].title!.isNotEmpty)
-                  Positioned(
-                    bottom: _slides.length > 1 ? 22 : 10,
-                    left: 10,
-                    right: 10,
+                  Positioned.fill(
                     child: IgnorePointer(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _slides[_currentPage].title!,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.white.withValues(alpha: .07),
+                              Colors.transparent,
+                              premium.backgroundDeep.withValues(alpha: .10),
+                            ],
+                            stops: const [0, .38, 1],
+                          ),
                         ),
                       ),
                     ),
                   ),
-              ],
+
+                  // ── Dot indicators (only when >1 slide) ──
+                  if (_slides.length > 1)
+                    Positioned(
+                      bottom: 8,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_slides.length, (i) {
+                          final isActive = i == _currentPage;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: isActive ? 16 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? colors.primaryLight
+                                  : colors.textPrimary.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+
+                  // ── Title overlay (per slide) ──
+                  if (_slides.isNotEmpty &&
+                      _slides[_currentPage].title != null &&
+                      _slides[_currentPage].title!.isNotEmpty)
+                    Positioned(
+                      bottom: _slides.length > 1 ? 22 : 10,
+                      left: 10,
+                      right: 10,
+                      child: IgnorePointer(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: colors.background.withValues(alpha: 0.72),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _slides[_currentPage].title!,
+                            style: TextStyle(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

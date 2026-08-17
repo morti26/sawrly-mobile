@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 import '../../core/auth/auth_service.dart';
-import '../../core/design/design_tokens.dart';
 import '../../core/theme/app_theme_service.dart';
 import '../../core/services/media_service.dart';
 
@@ -57,6 +57,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         'sizeBytes': len,
         'sizeMb': (len / (1024 * 1024)).toStringAsFixed(2),
         'status': _StepStatus.waiting,
+        'progress': 0.0,
         'order': sortOrder++,
       });
     }
@@ -69,16 +70,29 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         'sizeBytes': len,
         'sizeMb': (len / (1024 * 1024)).toStringAsFixed(2),
         'status': _StepStatus.waiting,
+        'progress': 0.0,
         'order': sortOrder++,
       });
     }
-    _publishQueue.sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
+    _publishQueue
+        .sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
   }
 
   // Punkt 7: Uppdatera status för kö-poster
-  void _setQueueItemStatusAt(int order, _StepStatus status) {
+  void _setQueueItemProgressAt(
+    int order,
+    int totalItems,
+    double progress,
+  ) {
     if (order < 0 || order >= _publishQueue.length) return;
-    _publishQueue[order]['status'] = status;
+    final normalized = progress.clamp(0.0, 1.0);
+    _publishQueue[order]['status'] =
+        normalized >= 1 ? _StepStatus.success : _StepStatus.uploading;
+    _publishQueue[order]['progress'] = normalized;
+    final overall = totalItems <= 0
+        ? normalized
+        : ((order + normalized) / totalItems).clamp(0.0, 1.0);
+    _publishStage = 'جاري الرفع... ${(overall * 100).round()}%';
     if (mounted) setState(() {});
   }
 
@@ -108,6 +122,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     String statusText = "-";
     Color iconColor = colors.textTertiary;
     final bool isUploading = status == _StepStatus.uploading;
+    final progress = (item['progress'] as num?)?.toDouble() ?? 0;
     if (status == _StepStatus.waiting) {
       bg = colors.warning.withValues(alpha: 0.12);
       icon = Icons.hourglass_empty;
@@ -170,12 +185,24 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  "${isImage ? 'صورة' : 'فيديو'} • ${item['sizeMb']} MB • $statusText",
+                  "${isImage ? 'صورة' : 'فيديو'} • ${item['sizeMb']} MB • ${isUploading ? '${(progress * 100).round()}%' : statusText}",
                   style: TextStyle(
                     color: colors.textSecondary.withValues(alpha: 0.85),
                     fontSize: 11.5,
                   ),
                 ),
+                if (isUploading) ...[
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 4,
+                      backgroundColor: colors.surfaceLight,
+                      color: colors.primary,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -262,7 +289,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
             if (_publishQueue.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Center(child: CircularProgressIndicator(color: colors.textSecondary)),
+                child: Center(
+                    child:
+                        CircularProgressIndicator(color: colors.textSecondary)),
               )
             else
               Flexible(
@@ -278,9 +307,13 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
               const SizedBox(height: 14),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.28),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .shadow
+                      .withValues(alpha: 0.28),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: colors.borderLight),
                 ),
@@ -329,7 +362,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     );
     _fullPaymentController = TextEditingController(
       text: _formatAmountText(
-        widget.initialItem?['full_payment_iqd'] ?? widget.initialItem?['price_iqd'],
+        widget.initialItem?['full_payment_iqd'] ??
+            widget.initialItem?['price_iqd'],
       ),
     );
     _initialImageUrl = widget.initialItem?['image_url'];
@@ -394,8 +428,20 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
             const SnackBar(content: Text("يمكنك رفع فيديو واحد فقط")));
         return;
       }
-      final file = await mediaService.pickVideo();
+      final file = await mediaService.pickVideo(
+        maxDuration: const Duration(seconds: 60),
+      );
       if (file != null) {
+        final durationSeconds = await _readVideoDurationSeconds(file);
+        if (!mounted) return;
+        if (durationSeconds == null || durationSeconds > 60) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('مدة كل فيديو يجب ألا تتجاوز دقيقة واحدة.'),
+            ),
+          );
+          return;
+        }
         setState(() {
           _selectedVideo = file;
         });
@@ -413,6 +459,18 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       setState(() {
         _selectedImages.add(file);
       });
+    }
+  }
+
+  Future<int?> _readVideoDurationSeconds(File file) async {
+    final controller = VideoPlayerController.file(file);
+    try {
+      await controller.initialize();
+      return controller.value.duration.inSeconds;
+    } catch (_) {
+      return null;
+    } finally {
+      await controller.dispose();
     }
   }
 
@@ -532,7 +590,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     final bool isEditing = widget.initialItem != null;
 
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: colors.background,
@@ -567,9 +625,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                   hint: Align(
                       alignment: Alignment.centerRight,
                       child: Text("اختر ...",
-                          style:
-                              TextStyle(color: colors.textTertiary))), // "Choose..."
-                  icon: Icon(Icons.arrow_drop_down, color: colors.textSecondary),
+                          style: TextStyle(
+                              color: colors.textTertiary))), // "Choose..."
+                  icon:
+                      Icon(Icons.arrow_drop_down, color: colors.textSecondary),
                   style: TextStyle(color: colors.textPrimary, fontSize: 15),
                   isExpanded: true,
                   items: _offerTypes
@@ -660,8 +719,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
                       alignment: Alignment.centerRight,
                       child: Text("اختر نسبة الخصم ...",
                           style: TextStyle(
-                              color: colors.textTertiary))), // "Choose Discount..."
-                  icon: Icon(Icons.arrow_drop_down, color: colors.textSecondary),
+                              color: colors
+                                  .textTertiary))), // "Choose Discount..."
+                  icon:
+                      Icon(Icons.arrow_drop_down, color: colors.textSecondary),
                   style: TextStyle(color: colors.textPrimary, fontSize: 15),
                   isExpanded: true,
                   menuMaxHeight: 280,
@@ -700,7 +761,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         border: Border.all(color: colors.borderLight),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.28),
             blurRadius: 16,
             offset: const Offset(0, 10),
           ),
@@ -806,7 +867,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
         border: Border.all(color: colors.borderLight),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.24),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.24),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -868,10 +929,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       children: [
         _buildTileFrame(
           child: Container(
-            color: Colors.black87,
+            color: colors.background,
             child: Center(
-              child:
-                  Icon(Icons.videocam_rounded, color: colors.textPrimary, size: 30),
+              child: Icon(Icons.videocam_rounded,
+                  color: colors.textPrimary, size: 30),
             ),
           ),
         ),
@@ -906,9 +967,10 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     if (isVideo) {
       return _buildTileFrame(
         child: Container(
-          color: Colors.black87,
+          color: colors.background,
           child: Center(
-            child: Icon(Icons.videocam_rounded, color: colors.textPrimary, size: 30),
+            child: Icon(Icons.videocam_rounded,
+                color: colors.textPrimary, size: 30),
           ),
         ),
       );
@@ -930,10 +992,14 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       child: _buildTileFrame(
         child: Container(
           decoration: BoxDecoration(
-            color: enabled ? colors.surface : Color.lerp(colors.background, colors.surface, 0.78)!,
+            color: enabled
+                ? colors.surface
+                : Color.lerp(colors.background, colors.surface, 0.78)!,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: enabled ? colors.accentPink.withValues(alpha: 0.35) : colors.borderLight,
+              color: enabled
+                  ? colors.accentPink.withValues(alpha: 0.35)
+                  : colors.borderLight,
             ),
             boxShadow: enabled
                 ? [
@@ -991,7 +1057,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     if (finalPrice < _minimumOfferPrice) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("السعر النهائي بعد الخصم يجب أن يكون 1200 دينار عراقي أو أكثر"),
+          content: Text(
+              "السعر النهائي بعد الخصم يجب أن يكون 1200 دينار عراقي أو أكثر"),
         ),
       );
       return;
@@ -1002,12 +1069,14 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     if (fullPaymentAmount < _minimumOfferPrice) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("مبلغ الدفع الكامل يجب أن يكون 1200 دينار عراقي أو أكثر"),
+          content:
+              Text("مبلغ الدفع الكامل يجب أن يكون 1200 دينار عراقي أو أكثر"),
         ),
       );
       return;
     }
-    final typedPartialPayment = _parsePriceValue(_partialPaymentController.text);
+    final typedPartialPayment =
+        _parsePriceValue(_partialPaymentController.text);
     final partialPaymentAmount = typedPartialPayment > 0
         ? typedPartialPayment
         : (fullPaymentAmount * 0.30).ceilToDouble();
@@ -1022,7 +1091,8 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
     if (partialPaymentAmount >= fullPaymentAmount) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("مبلغ الدفعة الجزئية يجب أن يكون أقل من مبلغ الدفع الكامل"),
+          content:
+              Text("مبلغ الدفعة الجزئية يجب أن يكون أقل من مبلغ الدفع الكامل"),
         ),
       );
       return;
@@ -1082,7 +1152,9 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
       }
 
       String? error;
-      _updatePublishStage(isEditing ? "جاري تحديث العرض..." : "جاري إرسال العرض إلى السيرفر...");
+      _updatePublishStage(isEditing
+          ? "جاري تحديث العرض..."
+          : "جاري إرسال العرض إلى السيرفر...");
 
       if (isEditing) {
         error = await mediaService.updateOffer(
@@ -1098,6 +1170,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           originalPrice: originalPrice,
           partialPaymentAmount: partialPaymentAmount,
           fullPaymentAmount: fullPaymentAmount,
+          onUploadProgress: _setQueueItemProgressAt,
         );
       } else {
         error = await mediaService.createOffer(
@@ -1110,6 +1183,7 @@ class _CreateOfferScreenState extends State<CreateOfferScreen> {
           originalPrice: originalPrice,
           partialPaymentAmount: partialPaymentAmount,
           fullPaymentAmount: fullPaymentAmount,
+          onUploadProgress: _setQueueItemProgressAt,
         );
       }
 

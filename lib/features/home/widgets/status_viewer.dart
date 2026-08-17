@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/status_service.dart';
+import '../../../core/theme/app_theme_service.dart';
 import '../../../core/widgets/report_dialog.dart';
 import '../../../models/creator_status.dart';
 
@@ -165,7 +166,7 @@ class _StatusViewerState extends State<StatusViewer> {
 
     return Dialog(
       insetPadding: EdgeInsets.zero,
-      backgroundColor: Colors.black,
+      backgroundColor: context.watch<AppThemeService>().colors.background,
       child: Stack(
         children: [
           Positioned.fill(
@@ -281,7 +282,7 @@ class _StatusViewerState extends State<StatusViewer> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.black54,
+                  color: context.watch<AppThemeService>().colors.background.withValues(alpha: 0.72),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(

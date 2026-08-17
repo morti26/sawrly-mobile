@@ -103,9 +103,9 @@ class CreatorStatusRow extends StatelessWidget {
     final leadingCount = (hasOwnStorySlot ? 1 : 0) + (hasAddButtonSlot ? 1 : 0);
     final totalCount = groups.length + leadingCount;
 
-      if (totalCount == 0) {
-        return const SizedBox.shrink();
-      }
+    if (totalCount == 0) {
+      return const SizedBox.shrink();
+    }
 
     return SizedBox(
       height: 100,
@@ -260,7 +260,7 @@ class CreatorStatusRow extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
                         border: Border.all(
                             color: Theme.of(context).scaffoldBackgroundColor,
@@ -291,7 +291,10 @@ class CreatorStatusRow extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: status.hasStory
-                  ? const LinearGradient(colors: [Colors.purple, Colors.orange])
+                  ? LinearGradient(colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ])
                   : null,
               color: status.hasStory ? null : Colors.grey.shade300,
             ),
@@ -322,7 +325,10 @@ class CreatorStatusRow extends StatelessWidget {
               shape: BoxShape.circle,
               // Gradient ring if active status
               gradient: status.hasStory
-                  ? const LinearGradient(colors: [Colors.purple, Colors.orange])
+                  ? LinearGradient(colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ])
                   : null,
               color: status.hasStory
                   ? null

@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
 import 'widgets/offer_card.dart';
+import '../../core/theme/app_theme_service.dart';
+import 'package:provider/provider.dart';
 
 class SeeAllScreen extends StatelessWidget {
   final String title;
@@ -19,9 +21,9 @@ class SeeAllScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: const Color(0xFF161921),
+        backgroundColor: context.watch<AppThemeService>().colors.background,
         elevation: 0,
-        foregroundColor: Colors.white,
+        foregroundColor: context.watch<AppThemeService>().colors.textPrimary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

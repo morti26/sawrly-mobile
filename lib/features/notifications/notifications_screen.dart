@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:fotgraf_mobile/models/notification_item.dart';
+import 'package:provider/provider.dart';
+import '../../core/theme/app_theme_service.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.watch<AppThemeService>().colors;
     // Mock Data
     final notifications = [
       NotificationItem(
@@ -38,11 +41,11 @@ class NotificationsScreen extends StatelessWidget {
           return ListTile(
             leading: CircleAvatar(
               backgroundColor: item.isRead
-                  ? Colors.grey.shade200
-                  : Colors.blue.withValues(alpha: 0.1),
+                  ? colors.surfaceLight.withValues(alpha: 0.45)
+                  : colors.primary.withValues(alpha: 0.12),
               child: Icon(
                 _getIcon(item.type),
-                color: item.isRead ? Colors.grey : Colors.blue,
+                color: item.isRead ? colors.textSecondary : colors.primary,
               ),
             ),
             title: Text(
@@ -54,11 +57,11 @@ class NotificationsScreen extends StatelessWidget {
             subtitle: Text(item.message),
             trailing: Text(
               '${item.timestamp.hour}:${item.timestamp.minute}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: colors.textSecondary),
             ),
             tileColor: item.isRead
-                ? Colors.white
-                : Colors.blue.withValues(alpha: 0.05),
+                ? colors.surface
+                : colors.primary.withValues(alpha: 0.08),
           );
         },
       ),

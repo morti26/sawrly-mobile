@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -56,21 +57,29 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _tabListener = () { setState(() {}); };
+    _tabListener = () {
+      setState(() {});
+    };
     _tabController.addListener(_tabListener);
 
     _loadFullProfile();
   }
 
   Future<void> _loadFullProfile({bool bypassCache = false}) async {
-    final String? targetId = widget.userId ?? widget.user?.id ?? context.read<AuthService>().currentUser?.id;
+    final String? targetId = widget.userId ??
+        widget.user?.id ??
+        context.read<AuthService>().currentUser?.id;
     if (targetId == null || targetId.trim().isEmpty) return;
-    final user = widget.user ?? (targetId.isNotEmpty ? User(id: targetId, name: '', email: '', role: UserRole.creator) : null);
+    final user = widget.user ??
+        (targetId.isNotEmpty
+            ? User(id: targetId, name: '', email: '', role: UserRole.creator)
+            : null);
     if (user == null) return;
 
     setState(() => _isLoadingProfile = true);
-    final fullProfile =
-        await context.read<AuthService>().fetchUserProfile(targetId, bypassCache: bypassCache);
+    final fullProfile = await context
+        .read<AuthService>()
+        .fetchUserProfile(targetId, bypassCache: bypassCache);
     // #region debug-point D:full-profile-loaded
     debugPrint(
       "[DEBUG] _loadFullProfile D: requestedUserId=${user.id} bypassCache=$bypassCache "
@@ -147,7 +156,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         setState(() => _isReloadingBadge = false);
       }
     }
-    debugPrint("[DEBUG] _forceReloadSuperadminBadge D: finished badgeReloadTick=$_badgeReloadTick");
+    debugPrint(
+        "[DEBUG] _forceReloadSuperadminBadge D: finished badgeReloadTick=$_badgeReloadTick");
   }
 
   Future<void> _toggleFollow(String targetUserId) async {
@@ -215,7 +225,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }
 
   bool _hasLimitedMonthlyPlan(User user) {
-    return _hasActiveSubscription(user) && _normalizedPlan(user.subscriptionPlan) == 'monthly';
+    return _hasActiveSubscription(user) &&
+        _normalizedPlan(user.subscriptionPlan) == 'monthly';
   }
 
   Future<int?> _readVideoDurationSeconds(File file) async {
@@ -230,30 +241,48 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     }
   }
 
-  void _showUploadLoadingDialog(BuildContext screenContext, String message) {
+  void _showUploadLoadingDialog(
+    BuildContext screenContext,
+    String message,
+    ValueListenable<double> progress,
+  ) {
     final theme = context.read<AppThemeService>();
     final colors = theme.colors;
     showDialog<void>(
       context: screenContext,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: colors.background,
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2.4),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
+        backgroundColor: Colors.transparent,
+        content: ValueListenableBuilder<double>(
+          valueListenable: progress,
+          builder: (context, value, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
                 message,
                 textAlign: TextAlign.right,
                 style: TextStyle(color: colors.textPrimary),
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              LinearProgressIndicator(
+                value: value.clamp(0.0, 1.0),
+                minHeight: 7,
+                borderRadius: BorderRadius.circular(999),
+                color: colors.primary,
+                backgroundColor: colors.surfaceLight,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${(value.clamp(0.0, 1.0) * 100).round()}%',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -338,10 +367,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       if (!screenContext.mounted) return;
                       await _showSubscriptionRequiredDialog(
                         screenContext,
-                        message:
-                            hasLimitedMonthlyPlan
-                                ? "الخطة الشهرية المحدودة تسمح برفع $_maxMonthlyCreatorImages صورة كحد أقصى."
-                                : "يمكنك رفع $_maxFreeCreatorImages صور فقط بدون اشتراك. الاشتراك الشهري المحدود يضيف 4 صور إضافية، أما Plus والسنوي فغير محدودين.",
+                        message: hasLimitedMonthlyPlan
+                            ? "الخطة الشهرية المحدودة تسمح برفع $_maxMonthlyCreatorImages صورة كحد أقصى."
+                            : "يمكنك رفع $_maxFreeCreatorImages صور فقط بدون اشتراك. الاشتراك الشهري المحدود يضيف 4 صور إضافية، أما Plus والسنوي فغير محدودين.",
                       );
                       return;
                     }
@@ -366,15 +394,21 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                               ));
 
                       if (!screenContext.mounted) return;
+                      final uploadProgress = ValueNotifier<double>(0);
                       _showUploadLoadingDialog(
                         screenContext,
                         "جاري رفع الصورة...",
+                        uploadProgress,
                       );
-                      final success =
-                          await mediaService.uploadPhoto(file, caption);
+                      final success = await mediaService.uploadPhoto(
+                        file,
+                        caption,
+                        onProgress: (value) => uploadProgress.value = value,
+                      );
                       if (screenContext.mounted) {
                         Navigator.of(screenContext, rootNavigator: true).pop();
                       }
+                      uploadProgress.dispose();
                       if (success && mounted) {
                         setState(() {
                           _mediaReloadTick++;
@@ -422,26 +456,36 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       if (!screenContext.mounted) return;
                       await _showSubscriptionRequiredDialog(
                         screenContext,
-                        message:
-                            hasLimitedMonthlyPlan
-                                ? "الخطة الشهرية المحدودة تسمح برفع $_maxMonthlyCreatorVideos فيديوهات كحد أقصى."
-                                : "يمكنك رفع $_maxFreeCreatorVideos فيديوهات فقط بدون اشتراك. الاشتراك الشهري المحدود يضيف 4 فيديوهات إضافية، أما Plus والسنوي فغير محدودين.",
+                        message: hasLimitedMonthlyPlan
+                            ? "الخطة الشهرية المحدودة تسمح برفع $_maxMonthlyCreatorVideos فيديوهات كحد أقصى."
+                            : "يمكنك رفع $_maxFreeCreatorVideos فيديوهات فقط بدون اشتراك. الاشتراك الشهري المحدود يضيف 4 فيديوهات إضافية، أما Plus والسنوي فغير محدودين.",
                       );
                       return;
                     }
-                    final file = await mediaService.pickVideo();
+                    final file = await mediaService.pickVideo(
+                      maxDuration: const Duration(seconds: 60),
+                    );
                     if (file != null) {
                       final durationSeconds =
                           await _readVideoDurationSeconds(file);
-                      if (!hasLimitedMonthlyPlan &&
-                          !hasUnlimitedPlan &&
-                          (durationSeconds ?? 0) >
-                          _maxFreeVideoDurationSeconds) {
+                      if (durationSeconds == null ||
+                          durationSeconds > _maxFreeVideoDurationSeconds) {
                         if (!screenContext.mounted) return;
-                        await _showSubscriptionRequiredDialog(
-                          screenContext,
-                          message:
-                              "مدة الفيديو يجب ألا تتجاوز دقيقة واحدة بدون اشتراك. الاشتراكات المدفوعة تسمح بفيديوهات أطول.",
+                        await showDialog<void>(
+                          context: screenContext,
+                          builder: (context) => AlertDialog(
+                            title: const Text('مدة الفيديو غير مسموحة'),
+                            content: const Text(
+                              'مدة كل فيديو يجب ألا تتجاوز دقيقة واحدة.',
+                              textAlign: TextAlign.right,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('موافق'),
+                              ),
+                            ],
+                          ),
                         );
                         return;
                       }
@@ -464,19 +508,22 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                               ));
 
                       if (!screenContext.mounted) return;
+                      final uploadProgress = ValueNotifier<double>(0);
                       _showUploadLoadingDialog(
                         screenContext,
                         "جاري رفع الفيديو...",
+                        uploadProgress,
                       );
-                      final success =
-                          await mediaService.uploadVideo(
+                      final success = await mediaService.uploadVideo(
                         file,
                         caption,
                         durationSeconds: durationSeconds,
+                        onProgress: (value) => uploadProgress.value = value,
                       );
                       if (screenContext.mounted) {
                         Navigator.of(screenContext, rootNavigator: true).pop();
                       }
+                      uploadProgress.dispose();
                       if (success && mounted) {
                         setState(() {
                           _mediaReloadTick++;
@@ -502,8 +549,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                   },
                 ),
                 ListTile(
-                  leading:
-                      Icon(Icons.calendar_month, color: colors.primary),
+                  leading: Icon(Icons.calendar_month, color: colors.primary),
                   title: const Text("إضافة إلى الجدول"),
                   onTap: () async {
                     Navigator.pop(context);
@@ -566,26 +612,34 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         Tab(text: "الجدول"),
       ];
       tabViews = [
-        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
-            userId: displayUser.id,
-            type: "Offer",
-            isOwner: isOwner,
-            refreshToken: _mediaReloadTick)),
-        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
-            userId: displayUser.id,
-            type: "Photo",
-            isOwner: isOwner,
-            refreshToken: _mediaReloadTick)),
-        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
-            userId: displayUser.id,
-            type: "Video",
-            isOwner: isOwner,
-            refreshToken: _mediaReloadTick)),
-        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
-            userId: displayUser.id,
-            type: "Event",
-            isOwner: isOwner,
-            refreshToken: _mediaReloadTick)),
+        Align(
+            alignment: Alignment.topCenter,
+            child: ProfileMediaGrid(
+                userId: displayUser.id,
+                type: "Offer",
+                isOwner: isOwner,
+                refreshToken: _mediaReloadTick)),
+        Align(
+            alignment: Alignment.topCenter,
+            child: ProfileMediaGrid(
+                userId: displayUser.id,
+                type: "Photo",
+                isOwner: isOwner,
+                refreshToken: _mediaReloadTick)),
+        Align(
+            alignment: Alignment.topCenter,
+            child: ProfileMediaGrid(
+                userId: displayUser.id,
+                type: "Video",
+                isOwner: isOwner,
+                refreshToken: _mediaReloadTick)),
+        Align(
+            alignment: Alignment.topCenter,
+            child: ProfileMediaGrid(
+                userId: displayUser.id,
+                type: "Event",
+                isOwner: isOwner,
+                refreshToken: _mediaReloadTick)),
       ];
     } else {
       tabs = const [
@@ -593,16 +647,20 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         Tab(text: "محفوظات"),
       ];
       tabViews = [
-        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
-            userId: displayUser.id,
-            type: "Purchased",
-            isOwner: isOwner,
-            refreshToken: _mediaReloadTick)),
-        Align(alignment: Alignment.topCenter, child: ProfileMediaGrid(
-            userId: displayUser.id,
-            type: "Saved",
-            isOwner: isOwner,
-            refreshToken: _mediaReloadTick)),
+        Align(
+            alignment: Alignment.topCenter,
+            child: ProfileMediaGrid(
+                userId: displayUser.id,
+                type: "Purchased",
+                isOwner: isOwner,
+                refreshToken: _mediaReloadTick)),
+        Align(
+            alignment: Alignment.topCenter,
+            child: ProfileMediaGrid(
+                userId: displayUser.id,
+                type: "Saved",
+                isOwner: isOwner,
+                refreshToken: _mediaReloadTick)),
       ];
     }
 
@@ -626,17 +684,17 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     final serviceAreaLabel = serviceAreaParts.join(" - ");
 
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: colors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           if (!isOwner && isLoggedIn)
             Center(
               child: Padding(
-                padding: const EdgeInsets.only(
-                    right: 8.0, top: 8.0, bottom: 8.0),
+                padding:
+                    const EdgeInsets.only(right: 8.0, top: 8.0, bottom: 8.0),
                 child: ElevatedButton(
                   onPressed: () => _toggleFollow(displayUser.id),
                   style: ElevatedButton.styleFrom(
@@ -650,8 +708,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                   ),
                   child: Text(_isFollowing ? "إلغاء المتابعة" : "متابعة",
-                      style:
-                          const TextStyle(fontWeight: FontWeight.bold)),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ),
@@ -688,8 +745,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             ),
           if (isOwner && displayUser.isSuperadmin)
             Container(
-              margin: const EdgeInsets.only(
-                  right: 8.0, top: 8.0, bottom: 8.0),
+              margin: const EdgeInsets.only(right: 8.0, top: 8.0, bottom: 8.0),
               decoration: BoxDecoration(
                 color: _isReloadingBadge
                     ? colors.primaryDark.withValues(alpha: 0.55)
@@ -759,17 +815,16 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) =>
-                                            EditProfileScreen(
-                                                user: displayUser)),
+                                        builder: (context) => EditProfileScreen(
+                                            user: displayUser)),
                                   );
                                 }
                               : null,
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: colors.textPrimary, width: 3),
+                              border: Border.all(
+                                  color: colors.textPrimary, width: 3),
                             ),
                             child: CircleAvatar(
                               radius: 40,
@@ -783,82 +838,88 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              displayUser.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: colors.textPrimary,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            displayUser.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: colors.textPrimary,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
-                                          if ((displayUser.gender ?? '')
-                                              .trim()
-                                              .toLowerCase() == 'male')
-                                            Icon(Icons.male,
-                                                color: colors.primary,
-                                                size: 20)
-                                          else if ((displayUser.gender ?? '')
-                                              .trim()
-                                              .toLowerCase() == 'female')
-                                            Icon(Icons.female,
-                                                color: colors.accentPink,
-                                                size: 20),
-                                          if (displayUser.role == UserRole.creator)
-                                            const SizedBox(width: 6),
-                                          if (displayUser.role == UserRole.creator)
-                                            Icon(Icons.verified,
-                                                color: colors.info, size: 20),
-                                        ],
-                                      ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        if ((displayUser.gender ?? '')
+                                                .trim()
+                                                .toLowerCase() ==
+                                            'male')
+                                          Icon(Icons.male,
+                                              color: colors.primary, size: 20)
+                                        else if ((displayUser.gender ?? '')
+                                                .trim()
+                                                .toLowerCase() ==
+                                            'female')
+                                          Icon(Icons.female,
+                                              color: colors.accentPink,
+                                              size: 20),
+                                        if (displayUser.role ==
+                                            UserRole.creator)
+                                          const SizedBox(width: 6),
+                                        if (displayUser.role ==
+                                            UserRole.creator)
+                                          Icon(Icons.verified,
+                                              color: colors.info, size: 20),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
+                              ),
                               Text(
                                 "@${displayUser.email.split('@')[0]}",
                                 style: TextStyle(color: colors.textSecondary),
                               ),
-                                if ((displayUser.role == UserRole.creator &&
+                              if ((displayUser.role == UserRole.creator &&
+                                      (displayUser.creatorLevelName ?? '')
+                                          .trim()
+                                          .isNotEmpty &&
+                                      (displayUser.creatorLevelIcon ?? '')
+                                          .trim()
+                                          .isNotEmpty) ||
+                                  displayUser.isSuperadmin) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    if (displayUser.role == UserRole.creator &&
                                         (displayUser.creatorLevelName ?? '')
                                             .trim()
                                             .isNotEmpty &&
                                         (displayUser.creatorLevelIcon ?? '')
                                             .trim()
-                                            .isNotEmpty) ||
-                                    displayUser.isSuperadmin) ...[
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
-                                      if (displayUser.role == UserRole.creator &&
-                                          (displayUser.creatorLevelName ?? '')
-                                              .trim()
-                                              .isNotEmpty &&
-                                          (displayUser.creatorLevelIcon ?? '')
-                                              .trim()
-                                              .isNotEmpty)
-                                        _buildCreatorLevelBadge(
-                                          icon: displayUser.creatorLevelIcon!.trim(),
-                                          name: displayUser.creatorLevelName!.trim(),
-                                        ),
-                                      if (displayUser.isSuperadmin)
-                                        _buildSuperadminBadgeIcon(
-                                          iconUrl: displayUser.superadminBadgeIconUrl,
-                                          label: displayUser.superadminBadgeLabel,
-                                        ),
-                                    ],
-                                  ),
-                                ],
+                                            .isNotEmpty)
+                                      _buildCreatorLevelBadge(
+                                        icon: displayUser.creatorLevelIcon!
+                                            .trim(),
+                                        name: displayUser.creatorLevelName!
+                                            .trim(),
+                                      ),
+                                    if (displayUser.isSuperadmin)
+                                      _buildSuperadminBadgeIcon(
+                                        iconUrl:
+                                            displayUser.superadminBadgeIconUrl,
+                                        label: displayUser.superadminBadgeLabel,
+                                      ),
+                                  ],
+                                ),
+                              ],
                               if (serviceAreaLabel.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Wrap(
@@ -893,16 +954,15 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildStatItem(
-                              "متابعون", _followersCount.toString()),
+                          _buildStatItem("متابعون", _followersCount.toString()),
                           _buildStatItem("متابع", _followingCount.toString()),
                         ],
                       ),
                     const SizedBox(height: 20),
                   ],
                   const Text("نبذة تعريفية",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 8),
                   Text(bio,
                       style:
@@ -950,7 +1010,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       "resolved=${_debugLastNormalizedUrl ?? 'null'}\n"
                       "badgeReloadTick=$_badgeReloadTick\n"
                       "reloadStatus=${_badgeReloadStatus ?? 'idle'}",
-                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                      style:
+                          TextStyle(color: colors.textSecondary, fontSize: 12),
                     ),
                     const SizedBox(height: 6),
                     OutlinedButton.icon(
@@ -961,16 +1022,21 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: colors.textPrimary),
                             )
-                          : Icon(Icons.refresh, size: 14, color: colors.textPrimary),
+                          : Icon(Icons.refresh,
+                              size: 14, color: colors.textPrimary),
                       label: Text(
-                        _isReloadingBadge ? "Reloadar..." : "Force reload badge",
+                        _isReloadingBadge
+                            ? "Reloadar..."
+                            : "Force reload badge",
                         style: TextStyle(color: colors.textPrimary),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: colors.textPrimary.withValues(alpha: 0.4)),
+                        side: BorderSide(
+                            color: colors.textPrimary.withValues(alpha: 0.4)),
                       ),
-                      onPressed:
-                          _isReloadingBadge ? null : _forceReloadSuperadminBadge,
+                      onPressed: _isReloadingBadge
+                          ? null
+                          : _forceReloadSuperadminBadge,
                     ),
                   ],
                   const SizedBox(height: 20),
@@ -1018,7 +1084,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                           padding: const EdgeInsets.symmetric(horizontal: 2.0),
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              gradient: config.effects.primaryGradient(colors.primary, colors.primaryDark),
+                              gradient: config.effects.primaryGradient(
+                                  colors.primary, colors.primaryDark),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
@@ -1319,7 +1386,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
 
   DateTime _startOfWeek(DateTime value) {
     final normalized = _dayOnly(value);
-    return normalized.subtract(Duration(days: normalized.weekday - DateTime.monday));
+    return normalized
+        .subtract(Duration(days: normalized.weekday - DateTime.monday));
   }
 
   bool _sameDay(DateTime a, DateTime b) =>
@@ -1335,7 +1403,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     return 1 + (thursday.difference(firstThursday).inDays ~/ 7);
   }
 
-  Map<DateTime, List<Map<String, dynamic>>> _groupEventsByDay(List<dynamic> items) {
+  Map<DateTime, List<Map<String, dynamic>>> _groupEventsByDay(
+      List<dynamic> items) {
     final grouped = <DateTime, List<Map<String, dynamic>>>{};
     for (final raw in items) {
       if (raw is! Map) continue;
@@ -1414,15 +1483,15 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     return '$hour:$minute';
   }
 
-  String _normalizeMediaUrl(String raw) =>
-      normalizePublicMediaUrl(raw);
+  String _normalizeMediaUrl(String raw) => normalizePublicMediaUrl(raw);
 
   bool _isVideoUrl(String url) {
     if (url.isEmpty) return false;
     final lower = url.toLowerCase();
     if (lower.contains('/videos/')) return true;
     const videoExt = ['.mp4', '.mov', '.webm', '.mkv', '.m3u8'];
-    return videoExt.any((ext) => lower.contains('$ext?') || lower.endsWith(ext));
+    return videoExt
+        .any((ext) => lower.contains('$ext?') || lower.endsWith(ext));
   }
 
   String _calendarStatusLabel(dynamic raw) {
@@ -1471,7 +1540,10 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          gradient: isSelected ? config.effects.primaryGradient(colors.primary, colors.primaryDark) : null,
+          gradient: isSelected
+              ? config.effects
+                  .primaryGradient(colors.primary, colors.primaryDark)
+              : null,
           color: isSelected ? null : colors.surfaceLight,
           boxShadow: isSelected ? AppShadows.glowAccent : null,
           border: Border.all(
@@ -1487,7 +1559,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                  color: colors.textPrimary, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -1524,8 +1597,10 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     return grouped[_dayOnly(day)] ?? const [];
   }
 
-  Widget _buildEventPreviewThumb(Map<String, dynamic> item, {double size = 18, required RemoteThemeColors colors}) {
-    final previewUrl = _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
+  Widget _buildEventPreviewThumb(Map<String, dynamic> item,
+      {double size = 18, required RemoteThemeColors colors}) {
+    final previewUrl =
+        _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
     final isVideo = _isVideoUrl(previewUrl);
     if (previewUrl.isEmpty) {
       return Container(
@@ -1669,7 +1744,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     );
   }
 
-  Widget _buildSelectedDayPanel(List<Map<String, dynamic>> events, RemoteThemeColors colors, AppThemeConfig config) {
+  Widget _buildSelectedDayPanel(List<Map<String, dynamic>> events,
+      RemoteThemeColors colors, AppThemeConfig config) {
     final selectedDay = _selectedDay ?? _dayOnly(DateTime.now());
     return Container(
       width: double.infinity,
@@ -1708,7 +1784,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                 ),
               ),
               FilledButton.icon(
-                onPressed: () => _showCreateEventDialog(initialDate: selectedDay),
+                onPressed: () =>
+                    _showCreateEventDialog(initialDate: selectedDay),
                 icon: const Icon(Icons.add),
                 label: const Text('إضافة'),
               ),
@@ -1732,11 +1809,13 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
           else
             ...events.map(
               (item) {
-                final previewUrl =
-                    _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
+                final previewUrl = _normalizeMediaUrl(
+                    item['cover_image_url']?.toString() ?? '');
                 final isVideo = _isVideoUrl(previewUrl);
-                final statusColor = _calendarStatusColor(item['calendar_status'], colors);
-                final statusBg = _calendarStatusBackground(item['calendar_status'], colors);
+                final statusColor =
+                    _calendarStatusColor(item['calendar_status'], colors);
+                final statusBg =
+                    _calendarStatusBackground(item['calendar_status'], colors);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
@@ -1771,7 +1850,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Text(
-                                    _calendarStatusLabel(item['calendar_status']),
+                                    _calendarStatusLabel(
+                                        item['calendar_status']),
                                     style: TextStyle(
                                       color: statusColor,
                                       fontSize: 11,
@@ -1796,16 +1876,21 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              item['title']?.toString().trim().isNotEmpty == true
+                              item['title']?.toString().trim().isNotEmpty ==
+                                      true
                                   ? item['title'].toString().trim()
-                                  : _calendarStatusLabel(item['calendar_status']),
+                                  : _calendarStatusLabel(
+                                      item['calendar_status']),
                               style: TextStyle(
                                 color: colors.textPrimary,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            if ((item['location']?.toString().trim().isNotEmpty ??
+                            if ((item['location']
+                                    ?.toString()
+                                    .trim()
+                                    .isNotEmpty ??
                                 false)) ...[
                               const SizedBox(height: 6),
                               Text(
@@ -1846,7 +1931,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
     final config = theme.config;
     final locationController = TextEditingController();
     final notesController = TextEditingController();
-    DateTime selectedDate = initialDate ?? DateTime.now().add(const Duration(days: 1));
+    DateTime selectedDate =
+        initialDate ?? DateTime.now().add(const Duration(days: 1));
     TimeOfDay selectedTime = const TimeOfDay(hour: 12, minute: 0);
     String selectedStatus = 'booked';
     File? selectedMedia;
@@ -1886,7 +1972,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                             icon: Icons.event_busy,
                             status: 'booked',
                             currentStatus: selectedStatus,
-                            onTap: () => setDialogState(() => selectedStatus = 'booked'),
+                            onTap: () =>
+                                setDialogState(() => selectedStatus = 'booked'),
                             colors: colors,
                             config: config,
                           ),
@@ -1895,7 +1982,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                             icon: Icons.block,
                             status: 'busy',
                             currentStatus: selectedStatus,
-                            onTap: () => setDialogState(() => selectedStatus = 'busy'),
+                            onTap: () =>
+                                setDialogState(() => selectedStatus = 'busy'),
                             colors: colors,
                             config: config,
                           ),
@@ -1913,8 +2001,10 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                           final pickedDate = await showDatePicker(
                             context: dialogContext,
                             initialDate: selectedDate,
-                            firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            firstDate: DateTime.now()
+                                .subtract(const Duration(days: 1)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
                           );
                           if (pickedDate == null) return;
                           setDialogState(() {
@@ -1964,7 +2054,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                               onTap: () => Navigator.pop(sheetContext, "image"),
                             ),
                             ListTile(
-                              leading: Icon(Icons.videocam, color: colors.error),
+                              leading:
+                                  Icon(Icons.videocam, color: colors.error),
                               title: const Text("رفع فيديو"),
                               onTap: () => Navigator.pop(sheetContext, "video"),
                             ),
@@ -1983,24 +2074,30 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                     });
                   },
                   icon: Icon(
-                    selectedMediaIsVideo ? Icons.videocam : Icons.perm_media_rounded,
+                    selectedMediaIsVideo
+                        ? Icons.videocam
+                        : Icons.perm_media_rounded,
                   ),
                   label: Text(
                     selectedMedia == null
                         ? "إضافة صورة أو فيديو للحدث"
-                        : selectedMedia!.path.split(Platform.pathSeparator).last,
+                        : selectedMedia!.path
+                            .split(Platform.pathSeparator)
+                            .last,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: locationController,
-                  decoration: const InputDecoration(labelText: "الموقع (اختياري)"),
+                  decoration:
+                      const InputDecoration(labelText: "الموقع (اختياري)"),
                 ),
                 TextField(
                   controller: notesController,
                   maxLines: 3,
-                  decoration: const InputDecoration(labelText: "ملاحظات (اختياري)"),
+                  decoration:
+                      const InputDecoration(labelText: "ملاحظات (اختياري)"),
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -2044,7 +2141,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                 showDialog(
                   context: dialogContext,
                   barrierDismissible: false,
-                  builder: (_) => const Center(child: CircularProgressIndicator()),
+                  builder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
                 );
 
                 final error = await context.read<MediaService>().createEvent(
@@ -2098,7 +2196,7 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
         Navigator.pop(context, _didChange);
       },
       child: Scaffold(
-        backgroundColor: colors.background,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: colors.background,
           elevation: 0,
@@ -2110,7 +2208,8 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
           ),
           actions: [
             IconButton(
-              onPressed: () => _showCreateEventDialog(initialDate: _selectedDay),
+              onPressed: () =>
+                  _showCreateEventDialog(initialDate: _selectedDay),
               icon: const Icon(Icons.add_circle_outline_rounded),
             ),
           ],
@@ -2157,14 +2256,15 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                         children: [
                           IconButton(
                             onPressed: () {
-                              final newWeek =
-                                  _visibleWeekStart.subtract(const Duration(days: 7));
+                              final newWeek = _visibleWeekStart
+                                  .subtract(const Duration(days: 7));
                               setState(() {
                                 _visibleWeekStart = newWeek;
                                 _selectedDay = newWeek;
                               });
                             },
-                            icon: Icon(Icons.chevron_left, color: colors.textPrimary),
+                            icon: Icon(Icons.chevron_left,
+                                color: colors.textPrimary),
                           ),
                           Expanded(
                             child: Column(
@@ -2191,14 +2291,15 @@ class _CreatorCalendarScreenState extends State<CreatorCalendarScreen> {
                           ),
                           IconButton(
                             onPressed: () {
-                              final newWeek =
-                                  _visibleWeekStart.add(const Duration(days: 7));
+                              final newWeek = _visibleWeekStart
+                                  .add(const Duration(days: 7));
                               setState(() {
                                 _visibleWeekStart = newWeek;
                                 _selectedDay = newWeek;
                               });
                             },
-                            icon: Icon(Icons.chevron_right, color: colors.textPrimary),
+                            icon: Icon(Icons.chevron_right,
+                                color: colors.textPrimary),
                           ),
                         ],
                       ),
@@ -2377,7 +2478,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.videocam_rounded, color: colors.textPrimary, size: 12),
+                  Icon(Icons.videocam_rounded,
+                      color: colors.textPrimary, size: 12),
                   const SizedBox(width: 4),
                   Text(
                     "HD",
@@ -2396,8 +2498,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     );
   }
 
-  String _normalizeMediaUrl(String raw) =>
-      normalizePublicMediaUrl(raw);
+  String _normalizeMediaUrl(String raw) => normalizePublicMediaUrl(raw);
 
   bool _isVideoUrl(String raw) {
     if (raw.trim().isEmpty) return false;
@@ -2470,7 +2571,8 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     return colors.infoBg;
   }
 
-  Widget _buildEventGridCard(dynamic rawItem, RemoteThemeColors colors, AppThemeConfig config) {
+  Widget _buildEventGridCard(
+      dynamic rawItem, RemoteThemeColors colors, AppThemeConfig config) {
     final item = Map<String, dynamic>.from(rawItem as Map);
     final title = (item['title']?.toString().trim().isNotEmpty ?? false)
         ? item['title'].toString().trim()
@@ -2482,8 +2584,10 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
         _normalizeMediaUrl(item['cover_image_url']?.toString() ?? '');
     final hasPreview = previewUrl.isNotEmpty;
     final isVideo = _isVideoUrl(previewUrl);
-    final badgeColor = _calendarStatusColorGrid(item['calendar_status'], colors);
-    final badgeBackground = _calendarStatusBackgroundGrid(item['calendar_status'], colors);
+    final badgeColor =
+        _calendarStatusColorGrid(item['calendar_status'], colors);
+    final badgeBackground =
+        _calendarStatusBackgroundGrid(item['calendar_status'], colors);
 
     return Card(
       color: colors.surface,
@@ -2734,7 +2838,14 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                 ? "اضغط على زر الجمع في علامة الجدول لإضافة مواعيد للحجوزات."
                 : "لا توجد حجوزات لعرضها حاليا.",
           };
-          const known = ['Purchased','Saved','Offer','Photo','Video','Event'];
+          const known = [
+            'Purchased',
+            'Saved',
+            'Offer',
+            'Photo',
+            'Video',
+            'Event'
+          ];
           final typeKey = known.contains(widget.type) ? widget.type : 'Photo';
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
@@ -2758,14 +2869,11 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                       ),
                     ],
                   ),
-                  child: Icon(
-                      emptyIcons[typeKey] ?? Icons.perm_media_outlined,
-                      size: 44,
-                      color: colors.primary),
+                  child: Icon(emptyIcons[typeKey] ?? Icons.perm_media_outlined,
+                      size: 44, color: colors.primary),
                 ),
                 const SizedBox(height: 22),
-                Text(
-                    emptyTitlesAr[typeKey] ?? "لا يوجد محتوى بعد",
+                Text(emptyTitlesAr[typeKey] ?? "لا يوجد محتوى بعد",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: colors.textPrimary,
@@ -2773,8 +2881,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                       fontWeight: FontWeight.w800,
                     )),
                 const SizedBox(height: 10),
-                Text(
-                    emptyHintsAr[typeKey] ?? "",
+                Text(emptyHintsAr[typeKey] ?? "",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: colors.textSecondary,
@@ -2807,248 +2914,257 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
             rows * cardH +
             (rows > 1 ? (rows - 1) * mainSpc : 0.0);
 
-        return SizedBox(height: totH, child: GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(8, 6, 8, 20),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: isOfferGrid
-                ? 0.95
-                : widget.type == "Event"
-                    ? 0.86
-                    : 0.75,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            if (widget.type == "Event") {
-              return _buildEventGridCard(item, colors, config);
-            }
-            String imageUrl = "";
-            String previewUrl = "";
-            String title = "";
-            String subtitle = "";
-            bool isPreviewVideo = false;
-            bool isGridVideo = false;
-
-            bool showVideoBadge = false;
-
-            if (isOfferGrid) {
-              final offer = Offer.fromJson(
-                Map<String, dynamic>.from(item as Map),
-              );
-
-              title = offer.title.isEmpty ? "No Title" : offer.title;
-              subtitle = "${offer.price.toStringAsFixed(0)} IQD";
-
-              final normalizedMedia = offer.mediaItems
-                  .map(
-                    (m) => OfferMediaItem(
-                      rawUrl: m.rawUrl,
-                      url: _normalizeMediaUrl(m.url),
-                      type: m.type,
-                    ),
-                  )
-                  .toList();
-
-              showVideoBadge = normalizedMedia.any((m) => m.isVideo);
-              final firstImage = normalizedMedia.firstWhere(
-                (m) => !m.isVideo && m.url.trim().isNotEmpty,
-                orElse: () => const OfferMediaItem(rawUrl: '', url: '', type: 'image'),
-              );
-
-              if (firstImage.url.trim().isNotEmpty) {
-                imageUrl = firstImage.url;
-              } else {
-                final fallback = _normalizeMediaUrl(offer.imageUrl);
-                if (_isVideoUrl(fallback)) {
-                  previewUrl = fallback;
-                  isPreviewVideo = true;
-                  isGridVideo = true;
-                } else {
-                  imageUrl = fallback.isEmpty
-                      ? "https://via.placeholder.com/300"
-                      : fallback;
+        return SizedBox(
+            height: totH,
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 20),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: isOfferGrid
+                    ? 0.95
+                    : widget.type == "Event"
+                        ? 0.86
+                        : 0.75,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                if (widget.type == "Event") {
+                  return _buildEventGridCard(item, colors, config);
                 }
-              }
-            } else if (widget.type == "Photo" || widget.type == "Video") {
-              String path = item['url'] ?? "";
-              previewUrl = _normalizeMediaUrl(path);
-              if (widget.type == "Video") {
-                isPreviewVideo = true;
-                isGridVideo = true;
-              } else {
-                imageUrl = previewUrl;
-              }
-              title = item['caption'] ??
-                  (widget.type == "Video" ? "Video" : "Photo");
-            }
+                String imageUrl = "";
+                String previewUrl = "";
+                String title = "";
+                String subtitle = "";
+                bool isPreviewVideo = false;
+                bool isGridVideo = false;
 
-            final canPreview = previewUrl.isNotEmpty &&
-                (widget.type == "Photo" || widget.type == "Video");
+                bool showVideoBadge = false;
 
-            return Card(
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                            if (isOfferGrid) {
-                              try {
-                                final offer = Offer.fromJson(
-                                  Map<String, dynamic>.from(item as Map),
-                                );
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => OfferDetailsScreen(offer: offer),
-                                  ),
-                                );
-                              } catch (e, stack) {
-                                debugPrint(
-                                    "❌ CreatorProfile grid Offer open error: $e\n$stack");
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                        "تعذر فتح العرض. الرجاء تحديث الصفحة."),
-                                    action: SnackBarAction(
-                                        label: 'تحديث',
-                                        onPressed: () => setState(() {
-                                              _loadFuture = _loadData();
-                                            })),
-                                    duration: const Duration(seconds: 4),
-                                  ),
+                if (isOfferGrid) {
+                  final offer = Offer.fromJson(
+                    Map<String, dynamic>.from(item as Map),
+                  );
+
+                  title = offer.title.isEmpty ? "No Title" : offer.title;
+                  subtitle = "${offer.price.toStringAsFixed(0)} IQD";
+
+                  final normalizedMedia = offer.mediaItems
+                      .map(
+                        (m) => OfferMediaItem(
+                          rawUrl: m.rawUrl,
+                          url: _normalizeMediaUrl(m.url),
+                          type: m.type,
+                        ),
+                      )
+                      .toList();
+
+                  showVideoBadge = normalizedMedia.any((m) => m.isVideo);
+                  final firstImage = normalizedMedia.firstWhere(
+                    (m) => !m.isVideo && m.url.trim().isNotEmpty,
+                    orElse: () => const OfferMediaItem(
+                        rawUrl: '', url: '', type: 'image'),
+                  );
+
+                  if (firstImage.url.trim().isNotEmpty) {
+                    imageUrl = firstImage.url;
+                  } else {
+                    final fallback = _normalizeMediaUrl(offer.imageUrl);
+                    if (_isVideoUrl(fallback)) {
+                      previewUrl = fallback;
+                      isPreviewVideo = true;
+                      isGridVideo = true;
+                    } else {
+                      imageUrl = fallback.isEmpty
+                          ? "https://via.placeholder.com/300"
+                          : fallback;
+                    }
+                  }
+                } else if (widget.type == "Photo" || widget.type == "Video") {
+                  String path = item['url'] ?? "";
+                  previewUrl = _normalizeMediaUrl(path);
+                  if (widget.type == "Video") {
+                    isPreviewVideo = true;
+                    isGridVideo = true;
+                  } else {
+                    imageUrl = previewUrl;
+                  }
+                  title = item['caption'] ??
+                      (widget.type == "Video" ? "Video" : "Photo");
+                }
+
+                final canPreview = previewUrl.isNotEmpty &&
+                    (widget.type == "Photo" || widget.type == "Video");
+
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              if (isOfferGrid) {
+                                try {
+                                  final offer = Offer.fromJson(
+                                    Map<String, dynamic>.from(item as Map),
+                                  );
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          OfferDetailsScreen(offer: offer),
+                                    ),
+                                  );
+                                } catch (e, stack) {
+                                  debugPrint(
+                                      "❌ CreatorProfile grid Offer open error: $e\n$stack");
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text(
+                                          "تعذر فتح العرض. الرجاء تحديث الصفحة."),
+                                      action: SnackBarAction(
+                                          label: 'تحديث',
+                                          onPressed: () => setState(() {
+                                                _loadFuture = _loadData();
+                                              })),
+                                      duration: const Duration(seconds: 4),
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+                              if (canPreview) {
+                                _openMediaPreview(
+                                  mediaUrl: previewUrl,
+                                  title: title,
+                                  isVideo: isPreviewVideo,
                                 );
                               }
-                              return;
-                            }
-                          if (canPreview) {
-                            _openMediaPreview(
-                              mediaUrl: previewUrl,
-                              title: title,
-                              isVideo: isPreviewVideo,
-                            );
-                          }
-                        },
-                        child: isGridVideo
-                            ? _buildVideoTile(colors, config)
-                            : Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                    errorBuilder: (ctx, err, stack) =>
-                                        const Center(child: Icon(Icons.error)),
-                                  ),
-                                  if (showVideoBadge)
-                                    Positioned(
-                                      top: 10,
-                                      right: 10,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: colors.background.withValues(alpha: 0.35),
-                                          borderRadius:
-                                              BorderRadius.circular(999),
-                                          border: Border.all(
-                                              color: colors.borderLight),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.videocam_rounded,
-                                                color: colors.textPrimary, size: 12),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              "HD",
-                                              style: TextStyle(
-                                                color: colors.textPrimary,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                            },
+                            child: isGridVideo
+                                ? _buildVideoTile(colors, config)
+                                : Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        errorBuilder: (ctx, err, stack) =>
+                                            const Center(
+                                                child: Icon(Icons.error)),
                                       ),
+                                      if (showVideoBadge)
+                                        Positioned(
+                                          top: 10,
+                                          right: 10,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: colors.background
+                                                  .withValues(alpha: 0.35),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                              border: Border.all(
+                                                  color: colors.borderLight),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.videocam_rounded,
+                                                    color: colors.textPrimary,
+                                                    size: 12),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  "HD",
+                                                  style: TextStyle(
+                                                    color: colors.textPrimary,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (subtitle.isNotEmpty)
+                                    Text(
+                                      subtitle,
+                                      style: TextStyle(
+                                          color: colors.success, fontSize: 12),
                                     ),
                                 ],
                               ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            ),
+                            if (widget.isOwner &&
+                                (isOfferGrid ||
+                                    widget.type == "Photo" ||
+                                    widget.type == "Video" ||
+                                    widget.type == "Event"))
+                              IconButton(
+                                icon: const Icon(Icons.more_vert, size: 20),
+                                onPressed: () =>
+                                    _showItemOptions(context, item),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              )
+                            else if (!widget.isOwner &&
+                                (widget.type == "Photo" ||
+                                    widget.type == "Video"))
+                              IconButton(
+                                icon: Icon(Icons.flag_outlined,
+                                    size: 20, color: colors.error),
+                                onPressed: () => _showReportDialog(item),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              )
+                            else if (!widget.isOwner && isOfferGrid)
+                              IconButton(
+                                icon: Icon(Icons.flag_outlined,
+                                    size: 20, color: colors.error),
+                                onPressed: () => _showOfferReportDialog(item),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
                               ),
-                              if (subtitle.isNotEmpty)
-                                Text(
-                                  subtitle,
-                                  style: TextStyle(
-                                      color: colors.success, fontSize: 12),
-                                ),
-                            ],
-                          ),
+                          ],
                         ),
-                        if (widget.isOwner &&
-                            (isOfferGrid ||
-                                widget.type == "Photo" ||
-                                widget.type == "Video" ||
-                                widget.type == "Event"))
-                          IconButton(
-                            icon: const Icon(Icons.more_vert, size: 20),
-                            onPressed: () => _showItemOptions(context, item),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          )
-                        else if (!widget.isOwner &&
-                            (widget.type == "Photo" || widget.type == "Video"))
-                          IconButton(
-                            icon: Icon(Icons.flag_outlined,
-                                size: 20, color: colors.error),
-                            onPressed: () => _showReportDialog(item),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          )
-                        else if (!widget.isOwner && isOfferGrid)
-                          IconButton(
-                            icon: Icon(Icons.flag_outlined,
-                                size: 20, color: colors.error),
-                            onPressed: () => _showOfferReportDialog(item),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          },
-        )); // GridView.builder + SizedBox(height: totH) STÄNGNING
+                );
+              },
+            )); // GridView.builder + SizedBox(height: totH) STÄNGNING
       },
     );
   }
@@ -3058,7 +3174,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
     final colors = theme.colors;
     showModalBottomSheet(
       context: context,
-      backgroundColor: colors.background,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3091,8 +3207,7 @@ class _ProfileMediaGridState extends State<ProfileMediaGrid> {
                 leading: Icon(Icons.delete, color: colors.error),
                 title: Text("حذف",
                     style: TextStyle(
-                        color: colors.error,
-                        fontWeight: FontWeight.bold)),
+                        color: colors.error, fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(context);
                   _handleDelete(item);
@@ -3409,7 +3524,7 @@ class _ProfileMediaPreviewScreenState
     final theme = context.watch<AppThemeService>();
     final colors = theme.colors;
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: colors.background,
         foregroundColor: colors.textPrimary,
@@ -3465,7 +3580,8 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                         padding: const EdgeInsets.only(left: 8.0, right: 4.0),
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            gradient: config.effects.primaryGradient(colors.primary, colors.primaryDark),
+                            gradient: config.effects.primaryGradient(
+                                colors.primary, colors.primaryDark),
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
@@ -3497,8 +3613,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                   ),
                   physics: const BouncingScrollPhysics(),
                   isScrollable: false,
-                  labelPadding:
-                      const EdgeInsets.symmetric(horizontal: 8.0),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 8.0),
                   padding: EdgeInsets.zero,
                   tabs: tabs,
                 ),

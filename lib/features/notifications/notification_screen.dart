@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/services/notification_service.dart';
 import '../../models/notification_item.dart';
 import 'package:intl/intl.dart';
@@ -42,11 +43,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey[400]),
+                          Icon(Icons.notifications_off_outlined,
+                              size: 64, color: Colors.grey[400]),
                           const SizedBox(height: 16),
                           Text(
                             'لا توجد إشعارات حالياً', // No notifications currently
-                            style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 16),
                           ),
                         ],
                       ),
@@ -54,7 +57,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: notifications.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1),
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final notification = notifications[index];
                         return NotificationTile(notification: notification);
@@ -73,7 +77,8 @@ class NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Format date: "12 Feb, 10:30 AM"
-    final dateStr = DateFormat('dd MMM, hh:mm a').format(notification.timestamp);
+    final dateStr =
+        DateFormat('dd MMM, hh:mm a').format(notification.timestamp);
 
     return Container(
       color: notification.isRead
@@ -84,12 +89,14 @@ class NotificationTile extends StatelessWidget {
         leading: CircleAvatar(
           backgroundColor:
               _getTypeColor(notification.type).withValues(alpha: 0.1),
-          child: Icon(_getTypeIcon(notification.type), color: _getTypeColor(notification.type)),
+          child: Icon(_getTypeIcon(notification.type),
+              color: _getTypeColor(notification.type)),
         ),
         title: Text(
           notification.title,
           style: TextStyle(
-            fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+            fontWeight:
+                notification.isRead ? FontWeight.normal : FontWeight.bold,
           ),
         ),
         subtitle: Column(
@@ -114,21 +121,31 @@ class NotificationTile extends StatelessWidget {
 
   Color _getTypeColor(String type) {
     switch (type) {
-      case 'booking': return Colors.orange;
-      case 'payment': return Colors.green;
-      case 'delivery': return Colors.blue;
-      case 'system': return Colors.purple;
-      default: return Colors.grey;
+      case 'booking':
+        return Colors.orange;
+      case 'payment':
+        return Colors.green;
+      case 'delivery':
+        return Colors.blue;
+      case 'system':
+        return AppColors.accentPink;
+      default:
+        return Colors.grey;
     }
   }
 
   IconData _getTypeIcon(String type) {
     switch (type) {
-      case 'booking': return Icons.calendar_today;
-      case 'payment': return Icons.attach_money;
-      case 'delivery': return Icons.inventory_2;
-      case 'system': return Icons.info_outline;
-      default: return Icons.notifications;
+      case 'booking':
+        return Icons.calendar_today;
+      case 'payment':
+        return Icons.attach_money;
+      case 'delivery':
+        return Icons.inventory_2;
+      case 'system':
+        return Icons.info_outline;
+      default:
+        return Icons.notifications;
     }
   }
 }

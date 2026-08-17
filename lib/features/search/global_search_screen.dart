@@ -116,7 +116,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
             onChanged: _onSearchChanged,
             autofocus: false,
             decoration: InputDecoration(
-              hintText: 'Ø§Ø¨Ø­Ø« Ø¹Ù† Ù…Ù†Ø´Ø¦ÙŠÙ† Ø£Ùˆ Ø¹Ø±ÙˆØ¶...',
+              hintText: 'ابحث عن منشئين أو عروض...',
               hintStyle: TextStyle(color: colors.textTertiary, fontSize: 14),
               prefixIcon:
                   Icon(Icons.search, color: colors.textSecondary, size: 20),
@@ -141,8 +141,8 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           tabs: [
             Tab(
                 text:
-                    'Ø§Ù„Ù…Ù†Ø´Ø¦ÙˆÙ†${_creators.isEmpty ? '' : ' (${_creators.length})'}'),
-            Tab(text: 'Ø§Ù„Ø¹Ø±ÙˆØ¶${_offers.isEmpty ? '' : ' (${_offers.length})'}'),
+                    'المنشئون${_creators.isEmpty ? '' : ' (${_creators.length})'}'),
+            Tab(text: 'العروض${_offers.isEmpty ? '' : ' (${_offers.length})'}'),
           ],
         ),
       ),
@@ -167,7 +167,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           children: [
             Icon(Icons.person_search, size: 60, color: colors.textTertiary),
             const SizedBox(height: 12),
-            Text('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ù…Ù†Ø´Ø¦ÙŠÙ†',
+            Text('لم يتم العثور على منشئين',
                 style: TextStyle(color: colors.textTertiary)),
           ],
         ),
@@ -199,7 +199,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           ),
           title:
               Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text('Ù…Ù†Ø´Ø¦ Ù…Ø­ØªÙˆÙ‰',
+          subtitle: Text('منشئ محتوى',
               style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           trailing:
               Icon(Icons.arrow_forward_ios, size: 14, color: colors.textSecondary),
@@ -233,7 +233,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           children: [
             Icon(Icons.local_offer_outlined, size: 60, color: colors.textTertiary),
             const SizedBox(height: 12),
-            Text('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø¹Ø±ÙˆØ¶',
+            Text('لم يتم العثور على عروض',
                 style: TextStyle(color: colors.textTertiary)),
           ],
         ),

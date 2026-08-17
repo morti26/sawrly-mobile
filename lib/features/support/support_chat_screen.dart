@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import '../../core/auth/auth_service.dart';
 import '../../core/services/support_service.dart';
+import '../../core/theme/app_theme_service.dart';
 
 class SupportChatScreen extends StatefulWidget {
   const SupportChatScreen({super.key});
@@ -107,13 +108,14 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   Widget _buildMessageBubble(SupportMessage message, bool isMe) {
+    final colors = context.watch<AppThemeService>().colors;
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? Colors.blueAccent : Colors.grey[200],
+          color: isMe ? colors.primary : colors.surfaceLight,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -129,7 +131,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             Text(
               message.content,
               style: TextStyle(
-                color: isMe ? Colors.white : Colors.black87,
+                color: isMe ? colors.textPrimary : colors.textPrimary,
                 fontSize: 16,
               ),
             ),
@@ -137,7 +139,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             Text(
               DateFormat('HH:mm').format(message.createdAt),
               style: TextStyle(
-                color: isMe ? Colors.white70 : Colors.black54,
+                color: isMe ? colors.textPrimary.withValues(alpha: 0.72) : colors.textSecondary,
                 fontSize: 10,
               ),
             ),
@@ -148,13 +150,14 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   Widget _buildMessageInput() {
+    final colors = context.watch<AppThemeService>().colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: colors.background.withValues(alpha: 0.12),
             offset: const Offset(0, -2),
             blurRadius: 4,
           ),
@@ -174,7 +177,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: colors.surfaceLight.withValues(alpha: 0.45),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
                 textInputAction: TextInputAction.send,
@@ -183,12 +186,12 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             ),
             const SizedBox(width: 8),
             Container(
-              decoration: const BoxDecoration(
-                color: Colors.blueAccent,
+              decoration: BoxDecoration(
+                color: colors.primary,
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
+                icon: Icon(Icons.send, color: colors.textPrimary),
                 onPressed: _sendMessage,
               ),
             ),

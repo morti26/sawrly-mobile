@@ -55,3 +55,9 @@ app.*.map.json
 /linux/flutter/ephemeral/
 /macos/Flutter/ephemeral/
 /windows/flutter/ephemeral/
+# Locally archived release binaries exceed GitHub's file-size limit.
+/release-archive/**/*.apk
+# Local release artifacts exceed GitHub's regular file-size limit.
+release-archive/**/*.apk
+release-archive/**/*.aab
+release-archive/**/*.ipa

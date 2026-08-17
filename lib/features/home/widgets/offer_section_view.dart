@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
+import 'package:provider/provider.dart';
+import '../../../core/design/design_tokens.dart';
+import '../../../core/theme/app_theme_service.dart';
 import 'offer_card.dart';
 
 class OfferSectionView extends StatelessWidget {
@@ -20,10 +23,12 @@ class OfferSectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<AppThemeService>();
+    final premium = PremiumDesignTokens.from(theme.config);
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = (screenWidth * 0.36).clamp(128.0, 160.0).toDouble();
-    const imageHeight = 58.0;
-    const sectionHeight = 188.0;
+    final cardWidth = (screenWidth * 0.43).clamp(152.0, 182.0).toDouble();
+    final imageHeight = (cardWidth * .54).clamp(82.0, 98.0).toDouble();
+    const sectionHeight = 250.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,16 +41,27 @@ class OfferSectionView extends StatelessWidget {
             children: [
               Text(
                 title,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  color: premium.textPrimary,
+                  letterSpacing: -.15,
+                ),
               ),
               if (onSeeAll != null)
                 TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: premium.accentWarm,
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   onPressed: onSeeAll,
-                  child: const Text('المزيد',
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFFFFA726))), // Arabic "More"
+                  child: Text(
+                    'المزيد',
+                    style: TextStyle(color: premium.accentWarm),
+                  ), // Arabic "More"
                 )
             ],
           ),
@@ -55,7 +71,7 @@ class OfferSectionView extends StatelessWidget {
         SizedBox(
           height: sectionHeight,
           child: ListView.separated(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 6, 16, 8),
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 10),
             scrollDirection: Axis.horizontal,
             itemCount: offers.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),

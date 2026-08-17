@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../core/design/design_tokens.dart';
 import '../../core/theme/app_theme_service.dart';
 import '../../core/services/media_service.dart';
 import '../../models/user.dart';
@@ -424,7 +423,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     context.watch<AuthService>();
 
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: colors.background,
         foregroundColor: colors.textPrimary,
@@ -440,7 +439,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         centerTitle: true,
         title: Text("تعديل الملف الشخصي",
-            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: colors.textPrimary, fontWeight: FontWeight.bold)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveProfile,
@@ -452,7 +452,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         strokeWidth: 2, color: colors.textPrimary))
                 : Text("حفظ",
                     style: TextStyle(
-                        color: colors.textPrimary, fontWeight: FontWeight.bold)),
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 8),
         ],
@@ -500,7 +501,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('تسجيل الخروج'),
-                      content: const Text('هل أنت متأكد أنك تريد تسجيل الخروج؟'),
+                      content:
+                          const Text('هل أنت متأكد أنك تريد تسجيل الخروج؟'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -586,7 +588,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         border: Border.all(color: colors.textPrimary.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -676,9 +678,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           : Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: Colors.black.withValues(alpha: 0.12),
+                color: Theme.of(context)
+                    .colorScheme
+                    .shadow
+                    .withValues(alpha: 0.12),
               ),
-              child: Icon(Icons.camera_alt_outlined, color: colors.textSecondary),
+              child:
+                  Icon(Icons.camera_alt_outlined, color: colors.textSecondary),
             ),
     );
   }
@@ -730,8 +736,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   ImageProvider? _buildNetworkImage(String? rawUrl) {
     final url = rawUrl?.trim() ?? '';
     if (url.isEmpty) return null;
-    final normalized =
-        url.startsWith('/') ? "https://sawrly.com$url" : url;
+    final normalized = url.startsWith('/') ? "https://sawrly.com$url" : url;
     return NetworkImage(normalized);
   }
 
@@ -1138,7 +1143,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         style: TextStyle(color: colors.textPrimary),
                         decoration: InputDecoration(
                           hintText: "ابحث عن مدينة خدمة",
-                          hintStyle: TextStyle(color: colors.textTertiary.withValues(alpha: 0.7)),
+                          hintStyle: TextStyle(
+                              color:
+                                  colors.textTertiary.withValues(alpha: 0.7)),
                           prefixIcon:
                               Icon(Icons.search, color: colors.textTertiary),
                           filled: true,
@@ -1157,7 +1164,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ScrollViewKeyboardDismissBehavior.onDrag,
                         itemCount: _iraqiCitiesForUi
                             .where(
-                              (city) => city.toLowerCase().contains(searchQuery),
+                              (city) =>
+                                  city.toLowerCase().contains(searchQuery),
                             )
                             .length,
                         itemBuilder: (context, index) {
@@ -1259,7 +1267,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         style: TextStyle(color: colors.textPrimary),
                         decoration: InputDecoration(
                           hintText: "ابحث عن بلد الخدمة",
-                          hintStyle: TextStyle(color: colors.textTertiary.withValues(alpha: 0.7)),
+                          hintStyle: TextStyle(
+                              color:
+                                  colors.textTertiary.withValues(alpha: 0.7)),
                           prefixIcon:
                               Icon(Icons.search, color: colors.textTertiary),
                           filled: true,
@@ -1285,9 +1295,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         itemBuilder: (context, index) {
                           final filteredCountries = _countryOptionsForUi
                               .where(
-                                (country) => country
-                                    .toLowerCase()
-                                    .contains(searchQuery),
+                                (country) =>
+                                    country.toLowerCase().contains(searchQuery),
                               )
                               .toList();
                           final country = filteredCountries[index];
@@ -1402,8 +1411,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
-          crossAxisAlignment:
-              maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+          crossAxisAlignment: maxLines > 1
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.center,
           children: [
             Icon(icon, color: colors.textSecondary, size: 18),
             const SizedBox(width: 10),
@@ -1435,7 +1445,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   isDense: true,
                   border: InputBorder.none,
                   hintText: label,
-                  hintStyle: TextStyle(color: colors.textTertiary.withValues(alpha: 0.7)),
+                  hintStyle: TextStyle(
+                      color: colors.textTertiary.withValues(alpha: 0.7)),
                 ),
               ),
             ),

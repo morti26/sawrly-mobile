@@ -7,6 +7,13 @@ import 'package:mime/mime.dart';
 import '../network/api_client.dart';
 import '../../models/banner_ad.dart';
 
+typedef UploadProgressCallback = void Function(double progress);
+typedef UploadItemProgressCallback = void Function(
+  int itemIndex,
+  int totalItems,
+  double progress,
+);
+
 class MediaService {
   final ApiClient _apiClient;
   final ImagePicker _picker = ImagePicker();
@@ -108,7 +115,9 @@ class MediaService {
         return uri.replace(scheme: 'https', port: null).toString();
       }
       if (uri.host == legacyHost) {
-        return uri.replace(scheme: 'https', host: 'sawrly.com', port: null).toString();
+        return uri
+            .replace(scheme: 'https', host: 'sawrly.com', port: null)
+            .toString();
       }
     }
     if (url.startsWith('http://sawrly.com')) {
@@ -134,7 +143,11 @@ class MediaService {
   }
 
   // Generic upload returning URL (for ephemeral use like Status)
-  Future<String?> uploadFile(File file, {String subDir = 'status'}) async {
+  Future<String?> uploadFile(
+    File file, {
+    String subDir = 'status',
+    UploadProgressCallback? onProgress,
+  }) async {
     _lastUploadError = null;
     try {
       String fileName = file.path.split(Platform.pathSeparator).last;
@@ -159,6 +172,9 @@ class MediaService {
           sendTimeout: const Duration(minutes: 5),
           receiveTimeout: const Duration(minutes: 5),
         ),
+        onSendProgress: (sent, total) {
+          if (total > 0) onProgress?.call((sent / total).clamp(0.0, 1.0));
+        },
       );
 
       if (res.statusCode == 200 || res.statusCode == 201) {
@@ -187,7 +203,8 @@ class MediaService {
 
   // Legacy Generic upload (returns bool)
   Future<bool> _uploadMedia(String endpoint, File file, String caption,
-      {Map<String, dynamic>? extraFields}) async {
+      {Map<String, dynamic>? extraFields,
+      UploadProgressCallback? onProgress}) async {
     try {
       _lastUploadError = null;
       String fileName = file.path.split(Platform.pathSeparator).last;
@@ -205,7 +222,13 @@ class MediaService {
         ...?extraFields,
       });
 
-      await _apiClient.client.post(endpoint, data: formData);
+      await _apiClient.client.post(
+        endpoint,
+        data: formData,
+        onSendProgress: (sent, total) {
+          if (total > 0) onProgress?.call((sent / total).clamp(0.0, 1.0));
+        },
+      );
       return true;
     } on DioException catch (e) {
       _lastUploadError = _extractApiError(e, fallback: "فشل رفع الملف");
@@ -221,22 +244,29 @@ class MediaService {
     }
   }
 
-  Future<bool> uploadPhoto(File file, String caption) async {
-    return _uploadMedia('/media/photo', file, caption);
+  Future<bool> uploadPhoto(
+    File file,
+    String caption, {
+    UploadProgressCallback? onProgress,
+  }) async {
+    return _uploadMedia('/media/photo', file, caption, onProgress: onProgress);
   }
 
   Future<bool> uploadVideo(
     File file,
     String caption, {
     int? durationSeconds,
+    UploadProgressCallback? onProgress,
   }) async {
     return _uploadMedia(
       '/media/video',
       file,
       caption,
       extraFields: {
-        if (durationSeconds != null) 'durationSeconds': durationSeconds.toString(),
+        if (durationSeconds != null)
+          'durationSeconds': durationSeconds.toString(),
       },
+      onProgress: onProgress,
     );
   }
 
@@ -286,6 +316,7 @@ class MediaService {
     double? originalPrice,
     double? partialPaymentAmount,
     double? fullPaymentAmount,
+    UploadItemProgressCallback? onUploadProgress,
   }) async {
     _lastUploadError = null;
 
@@ -294,15 +325,38 @@ class MediaService {
     }
     final mediaItems = <Map<String, dynamic>>[];
 
+    final totalUploads = images.length + (video == null ? 0 : 1);
+    var uploadIndex = 0;
     for (final image in images) {
-      final url = await uploadFile(image, subDir: 'offers');
+      final currentIndex = uploadIndex;
+      final url = await uploadFile(
+        image,
+        subDir: 'offers',
+        onProgress: (progress) => onUploadProgress?.call(
+          currentIndex,
+          totalUploads,
+          progress,
+        ),
+      );
       if (url == null) return _lastUploadError ?? "فشل رفع الوسائط";
       mediaItems.add({'url': url, 'type': 'image'});
+      onUploadProgress?.call(currentIndex, totalUploads, 1);
+      uploadIndex++;
     }
     if (video != null) {
-      final url = await uploadFile(video, subDir: 'offers');
+      final currentIndex = uploadIndex;
+      final url = await uploadFile(
+        video,
+        subDir: 'offers',
+        onProgress: (progress) => onUploadProgress?.call(
+          currentIndex,
+          totalUploads,
+          progress,
+        ),
+      );
       if (url == null) return _lastUploadError ?? "فشل رفع الوسائط";
       mediaItems.add({'url': url, 'type': 'video'});
+      onUploadProgress?.call(currentIndex, totalUploads, 1);
     }
 
     final imageUrl = mediaItems
@@ -314,7 +368,8 @@ class MediaService {
         'title': title,
         'description': description,
         'priceIqd': price > 0 ? price : 0.0,
-        if (partialPaymentAmount != null) 'partialPaymentIqd': partialPaymentAmount,
+        if (partialPaymentAmount != null)
+          'partialPaymentIqd': partialPaymentAmount,
         if (fullPaymentAmount != null) 'fullPaymentIqd': fullPaymentAmount,
         if (imageUrl != null) 'imageUrl': imageUrl,
         if (mediaItems.isNotEmpty) 'mediaItems': mediaItems,
@@ -393,10 +448,14 @@ class MediaService {
         final first = data.first;
         if (first is Map) {
           final keys = first.keys.toList();
-          debugPrint("DEBUG fetchOffers: got ${data.length} items. First item KEYS: $keys");
-          final rawImg = first['image_url'] ?? first['imageUrl'] ?? 'MISSING_BOTH';
-          final rawItems = first['media_items'] ?? first['mediaItems'] ?? 'MISSING_BOTH';
-          debugPrint("DEBUG fetchOffers: image_url/imageUrl -> $rawImg | media_items/mediaItems type -> ${rawItems.runtimeType}, len -> ${rawItems is List ? rawItems.length : 'not list'}");
+          debugPrint(
+              "DEBUG fetchOffers: got ${data.length} items. First item KEYS: $keys");
+          final rawImg =
+              first['image_url'] ?? first['imageUrl'] ?? 'MISSING_BOTH';
+          final rawItems =
+              first['media_items'] ?? first['mediaItems'] ?? 'MISSING_BOTH';
+          debugPrint(
+              "DEBUG fetchOffers: image_url/imageUrl -> $rawImg | media_items/mediaItems type -> ${rawItems.runtimeType}, len -> ${rawItems is List ? rawItems.length : 'not list'}");
         }
       } else {
         debugPrint("DEBUG fetchOffers: EMPTY list returned from /offers");
@@ -411,8 +470,8 @@ class MediaService {
 
   Future<List<dynamic>> fetchSavedOffers() async {
     try {
-      final res =
-          await _apiClient.client.get('/offers', queryParameters: {'saved': '1'});
+      final res = await _apiClient.client
+          .get('/offers', queryParameters: {'saved': '1'});
       return res.data as List<dynamic>;
     } catch (e) {
       debugPrint("Fetch Saved Offers Error: $e");
@@ -684,6 +743,7 @@ class MediaService {
     double? originalPrice,
     double? partialPaymentAmount,
     double? fullPaymentAmount,
+    UploadItemProgressCallback? onUploadProgress,
   }) async {
     _lastUploadError = null;
     List<Map<String, dynamic>>? mediaItems;
@@ -693,15 +753,39 @@ class MediaService {
         return "يمكنك رفع 3 صور كحد أقصى";
       }
       mediaItems = <Map<String, dynamic>>[];
-      for (final image in images ?? const <File>[]) {
-        final url = await uploadFile(image, subDir: 'offers');
+      final imageFiles = images ?? const <File>[];
+      final totalUploads = imageFiles.length + (video == null ? 0 : 1);
+      var uploadIndex = 0;
+      for (final image in imageFiles) {
+        final currentIndex = uploadIndex;
+        final url = await uploadFile(
+          image,
+          subDir: 'offers',
+          onProgress: (progress) => onUploadProgress?.call(
+            currentIndex,
+            totalUploads,
+            progress,
+          ),
+        );
         if (url == null) return _lastUploadError ?? "فشل رفع الوسائط";
         mediaItems.add({'url': url, 'type': 'image'});
+        onUploadProgress?.call(currentIndex, totalUploads, 1);
+        uploadIndex++;
       }
       if (video != null) {
-        final url = await uploadFile(video, subDir: 'offers');
+        final currentIndex = uploadIndex;
+        final url = await uploadFile(
+          video,
+          subDir: 'offers',
+          onProgress: (progress) => onUploadProgress?.call(
+            currentIndex,
+            totalUploads,
+            progress,
+          ),
+        );
         if (url == null) return _lastUploadError ?? "فشل رفع الوسائط";
         mediaItems.add({'url': url, 'type': 'video'});
+        onUploadProgress?.call(currentIndex, totalUploads, 1);
       }
       imageUrl = mediaItems
           .firstWhere((e) => e['type'] == 'image', orElse: () => {})['url']
@@ -714,7 +798,8 @@ class MediaService {
         if (title != null) 'title': title,
         if (description != null) 'description': description,
         if (price != null) 'priceIqd': price,
-        if (partialPaymentAmount != null) 'partialPaymentIqd': partialPaymentAmount,
+        if (partialPaymentAmount != null)
+          'partialPaymentIqd': partialPaymentAmount,
         if (fullPaymentAmount != null) 'fullPaymentIqd': fullPaymentAmount,
         if (imageUrl != null) 'imageUrl': imageUrl,
         if (mediaItems != null) 'mediaItems': mediaItems,

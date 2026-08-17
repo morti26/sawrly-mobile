@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/design/design_tokens.dart';
 import '../../core/services/media_service.dart';
+import '../../core/theme/app_theme_service.dart';
 import '../../models/banner_ad.dart';
 import '../home/widgets/home_header.dart';
 import '../home/widgets/banner_announcement.dart';
@@ -50,18 +50,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   String _normalizeUrl(String url) {
     if (url.startsWith('/')) return 'https://sawrly.com$url';
     if (url.startsWith('http://10.0.2.2:3000')) {
-      return url.replaceFirst(
-          'http://10.0.2.2:3000', 'https://sawrly.com');
+      return url.replaceFirst('http://10.0.2.2:3000', 'https://sawrly.com');
     }
     if (url.startsWith('http://localhost:3000')) {
-      return url.replaceFirst(
-          'http://localhost:3000', 'https://sawrly.com');
+      return url.replaceFirst('http://localhost:3000', 'https://sawrly.com');
     }
     final uri = Uri.tryParse(url);
     if (uri != null && uri.hasAuthority) {
       final legacyHost = ['ph', 'sitely24', 'com'].join('.');
       if (uri.host == legacyHost) {
-        return uri.replace(scheme: 'https', host: 'sawrly.com', port: null).toString();
+        return uri
+            .replace(scheme: 'https', host: 'sawrly.com', port: null)
+            .toString();
       }
       if (uri.scheme == 'http' && uri.host == 'sawrly.com') {
         return uri.replace(scheme: 'https', port: null).toString();
@@ -72,8 +72,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.watch<AppThemeService>().colors;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -96,7 +97,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       const SizedBox(height: 24),
 
                       // Title
-                      const Align(
+                      Align(
                         alignment: Alignment.centerRight,
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -105,7 +106,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: colors.textPrimary,
                             ),
                           ),
                         ),
@@ -173,8 +174,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black
-                                            .withValues(alpha: 0.05),
+                                        color: colors.background
+                                            .withValues(alpha: 0.16),
                                         blurRadius: 8,
                                         offset: const Offset(0, 4),
                                       ),
@@ -205,10 +206,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                               cacheHeight: cacheHeight,
                                               errorBuilder: (_, __, ___) =>
                                                   Container(
-                                                color: Colors.grey.shade300,
-                                                child: const Icon(
+                                                color: colors.surfaceLight,
+                                                child: Icon(
                                                   Icons.category,
-                                                  color: Colors.grey,
+                                                  color: colors.textSecondary,
                                                 ),
                                               ),
                                             );
@@ -222,8 +223,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                               end: Alignment.bottomCenter,
                                               colors: [
                                                 Colors.transparent,
-                                                Colors.black
-                                                    .withValues(alpha: 0.7),
+                                                colors.background
+                                                    .withValues(alpha: 0.78),
                                               ],
                                               stops: const [0.4, 1.0],
                                             ),
@@ -237,8 +238,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                           child: Text(
                                             title,
                                             textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            style: TextStyle(
+                                              color: colors.textPrimary,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
                                             ),

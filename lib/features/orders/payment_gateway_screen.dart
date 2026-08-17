@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../../core/theme/app_theme_service.dart';
+import 'package:provider/provider.dart';
 
 class PaymentGatewayScreen extends StatefulWidget {
   final String checkoutUrl;
@@ -63,11 +65,12 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.watch<AppThemeService>().colors;
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1320),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F1320),
-        foregroundColor: Colors.white,
+        backgroundColor: context.watch<AppThemeService>().colors.background,
+        foregroundColor: context.watch<AppThemeService>().colors.textPrimary,
         centerTitle: true,
         title: const Text('بوابة الدفع'),
         actions: [
@@ -85,8 +88,8 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
             LinearProgressIndicator(
               value: _loadingProgress / 100,
               minHeight: 3,
-              backgroundColor: Colors.white12,
-              color: const Color(0xFF7A3EED),
+              backgroundColor: colors.border.withValues(alpha: 0.18),
+              color: colors.primary,
             ),
           Expanded(
             child: _pageFailed
@@ -96,17 +99,17 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.error_outline,
                             size: 56,
-                            color: Colors.white70,
+                            color: colors.textSecondary,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             _errorText ?? 'تعذر تحميل بوابة الدفع',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -126,8 +129,8 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF7A3EED),
-                                foregroundColor: Colors.white,
+                                backgroundColor: colors.primary,
+                                foregroundColor: colors.textPrimary,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),
                               ),

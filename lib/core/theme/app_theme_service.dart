@@ -43,23 +43,26 @@ class AppThemeService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   static const RemoteThemeColors _defaultColors = RemoteThemeColors(
-    primary: Color(0xFF9B4DFF),
-    primaryLight: Color(0xFFC48CFF),
-    primaryDark: Color(0xFF7230CC),
-    accentPink: Color(0xFFFF4DA6),
-    background: Color(0xFF46205A),
-    surface: Color(0xFF57246F),
-    surfaceLight: Color(0xFF6F2E8E),
-    menuBackground: Color(0xFF421B54),
+    primary: Color(0xFFD91F68),
+    primaryLight: Color(0xFFFF326F),
+    primaryDark: Color(0xFF76072E),
+    accentPink: Color(0xFFF0296B),
+    background: Color(0xFF200810),
+    surface: Color(0xFF35101A),
+    surfaceLight: Color(0xFF531020),
+    menuBackground: Color(0xFF250512),
     textPrimary: Color(0xFFFFFFFF),
-    textSecondary: Color(0xFFB0B0B0),
-    textTertiary: Color(0xFF707070),
+    textSecondary: Color(0xFFCBC3C6),
+    textTertiary: Color(0xFF9E9297),
     success: Color(0xFF22C55E),
     warning: Color(0xFFF59E0B),
     error: Color(0xFFEF4444),
     info: Color(0xFF3B82F6),
-    border: Color(0xFF7B469C),
-    borderLight: Color(0xFF5E2B79),
+    border: Color(0xFF8D2948),
+    borderLight: Color(0xFF5D1B31),
+    heroStart: Color(0xFF200810),
+    heroMid: Color(0xFF3E0A1B),
+    heroEnd: Color(0xFF0D0509),
   );
 
   static const RemoteThemeEffects _defaultEffects = RemoteThemeEffects(
@@ -79,19 +82,49 @@ class AppThemeService extends ChangeNotifier with WidgetsBindingObserver {
     colors: _defaultColors,
     navIcons: RemoteNavIcons(),
     effects: _defaultEffects,
+    visuals: RemoteThemeVisuals(),
   );
   DateTime? _lastFetchAt;
   bool _isLoading = false;
+  bool _isPreviewMode = false;
 
   AppThemeConfig get config => _config;
   RemoteThemeColors get colors => _config.colors;
   RemoteNavIcons get navIcons => _config.navIcons;
   RemoteThemeEffects get effects => _config.effects;
+  RemoteThemeVisuals get visuals => _config.visuals;
   bool get isLoading => _isLoading;
+  bool get isPreviewMode => _isPreviewMode;
+
+  /// Applies an unsaved theme sent by the admin preview. This never writes to the API.
+  void applyPreview(Map<String, dynamic> raw) {
+    // Preview is an isolated, unsaved theme session. Both this service and
+    // MainNavigation listen for lifecycle resume events; without this guard a
+    // resume immediately fetched the saved server theme and replaced the
+    // selected preview palette (typically making every preset look blue).
+    _isPreviewMode = true;
+    final colors = parseRemoteColors(raw['colors']);
+    final effects = parseRemoteEffects(raw['effects']);
+    final rawColors = raw['colors'];
+    final rawPrimary = rawColors is Map ? rawColors['primary'] : null;
+    final rawHeroStart = rawColors is Map ? rawColors['heroStart'] : null;
+    debugPrint(
+      '[ThemePreview] received primary=$rawPrimary heroStart=$rawHeroStart; '
+      'applied primary=0x${colors.primary.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()} '
+      'background=0x${colors.background.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}',
+    );
+    _config = AppThemeConfig(
+        colors: colors,
+        navIcons: _config.navIcons,
+        effects: effects,
+        visuals: parseRemoteVisuals(raw['visuals']));
+    notifyListeners();
+  }
 
   static const _cacheTtl = Duration(seconds: 10);
 
   Future<void> loadFromServer({bool forceRefresh = false}) async {
+    if (_isPreviewMode) return;
     if (_isLoading) return;
     final now = DateTime.now();
     if (!forceRefresh &&
@@ -118,9 +151,17 @@ class AppThemeService extends ChangeNotifier with WidgetsBindingObserver {
       if (data is Map) {
         final theme = data['theme'];
         final colors = parseRemoteColors(theme is Map ? theme['colors'] : null);
-        final navIcons = parseRemoteNavIcons(theme is Map ? theme['navIcons'] : null);
-        final effects = parseRemoteEffects(theme is Map ? theme['effects'] : null);
-        _config = AppThemeConfig(colors: colors, navIcons: navIcons, effects: effects);
+        final navIcons =
+            parseRemoteNavIcons(theme is Map ? theme['navIcons'] : null);
+        final effects =
+            parseRemoteEffects(theme is Map ? theme['effects'] : null);
+        final visuals =
+            parseRemoteVisuals(theme is Map ? theme['composerVisuals'] : null);
+        _config = AppThemeConfig(
+            colors: colors,
+            navIcons: navIcons,
+            effects: effects,
+            visuals: visuals);
         _lastFetchAt = now;
         notifyListeners();
       }

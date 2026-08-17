@@ -10,7 +10,6 @@ import 'package:fotgraf_mobile/models/creator_status.dart';
 import 'package:fotgraf_mobile/models/offer.dart';
 import 'package:fotgraf_mobile/models/banner_ad.dart';
 import 'package:dio/dio.dart';
-import '../../core/design/design_tokens.dart';
 import '../../core/services/status_service.dart';
 import '../../core/services/media_service.dart';
 import '../../core/auth/auth_service.dart';
@@ -308,14 +307,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   icon: Icons.camera_alt_rounded,
                   label: "التقاط صورة",
-                  color: Colors.blue,
+                  color: Theme.of(context).colorScheme.primary,
                   onTap: () => Navigator.pop(context, "camera_photo"),
                 ),
                 _buildSelectionItem(
                   context,
                   icon: Icons.photo_library_rounded,
                   label: "معرض الصور",
-                  color: Colors.blue,
+                  color: Theme.of(context).colorScheme.primary,
                   onTap: () => Navigator.pop(context, "gallery_photo"),
                 ),
               ],
@@ -375,7 +374,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!ok) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("أقصى مدة لفيديو القصة هي دقيقة واحدة")),
+            const SnackBar(
+                content: Text("أقصى مدة لفيديو القصة هي دقيقة واحدة")),
           );
         }
         return null;
@@ -657,143 +657,136 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: Column(
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            const HomeHeader(),
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: SizedBox(
-                width: double.infinity,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    boxShadow: AppShadows.glowPrimary,
-                  ),
-                  child: const SizedBox(height: 2),
+            RefreshIndicator(
+              onRefresh: () async {
+                await context.read<StatusService>().fetchStatuses();
+                await _fetchBanner();
+                await _fetchOffers();
+                await _fetchPopularOffers();
+                await _fetchDiscountOffers();
+              },
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // HomeHeader is an overlay. This preserves the original
+                    // initial spacing without creating a full-width header
+                    // layout slot; content can scroll behind it.
+                    const SizedBox(height: 96),
+                    SizedBox(
+                      height: 100,
+                      child: statusService.isLoading &&
+                              statusService.statusList.isEmpty
+                          ? const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                          : CreatorStatusRow(
+                              statusList: statusService.statusList,
+                              showAddButton: isCreator,
+                              userImage: currentUserImage,
+                              myUserName: currentUser?.name,
+                              myStatus: myStatus,
+                              onAddPressed: isCreator ? _createStory : null,
+                              onMyStoryLongPress: myStatus == null
+                                  ? null
+                                  : () => _openMyStoryActions(myStatus!),
+                              onStatusPressed: (statuses) {
+                                debugPrint(
+                                  'STORYDBG open viewer statuses=${statuses.length} first=${statuses.isNotEmpty ? statuses.first.id : ''} last=${statuses.isNotEmpty ? statuses.last.id : ''} creatorId=${statuses.isNotEmpty ? statuses.first.creatorId : ''}',
+                                );
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => StatusViewer(
+                                    statuses: statuses,
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_activeBanner != null)
+                      BannerAnnouncement(banner: _activeBanner!)
+                    else
+                      const BannerAnnouncement(),
+                    const SizedBox(height: 24),
+                    if (_isLoadingOffers)
+                      const Center(
+                          child: Padding(
+                              padding: EdgeInsets.all(20),
+                              child: CircularProgressIndicator()))
+                    else
+                    // All Offers
+                    if (!_isLoadingOffers)
+                      OfferSectionView(
+                        title: 'عروض مقترحة',
+                        offers: _allOffers,
+                        showDiscountBadge: false,
+                        onSeeAll: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SeeAllScreen(
+                                title: 'عروض مقترحة',
+                                offers: _allOffers,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 24),
+
+                    // Top Popular
+                    if (!_isLoadingOffers && _popularOffers.isNotEmpty)
+                      OfferSectionView(
+                        title: 'الاكثر طلباً',
+                        offers: _popularOffers,
+                        showDiscountBadge: false,
+                        onSeeAll: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SeeAllScreen(
+                                title: 'الاكثر طلباً',
+                                offers: _popularOffers,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 24),
+                    // Discounts
+                    if (!_isLoadingOffers && effectiveDiscountOffers.isNotEmpty)
+                      OfferSectionView(
+                        title: 'الخصومات',
+                        offers: effectiveDiscountOffers,
+                        showDiscountBadge: true,
+                        onSeeAll: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SeeAllScreen(
+                                title: 'الخصومات',
+                                offers: effectiveDiscountOffers,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 80), // Bottom padding
+                  ],
                 ),
               ),
             ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  await context.read<StatusService>().fetchStatuses();
-                  await _fetchBanner();
-                  await _fetchOffers();
-                  await _fetchPopularOffers();
-                  await _fetchDiscountOffers();
-                },
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 100,
-                          child: statusService.isLoading &&
-                                  statusService.statusList.isEmpty
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                              : CreatorStatusRow(
-                                  statusList: statusService.statusList,
-                                  showAddButton: isCreator,
-                                  userImage: currentUserImage,
-                                  myUserName: currentUser?.name,
-                                  myStatus: myStatus,
-                                  onAddPressed: isCreator ? _createStory : null,
-                                  onMyStoryLongPress: myStatus == null
-                                      ? null
-                                      : () => _openMyStoryActions(myStatus!),
-                                  onStatusPressed: (statuses) {
-                                    debugPrint(
-                                      'STORYDBG open viewer statuses=${statuses.length} first=${statuses.isNotEmpty ? statuses.first.id : ''} last=${statuses.isNotEmpty ? statuses.last.id : ''} creatorId=${statuses.isNotEmpty ? statuses.first.creatorId : ''}',
-                                    );
-                                    showDialog(
-                                      context: context,
-                                      builder: (_) => StatusViewer(
-                                        statuses: statuses,
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ),
-                        const SizedBox(height: 12),
-                      if (_activeBanner != null)
-                        BannerAnnouncement(banner: _activeBanner!)
-                      else
-                        const BannerAnnouncement(),
-                      const SizedBox(height: 24),
-                      if (_isLoadingOffers)
-                        const Center(
-                            child: Padding(
-                                padding: EdgeInsets.all(20),
-                                child: CircularProgressIndicator()))
-                      else
-                      // All Offers
-                      if (!_isLoadingOffers)
-                        OfferSectionView(
-                          title: 'عروض مقترحة',
-                          offers: _allOffers,
-                          showDiscountBadge: false,
-                          onSeeAll: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SeeAllScreen(
-                                  title: 'عروض مقترحة',
-                                  offers: _allOffers,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      const SizedBox(height: 24),
-
-                      // Top Popular
-                      if (!_isLoadingOffers && _popularOffers.isNotEmpty)
-                        OfferSectionView(
-                          title: 'الاكثر طلباً',
-                          offers: _popularOffers,
-                          showDiscountBadge: false,
-                          onSeeAll: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SeeAllScreen(
-                                  title: 'الاكثر طلباً',
-                                  offers: _popularOffers,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      const SizedBox(height: 24),
-                      // Discounts
-                      if (!_isLoadingOffers &&
-                          effectiveDiscountOffers.isNotEmpty)
-                        OfferSectionView(
-                          title: 'الخصومات',
-                          offers: effectiveDiscountOffers,
-                          showDiscountBadge: true,
-                          onSeeAll: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SeeAllScreen(
-                                  title: 'الخصومات',
-                                  offers: effectiveDiscountOffers,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      const SizedBox(height: 80), // Bottom padding
-                    ],
-                  ),
-                ),
-              ),
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: HomeHeader(),
             ),
           ],
         ),

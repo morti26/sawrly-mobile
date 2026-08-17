@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/auth_service.dart';
+import '../../../core/design/design_tokens.dart';
 import '../../../core/theme/app_theme_service.dart';
 import '../../notifications/notification_screen.dart';
 import '../../support/support_chat_screen.dart';
@@ -140,29 +141,35 @@ class _HomeHeaderState extends State<HomeHeader> {
   Widget build(BuildContext context) {
     final currentUser = context.watch<AuthService>().currentUser;
     final theme = context.watch<AppThemeService>();
-    final colors = theme.colors;
-    final effects = theme.effects;
+    final visuals = theme.visuals;
+    final premium = PremiumDesignTokens.from(theme.config);
     final isSuperAdmin = currentUser?.isSuperadmin == true;
-    final iconColor = colors.textPrimary.withValues(alpha: 0.9);
+    final iconColor = premium.textPrimary.withValues(alpha: 0.94);
     final logoFuture = _logoFuture;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: Container(
-        height: 58,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        height: 66,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          gradient: effects.primaryGradient(colors.primary, colors.primaryDark),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colors.border,
-            width: 1,
-          ),
+          color: visuals.headerStyle == 'solid'
+              ? Color.alphaBlend(
+                  visuals.headerTint.withValues(alpha: .14),
+                  premium.glassSurface,
+                ).withValues(alpha: .90)
+              : null,
+          gradient:
+              visuals.headerStyle == 'solid' ? null : premium.headerGradient,
+          backgroundBlendMode: BlendMode.srcOver,
+          borderRadius: BorderRadius.circular(premium.radiusLarge),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
@@ -201,52 +208,61 @@ class _HomeHeaderState extends State<HomeHeader> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: colors.textPrimary,
+                    color: premium.textPrimary,
                   ),
                 ),
               ],
             ),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                  if (isSuperAdmin) ...[
-                    IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const FeatureTestScreen(),
-                          ),
-                        );
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                      icon: Icon(Icons.fact_check_outlined, size: 20, color: iconColor),
-                      tooltip: 'Testsida',
-                    ),
-                    const SizedBox(width: 10),
-                  ],
-                IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                    );
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                  icon: Icon(Icons.notifications_none, size: 22, color: iconColor),
-                ),
+                if (isSuperAdmin) ...[
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FeatureTestScreen(),
+                        ),
+                      );
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 30, height: 30),
+                    icon: Icon(Icons.fact_check_outlined,
+                        size: 20, color: iconColor),
+                    tooltip: 'Testsida',
+                  ),
                   const SizedBox(width: 10),
+                ],
                 IconButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const SupportChatScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationScreen()),
                     );
                   },
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                  icon: Icon(Icons.headset_mic_outlined, size: 20, color: iconColor),
+                  constraints:
+                      const BoxConstraints.tightFor(width: 30, height: 30),
+                  icon: Icon(Icons.notifications_none,
+                      size: 22, color: iconColor),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SupportChatScreen()),
+                    );
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints.tightFor(width: 30, height: 30),
+                  icon: Icon(Icons.headset_mic_outlined,
+                      size: 20, color: iconColor),
                   tooltip: 'تحدث مع الدعم', // Chat with Support
                 ),
               ],

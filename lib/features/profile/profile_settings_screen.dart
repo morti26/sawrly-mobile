@@ -20,7 +20,7 @@ class ProfileSettingsScreen extends StatelessWidget {
     final config = theme.config;
 
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: colors.background,
         elevation: 0,
@@ -180,8 +180,8 @@ class ProfileSettingsScreen extends StatelessWidget {
                 : Center(
                     child: Text(
                       (user.name.trim().isNotEmpty
-                              ? user.name.trim()[0].toUpperCase()
-                              : '?'),
+                          ? user.name.trim()[0].toUpperCase()
+                          : '?'),
                       style: TextStyle(
                         color: colors.primary,
                         fontSize: 22,
