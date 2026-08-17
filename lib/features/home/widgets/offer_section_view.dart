@@ -37,6 +37,7 @@ class OfferSectionView extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
+            textDirection: TextDirection.rtl,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -70,20 +71,23 @@ class OfferSectionView extends StatelessWidget {
         // List
         SizedBox(
           height: sectionHeight,
-          child: ListView.separated(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 10),
-            scrollDirection: Axis.horizontal,
-            itemCount: offers.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              return OfferCard(
-                offer: offers[index],
-                cardWidth: cardWidth,
-                imageHeight: imageHeight,
-                showEngagementStats: showEngagementStats,
-                showDiscountBadge: showDiscountBadge,
-              );
-            },
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: ListView.separated(
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 10),
+              scrollDirection: Axis.horizontal,
+              itemCount: offers.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                return OfferCard(
+                  offer: offers[index],
+                  cardWidth: cardWidth,
+                  imageHeight: imageHeight,
+                  showEngagementStats: showEngagementStats,
+                  showDiscountBadge: showDiscountBadge,
+                );
+              },
+            ),
           ),
         ),
         const SizedBox(height: 14),

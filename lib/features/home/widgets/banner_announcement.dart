@@ -183,13 +183,16 @@ class _BannerAnnouncementState extends State<BannerAnnouncement> {
               child: Stack(
                 children: [
                   // ── Slides ──
-                  PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: _onPageChanged,
-                    itemCount: _slides.length,
-                    itemBuilder: (context, index) {
-                      return _buildSlide(_slides[index], index, bannerHeight);
-                    },
+                  Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: _onPageChanged,
+                      itemCount: _slides.length,
+                      itemBuilder: (context, index) {
+                        return _buildSlide(_slides[index], index, bannerHeight);
+                      },
+                    ),
                   ),
 
                   Positioned.fill(
