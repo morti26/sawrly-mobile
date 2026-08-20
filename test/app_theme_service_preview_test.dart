@@ -41,6 +41,28 @@ void main() {
     service.dispose();
   });
 
+  test('preview accepts versioned Style DNA without breaking legacy colors', () {
+    final service = AppThemeService(ApiClient(TokenStorage()));
+    service.applyPreview({
+      'schemaVersion': 2,
+      'styleDNA': {
+        'darkness': .82,
+        'contrast': .9,
+        'accentStrength': .18,
+        'glassStrength': .54,
+        'ambientLight': .18,
+        'vignetteStrength': .22,
+        'radiusStyle': .72,
+      },
+      'colors': {'primary': '#9F1239FF'}
+    });
+
+    expect(service.config.styleDNA.schemaVersion, 2);
+    expect(service.config.styleDNA.contrast, .9);
+    expect(service.colors.primary.toARGB32(), 0xFF9F1239);
+    service.dispose();
+  });
+
   testWidgets('shared route background premium-tones the composer gradient',
       (tester) async {
     final service = AppThemeService(ApiClient(TokenStorage()));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/design/design_tokens.dart';
@@ -229,7 +230,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                     padding: EdgeInsets.zero,
                     constraints:
                         const BoxConstraints.tightFor(width: 30, height: 30),
-                    icon: Icon(Icons.fact_check_outlined,
+                    icon: Icon(PhosphorIconsRegular.checkSquare,
                         size: 20, color: iconColor),
                     tooltip: 'Testsida',
                   ),
@@ -246,7 +247,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                   padding: EdgeInsets.zero,
                   constraints:
                       const BoxConstraints.tightFor(width: 30, height: 30),
-                  icon: Icon(Icons.notifications_none,
+                  icon: Icon(PhosphorIconsRegular.bell,
                       size: 22, color: iconColor),
                 ),
                 const SizedBox(width: 10),
@@ -261,7 +262,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                   padding: EdgeInsets.zero,
                   constraints:
                       const BoxConstraints.tightFor(width: 30, height: 30),
-                  icon: Icon(Icons.headset_mic_outlined,
+                  icon: Icon(PhosphorIconsRegular.headset,
                       size: 20, color: iconColor),
                   tooltip: 'تحدث مع الدعم', // Chat with Support
                 ),

@@ -21,6 +21,7 @@ class AppThemeBackground extends StatelessWidget {
     final visuals = theme.visuals;
     final premium = PremiumDesignTokens.from(theme.config);
     final size = MediaQuery.sizeOf(context);
+    final isLight = theme.colors.background.computeLuminance() > .52;
 
     Widget glowLayer(ThemeGlow glow, double blurFactor, double spreadFactor) {
       return Positioned(
@@ -79,7 +80,8 @@ class AppThemeBackground extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: .22),
+                      (isLight ? theme.colors.primaryDark : Colors.black)
+                          .withValues(alpha: isLight ? .055 : .22),
                     ],
                     stops: const [.58, 1],
                   ),

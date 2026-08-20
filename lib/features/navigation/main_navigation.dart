@@ -51,14 +51,6 @@ class _MainNavigationState extends State<MainNavigation>
     PhosphorIconsRegular.user,
   ];
 
-  final List<IconData> _webIcons = [
-    Icons.home_outlined,
-    Icons.search_rounded,
-    Icons.grid_view_rounded,
-    Icons.shopping_bag_outlined,
-    Icons.person_outline_rounded,
-  ];
-
   final List<String> _labels = const [
     '\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629',
     '\u0628\u062d\u062b',
@@ -67,8 +59,7 @@ class _MainNavigationState extends State<MainNavigation>
     '\u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644',
   ];
 
-  IconData _fallbackIcon(int index) =>
-      kIsWeb ? _webIcons[index] : _icons[index];
+  IconData _fallbackIcon(int index) => _icons[index];
 
   String? _navIconUrlForIndex(RemoteNavIcons navIcons, int index,
       {required bool active}) {
@@ -124,7 +115,6 @@ class _MainNavigationState extends State<MainNavigation>
 
   IconData? _resolveNavIcon(RemoteNavIcons navIcons, int index,
       {required bool active}) {
-    if (kIsWeb) return null;
     final rawId = _navIconIdForIndex(navIcons, index, active: active);
     if (rawId == null) return null;
     final parsed = parsePhosphorIconId(rawId);

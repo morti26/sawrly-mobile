@@ -194,17 +194,42 @@ class RemoteThemeEffects {
   }
 }
 
+/// Versioned Style DNA sent by Theme Studio. Defaults preserve v1 themes.
+class RemoteStyleDNA {
+  final int schemaVersion;
+  final double darkness;
+  final double contrast;
+  final double accentStrength;
+  final double glassStrength;
+  final double ambientLight;
+  final double vignetteStrength;
+  final double radiusStyle;
+
+  const RemoteStyleDNA({
+    this.schemaVersion = 1,
+    this.darkness = .82,
+    this.contrast = .74,
+    this.accentStrength = .18,
+    this.glassStrength = .54,
+    this.ambientLight = .18,
+    this.vignetteStrength = .22,
+    this.radiusStyle = .72,
+  });
+}
+
 class AppThemeConfig {
   final RemoteThemeColors colors;
   final RemoteNavIcons navIcons;
   final RemoteThemeEffects effects;
   final RemoteThemeVisuals visuals;
+  final RemoteStyleDNA styleDNA;
 
   const AppThemeConfig({
     required this.colors,
     required this.navIcons,
     required this.effects,
     this.visuals = const RemoteThemeVisuals(),
+    this.styleDNA = const RemoteStyleDNA(),
   });
 }
 
@@ -967,6 +992,23 @@ RemoteThemeVisuals parseRemoteVisuals(dynamic raw) {
       vignetteEnabled: vignette['enabled'] == true,
       vignetteStrength:
           _parseDouble(vignette['strength'], 0.0, min: 0, max: .3));
+}
+
+RemoteStyleDNA parseRemoteStyleDNA(dynamic raw, {dynamic schemaVersion}) {
+  if (raw is! Map) return const RemoteStyleDNA();
+  final map = Map<String, dynamic>.from(raw);
+  double pick(String key, double fallback) =>
+      _parseDouble(map[key], fallback, min: 0, max: 1);
+  return RemoteStyleDNA(
+    schemaVersion: schemaVersion is num ? schemaVersion.toInt() : 1,
+    darkness: pick('darkness', .82),
+    contrast: pick('contrast', .74),
+    accentStrength: pick('accentStrength', .18),
+    glassStrength: pick('glassStrength', .54),
+    ambientLight: pick('ambientLight', .18),
+    vignetteStrength: pick('vignetteStrength', .22),
+    radiusStyle: pick('radiusStyle', .72),
+  );
 }
 
 List<ThemeGlow> listFrom(dynamic value) => value is List
