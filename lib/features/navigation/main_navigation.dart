@@ -298,6 +298,7 @@ class _MainNavigationState extends State<MainNavigation>
                       const SizedBox(height: 1),
                       Text(
                         label,
+                        textAlign: index == 0 ? TextAlign.center : null,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -353,7 +354,7 @@ class _MainNavigationState extends State<MainNavigation>
             color: premium.accentSoft.withValues(alpha: .08),
             blurRadius: 22,
             spreadRadius: 1,
-            offset: const Offset(-2, -2),
+            offset: Offset(index == 0 ? 0 : -2, -2),
           ),
         ],
       ),
@@ -365,8 +366,8 @@ class _MainNavigationState extends State<MainNavigation>
             alignment: Alignment.center,
             children: [
               Positioned(
-                left: 6,
-                right: 10,
+                left: index == 0 ? 8 : 6,
+                right: index == 0 ? 8 : 10,
                 top: 3,
                 child: Container(
                   height: 7,
