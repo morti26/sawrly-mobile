@@ -4,6 +4,9 @@ import '../../core/auth/auth_service.dart';
 import '../../core/theme/app_theme_service.dart';
 import '../../models/user.dart';
 import 'edit_profile_screen.dart';
+import 'creator_subscription_screen.dart';
+import 'privacy_security_screen.dart';
+import 'creator_wallet_screen.dart';
 
 class ProfileSettingsScreen extends StatelessWidget {
   final User user;
@@ -17,7 +20,6 @@ class ProfileSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<AppThemeService>();
     final colors = theme.colors;
-    final config = theme.config;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -34,13 +36,52 @@ class ProfileSettingsScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildProfileHeaderCard(context, colors, config),
+            _buildProfileHeaderCard(context, colors, theme.config),
             const SizedBox(height: 20),
+            if (user.role == UserRole.creator)
+              _buildTile(
+                colors,
+                icon: Icons.workspace_premium_outlined,
+                title: 'خطط الاشتراك والدفع',
+                subtitle: 'اختر خطة المبدع وادفع عبر البوابة',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreatorSubscriptionScreen(),
+                  ),
+                ),
+                trailing: const Icon(Icons.chevron_left_rounded),
+              ),
+            if (user.role == UserRole.creator) _buildDivider(colors),
+            _buildTile(
+              colors,
+              icon: Icons.privacy_tip_outlined,
+              title: 'الخصوصية والأمان',
+              subtitle: 'تعديل بيانات الاتصال والتحقق من الهوية',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PrivacySecurityScreen()),
+              ),
+              trailing: const Icon(Icons.chevron_left_rounded),
+            ),
+            _buildDivider(colors),
+            if (user.role == UserRole.creator)
+              _buildTile(
+                colors,
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'المحفظة',
+                subtitle: 'الرصيد والأرباح وسجل المدفوعات',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatorWalletScreen())),
+                trailing: const Icon(Icons.chevron_left_rounded),
+              ),
+            if (user.role == UserRole.creator) _buildDivider(colors),
             _buildSectionTitle(colors, 'الملف الشخصي'),
             const SizedBox(height: 8),
             _buildCard(
@@ -131,6 +172,7 @@ class ProfileSettingsScreen extends StatelessWidget {
             _buildLogoutButton(context, colors),
             const SizedBox(height: 20),
           ],
+        ),
         ),
       ),
     );
@@ -281,6 +323,7 @@ class ProfileSettingsScreen extends StatelessWidget {
     Widget? trailing,
     bool disabled = false,
   }) {
+    if (icon == Icons.visibility_outlined) return const SizedBox.shrink();
     final bg = disabled ? colors.background : Colors.transparent;
     final fg = disabled ? colors.textSecondary : colors.textPrimary;
     return Material(

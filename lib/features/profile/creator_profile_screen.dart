@@ -52,6 +52,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   bool _isFollowing = false;
   int _badgeReloadTick = 0;
   String? _badgeReloadStatus;
+  double? _uploadBubbleLeft;
+  double? _uploadBubbleTop;
 
   @override
   void initState() {
@@ -732,7 +734,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: Icon(Icons.settings, color: colors.textPrimary),
+                icon: Icon(Icons.edit_square, color: colors.textPrimary),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -768,8 +770,13 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             )
         ],
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewPadding.bottom + 96,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -855,27 +862,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        if ((displayUser.gender ?? '')
-                                                .trim()
-                                                .toLowerCase() ==
-                                            'male')
-                                          Icon(Icons.male,
-                                              color: colors.primary, size: 20)
-                                        else if ((displayUser.gender ?? '')
-                                                .trim()
-                                                .toLowerCase() ==
-                                            'female')
-                                          Icon(Icons.female,
-                                              color: colors.accentPink,
-                                              size: 20),
-                                        if (displayUser.role ==
-                                            UserRole.creator)
-                                          const SizedBox(width: 6),
-                                        if (displayUser.role ==
-                                            UserRole.creator)
-                                          Icon(Icons.verified,
-                                              color: colors.info, size: 20),
                                       ],
                                     ),
                                   ),
@@ -892,13 +878,30 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                       (displayUser.creatorLevelIcon ?? '')
                                           .trim()
                                           .isNotEmpty) ||
-                                  displayUser.isSuperadmin) ...[
+                                  displayUser.isSuperadmin ||
+                                  displayUser.role == UserRole.creator ||
+                                  (displayUser.gender ?? '').trim().isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
                                   children: [
-                                    if (displayUser.role == UserRole.creator &&
+                                    if ((displayUser.gender ?? '')
+                                            .trim()
+                                            .toLowerCase() ==
+                                        'male')
+                                      Icon(Icons.male,
+                                          color: colors.primary, size: 20)
+                                    else if ((displayUser.gender ?? '')
+                                            .trim()
+                                            .toLowerCase() ==
+                                        'female')
+                                      Icon(Icons.female,
+                                          color: colors.accentPink, size: 20),
+                                    if (displayUser.role == UserRole.creator)
+                                      Icon(Icons.verified,
+                                          color: colors.info, size: 20),
+                                    if (false && displayUser.role == UserRole.creator &&
                                         (displayUser.creatorLevelName ?? '')
                                             .trim()
                                             .isNotEmpty &&
@@ -1055,7 +1058,51 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             const SizedBox(height: 40),
           ],
         ),
+        ),
+          if (showUpload)
+            Positioned(
+              left: _uploadBubbleLeft ?? 16,
+              top: _uploadBubbleTop ?? 100,
+              child: GestureDetector(
+                onPanUpdate: (details) {
+                  final size = MediaQuery.sizeOf(context);
+                  setState(() {
+                    _uploadBubbleLeft = ((_uploadBubbleLeft ?? 16) + details.delta.dx)
+                        .clamp(8.0, size.width - 44.0);
+                    _uploadBubbleTop = ((_uploadBubbleTop ?? 100) + details.delta.dy)
+                        .clamp(8.0, size.height - 100.0);
+                  });
+                },
+                child: _buildUploadBubble(colors, theme.config),
+              ),
+            ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildUploadBubble(dynamic colors, dynamic config) {
+    return GestureDetector(
+      onTap: _handleUpload,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: config.effects.primaryGradient(
+              colors.primary, colors.primaryDark),
+          boxShadow: [
+            BoxShadow(
+              color: colors.primary.withValues(alpha: 0.22),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(Icons.add_rounded, color: colors.textPrimary, size: 18),
+          ),
+        ),
     );
   }
 
@@ -1067,7 +1114,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     VoidCallback? onUpload,
     required List<Widget> tabs,
   }) {
-    const double uploadSlotWidth = 48;
     return Container(
       color: colors.background,
       child: Column(
@@ -1078,8 +1124,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: uploadSlotWidth,
-                  child: showUpload
+                  width: 0,
+                  child: false
                       ? Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2.0),
                           child: DecoratedBox(
@@ -1111,7 +1157,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         )
                       : const SizedBox.shrink(),
                 ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: TabBar(
                     controller: controller,
