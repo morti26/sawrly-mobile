@@ -7,6 +7,8 @@ import 'edit_profile_screen.dart';
 import 'creator_subscription_screen.dart';
 import 'privacy_security_screen.dart';
 import 'creator_wallet_screen.dart';
+import '../../core/localization/app_locale_service.dart';
+import '../../core/localization/app_strings.dart';
 
 class ProfileSettingsScreen extends StatelessWidget {
   final User user;
@@ -19,6 +21,7 @@ class ProfileSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<AppThemeService>();
+    final locale = context.watch<AppLocaleService>();
     final colors = theme.colors;
 
     return Scaffold(
@@ -28,7 +31,7 @@ class ProfileSettingsScreen extends StatelessWidget {
         elevation: 0,
         iconTheme: IconThemeData(color: colors.textPrimary),
         title: Text(
-          'الإعدادات',
+          AppStrings.settings,
           style: TextStyle(
             color: colors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -39,143 +42,163 @@ class ProfileSettingsScreen extends StatelessWidget {
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileHeaderCard(context, colors, theme.config),
-            const SizedBox(height: 20),
-            if (user.role == UserRole.creator)
-              _buildTile(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProfileHeaderCard(context, colors, theme.config),
+              const SizedBox(height: 20),
+              _buildSectionTitle(colors, AppStrings.profileSection),
+              const SizedBox(height: 8),
+              _buildCard(
                 colors,
-                icon: Icons.workspace_premium_outlined,
-                title: 'خطط الاشتراك والدفع',
-                subtitle: 'اختر خطة المبدع وادفع عبر البوابة',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CreatorSubscriptionScreen(),
+                children: [
+                  _buildTile(
+                    colors,
+                    icon: Icons.visibility_outlined,
+                    title: tr('عرض الملف الشخصي', 'View profile'),
+                    subtitle:
+                        tr('العودة إلى صفحة الملف الشخصي', 'Back to profile'),
+                    onTap: () => Navigator.pop(context),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: colors.textSecondary,
+                    ),
                   ),
-                ),
-                trailing: const Icon(Icons.chevron_left_rounded),
+                  _buildDivider(colors),
+                  _buildTile(
+                    colors,
+                    icon: Icons.edit_outlined,
+                    title: AppStrings.editProfile,
+                    subtitle: AppStrings.editProfileSubtitle,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditProfileScreen(user: user),
+                        ),
+                      );
+                    },
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-            if (user.role == UserRole.creator) _buildDivider(colors),
-            _buildTile(
-              colors,
-              icon: Icons.privacy_tip_outlined,
-              title: 'الخصوصية والأمان',
-              subtitle: 'تعديل بيانات الاتصال والتحقق من الهوية',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PrivacySecurityScreen()),
-              ),
-              trailing: const Icon(Icons.chevron_left_rounded),
-            ),
-            _buildDivider(colors),
-            if (user.role == UserRole.creator)
-              _buildTile(
+              const SizedBox(height: 20),
+              _buildSectionTitle(colors, AppStrings.account),
+              const SizedBox(height: 8),
+              _buildCard(
                 colors,
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'المحفظة',
-                subtitle: 'الرصيد والأرباح وسجل المدفوعات',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatorWalletScreen())),
-                trailing: const Icon(Icons.chevron_left_rounded),
-              ),
-            if (user.role == UserRole.creator) _buildDivider(colors),
-            _buildSectionTitle(colors, 'الملف الشخصي'),
-            const SizedBox(height: 8),
-            _buildCard(
-              colors,
-              children: [
-                _buildTile(
-                  colors,
-                  icon: Icons.visibility_outlined,
-                  title: 'عرض الملف الشخصي',
-                  subtitle: 'العودة إلى صفحة الملف الشخصي',
-                  onTap: () => Navigator.pop(context),
-                  trailing: Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                    color: colors.textSecondary,
+                children: [
+                  _buildTile(
+                    colors,
+                    icon: Icons.notifications_outlined,
+                    title: AppStrings.notifications,
+                    subtitle: AppStrings.soon,
+                    onTap: null,
+                    trailing: _buildSoonBadge(colors),
+                    disabled: true,
                   ),
-                ),
-                _buildDivider(colors),
-                _buildTile(
-                  colors,
-                  icon: Icons.edit_outlined,
-                  title: 'تعديل الملف الشخصي',
-                  subtitle: 'الاسم، الصورة، النبذة، الخدمة، إلخ',
-                  onTap: () {
-                    Navigator.push(
+                  _buildDivider(colors),
+                  if (user.role == UserRole.creator)
+                    _buildTile(
+                      colors,
+                      icon: Icons.workspace_premium_outlined,
+                      title: AppStrings.subscription,
+                      subtitle: AppStrings.subscriptionSubtitle,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CreatorSubscriptionScreen(),
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_left_rounded),
+                    ),
+                  if (user.role == UserRole.creator) _buildDivider(colors),
+                  if (user.role == UserRole.creator)
+                    _buildTile(
+                      colors,
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: AppStrings.wallet,
+                      subtitle: AppStrings.walletSubtitle,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CreatorWalletScreen(),
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_left_rounded),
+                    ),
+                  _buildDivider(colors),
+                  _buildTile(
+                    colors,
+                    icon: Icons.privacy_tip_outlined,
+                    title: AppStrings.privacy,
+                    subtitle: AppStrings.privacySubtitle,
+                    onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EditProfileScreen(user: user),
+                        builder: (_) => const PrivacySecurityScreen(),
                       ),
-                    );
-                  },
-                  trailing: Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                    color: colors.textSecondary,
+                    ),
+                    trailing: const Icon(Icons.chevron_left_rounded),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildSectionTitle(colors, 'الحساب'),
-            const SizedBox(height: 8),
-            _buildCard(
-              colors,
-              children: [
-                _buildTile(
-                  colors,
-                  icon: Icons.notifications_outlined,
-                  title: 'الإشعارات',
-                  subtitle: 'قريباً',
-                  onTap: null,
-                  trailing: _buildSoonBadge(colors),
-                  disabled: true,
-                ),
-                _buildDivider(colors),
-                _buildTile(
-                  colors,
-                  icon: Icons.payment_outlined,
-                  title: 'الدفع والمحفظة',
-                  subtitle: 'قريباً',
-                  onTap: null,
-                  trailing: _buildSoonBadge(colors),
-                  disabled: true,
-                ),
-                _buildDivider(colors),
-                _buildTile(
-                  colors,
-                  icon: Icons.privacy_tip_outlined,
-                  title: 'الخصوصية والأمان',
-                  subtitle: 'قريباً',
-                  onTap: null,
-                  trailing: _buildSoonBadge(colors),
-                  disabled: true,
-                ),
-                _buildDivider(colors),
-                _buildTile(
-                  colors,
-                  icon: Icons.language_outlined,
-                  title: 'اللغة',
-                  subtitle: 'قريباً',
-                  onTap: null,
-                  trailing: _buildSoonBadge(colors),
-                  disabled: true,
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-            _buildLogoutButton(context, colors),
-            const SizedBox(height: 20),
-          ],
-        ),
+                  _buildDivider(colors),
+                  _buildTile(
+                    colors,
+                    icon: Icons.language_outlined,
+                    title: AppStrings.language,
+                    subtitle: locale.isEnglish
+                        ? AppStrings.english
+                        : AppStrings.arabic,
+                    onTap: () => _showLanguageDialog(context),
+                    trailing: const Icon(Icons.chevron_left_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              _buildLogoutButton(context, colors),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _showLanguageDialog(BuildContext context) async {
+    final locale = context.read<AppLocaleService>();
+    final selected = await showDialog<AppLanguage>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppStrings.language),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<AppLanguage>(
+              value: AppLanguage.arabic,
+              groupValue: locale.language,
+              title: Text(AppStrings.arabic),
+              onChanged: (value) => Navigator.pop(dialogContext, value),
+            ),
+            RadioListTile<AppLanguage>(
+              value: AppLanguage.english,
+              groupValue: locale.language,
+              title: Text(AppStrings.english),
+              onChanged: (value) => Navigator.pop(dialogContext, value),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) {
+      await locale.setLanguage(selected);
+    }
   }
 
   Widget _buildProfileHeaderCard(
@@ -267,7 +290,9 @@ class ProfileSettingsScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    user.role == UserRole.creator ? 'حساب منشئ' : 'حساب عميل',
+                    user.role == UserRole.creator
+                        ? AppStrings.creatorAccount
+                        : AppStrings.clientAccount,
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: 11,
@@ -412,7 +437,7 @@ class ProfileSettingsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        'قريباً',
+        AppStrings.soon,
         style: TextStyle(
           color: colors.textSecondary,
           fontSize: 11,
@@ -434,25 +459,25 @@ class ProfileSettingsScreen extends StatelessWidget {
             builder: (context) => AlertDialog(
               backgroundColor: colors.surface,
               title: Text(
-                'تسجيل الخروج',
+                AppStrings.logout,
                 style: TextStyle(color: colors.textPrimary),
               ),
               content: Text(
-                'هل أنت متأكد أنك تريد تسجيل الخروج؟',
+                AppStrings.logoutQuestion,
                 style: TextStyle(color: colors.textSecondary),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
                   child: Text(
-                    'إلغاء',
+                    AppStrings.cancel,
                     style: TextStyle(color: colors.textSecondary),
                   ),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
                   child: Text(
-                    'خروج',
+                    AppStrings.exit,
                     style: TextStyle(color: colors.error),
                   ),
                 ),
@@ -468,7 +493,7 @@ class ProfileSettingsScreen extends StatelessWidget {
         },
         icon: Icon(Icons.logout, color: colors.error),
         label: Text(
-          'تسجيل الخروج',
+          AppStrings.logout,
           style: TextStyle(color: colors.error, fontWeight: FontWeight.w700),
         ),
         style: OutlinedButton.styleFrom(

@@ -8,6 +8,7 @@ import '../../notifications/notification_screen.dart';
 import '../../support/support_chat_screen.dart';
 import '../../qa/feature_test_screen.dart';
 import '../../../core/services/media_service.dart';
+import '../../../core/localization/app_locale_service.dart';
 
 /// Camera logo built from pure Flutter widgets — no PNG, no white background, never black
 class CameraLogoWidget extends StatelessWidget {
@@ -205,7 +206,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'صورلي',
+                  tr('صورلي', 'Sawrly'),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -264,7 +265,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                       const BoxConstraints.tightFor(width: 30, height: 30),
                   icon: Icon(PhosphorIconsRegular.headset,
                       size: 20, color: iconColor),
-                  tooltip: 'تحدث مع الدعم', // Chat with Support
+                  tooltip: tr('تحدث مع الدعم', 'Chat with support'),
                 ),
               ],
             ),

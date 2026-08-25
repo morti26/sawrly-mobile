@@ -273,8 +273,23 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final primaryLight = maybe('primaryLight');
   final primaryDark = maybe('primaryDark');
 
-  final hasCustomPrimary =
-      primary != null || primaryLight != null || primaryDark != null;
+  // A theme can be sent with a complete surface/background palette while
+  // omitting one of the optional legacy keys. Treat those values as a custom
+  // palette too; otherwise all derived colors silently fall back to the old
+  // maroon defaults.
+  final hasCustomPalette = <String>[
+    'primary',
+    'primaryLight',
+    'primaryDark',
+    'accentPink',
+    'background',
+    'surface',
+    'surfaceLight',
+    'menuBackground',
+    'heroStart',
+    'heroMid',
+    'heroEnd',
+  ].any((key) => maybe(key) != null);
   final effectivePrimary = primary ?? defaults.primary;
   final effectivePrimaryLight =
       primaryLight ?? _lighten(effectivePrimary, 0.18);
@@ -287,7 +302,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveBackground;
   if (maybe('background') case final bg?) {
     effectiveBackground = bg;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveBackground = _darken(_desaturate(effectivePrimary, 0.35), 0.45);
   } else {
     effectiveBackground = defaults.background;
@@ -296,7 +311,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveSurface;
   if (maybe('surface') case final s?) {
     effectiveSurface = s;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveSurface = _lighten(effectiveBackground, 0.12);
   } else {
     effectiveSurface = defaults.surface;
@@ -305,7 +320,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveSurfaceLight;
   if (maybe('surfaceLight') case final sl?) {
     effectiveSurfaceLight = sl;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveSurfaceLight = _lighten(effectiveSurface, 0.12);
   } else {
     effectiveSurfaceLight = defaults.surfaceLight;
@@ -314,7 +329,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveMenuBackground;
   if (maybe('menuBackground') case final mb?) {
     effectiveMenuBackground = mb;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveMenuBackground = _darken(effectiveBackground, 0.06);
   } else {
     effectiveMenuBackground = defaults.menuBackground;
@@ -322,11 +337,11 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
 
   final effectiveTextPrimary = maybe('textPrimary') ?? defaults.textPrimary;
   final effectiveTextSecondary = maybe('textSecondary') ??
-      (hasCustomPrimary
+      (hasCustomPalette
           ? effectiveTextPrimary.withValues(alpha: 0.72)
           : defaults.textSecondary);
   final effectiveTextTertiary = maybe('textTertiary') ??
-      (hasCustomPrimary
+      (hasCustomPalette
           ? effectiveTextPrimary.withValues(alpha: 0.48)
           : defaults.textTertiary);
   final effectiveSuccess = maybe('success') ?? defaults.success;
@@ -337,7 +352,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveBorder;
   if (maybe('border') case final b?) {
     effectiveBorder = b;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveBorder = _lighten(_desaturate(effectivePrimaryDark, 0.2), 0.08);
   } else {
     effectiveBorder = defaults.border;
@@ -346,7 +361,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveBorderLight;
   if (maybe('borderLight') case final bl?) {
     effectiveBorderLight = bl;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveBorderLight = _lighten(effectiveBorder, 0.18);
   } else {
     effectiveBorderLight = defaults.borderLight;
@@ -371,8 +386,20 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
     border: effectiveBorder,
     borderLight: effectiveBorderLight,
     heroStart: maybe('heroStart') ?? effectiveBackground,
-    heroMid: maybe('heroMid') ?? effectivePrimaryDark,
-    heroEnd: maybe('heroEnd') ?? effectiveAccentPink,
+    // Do not use the historical maroon primaryDark/accent fallback for a
+    // palette that supplied its own surfaces. The hero must be derived from
+    // the same background/surface family so a light/blue/green theme cannot
+    // retain a red-brown band in the app background.
+    heroMid: maybe('heroMid') ??
+        (hasCustomPalette
+            ? Color.lerp(effectiveBackground, effectiveSurfaceLight, .5)!
+            : effectivePrimaryDark),
+    heroEnd: maybe('heroEnd') ??
+        (hasCustomPalette
+            ? (effectiveBackground.computeLuminance() > .52
+                ? Color.lerp(effectiveBackground, effectiveSurface, .35)!
+                : _darken(effectiveBackground, .18))
+            : effectiveAccentPink),
   );
 }
 

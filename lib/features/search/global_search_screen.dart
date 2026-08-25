@@ -5,6 +5,7 @@ import '../../core/theme/app_theme_service.dart';
 import '../../core/network/api_client.dart';
 import '../../models/user.dart';
 import '../profile/creator_profile_screen.dart';
+import '../../core/localization/app_locale_service.dart';
 
 class GlobalSearchScreen extends StatefulWidget {
   final String initialQuery;
@@ -99,6 +100,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<AppThemeService>();
+    context.watch<AppLocaleService>();
     final colors = theme.colors;
     return Scaffold(
       appBar: AppBar(
@@ -116,7 +118,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
             onChanged: _onSearchChanged,
             autofocus: false,
             decoration: InputDecoration(
-              hintText: 'ابحث عن منشئين أو عروض...',
+              hintText: tr('ابحث عن منشئين أو عروض...', 'Search creators or offers...'),
               hintStyle: TextStyle(color: colors.textTertiary, fontSize: 14),
               prefixIcon:
                   Icon(Icons.search, color: colors.textSecondary, size: 20),
@@ -141,8 +143,8 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           tabs: [
             Tab(
                 text:
-                    'المنشئون${_creators.isEmpty ? '' : ' (${_creators.length})'}'),
-            Tab(text: 'العروض${_offers.isEmpty ? '' : ' (${_offers.length})'}'),
+                    '${tr('المنشئون', 'Creators')}${_creators.isEmpty ? '' : ' (${_creators.length})'}'),
+            Tab(text: '${tr('العروض', 'Offers')}${_offers.isEmpty ? '' : ' (${_offers.length})'}'),
           ],
         ),
       ),
@@ -167,7 +169,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen>
           children: [
             Icon(Icons.person_search, size: 60, color: colors.textTertiary),
             const SizedBox(height: 12),
-            Text('لم يتم العثور على منشئين',
+            Text(tr('لم يتم العثور على منشئين', 'No creators found'),
                 style: TextStyle(color: colors.textTertiary)),
           ],
         ),

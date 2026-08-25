@@ -338,8 +338,11 @@ class PremiumDesignTokens {
           c.primary, c.accentPink, dna.accentStrength.clamp(.12, .55))!,
       accentWarm: const Color(0xFFF4B63F),
       priceColor: const Color(0xFFFFC34A),
+      // A light palette should use a neutral shadow. Reusing primaryDark
+      // here allowed the legacy maroon tone to tint every card and elevated
+      // surface after the administrator selected a different theme.
       shadowColor: isLight
-          ? c.primaryDark.withValues(alpha: .28)
+          ? Colors.black.withValues(alpha: .16)
           : Color.alphaBlend(
               c.primaryDark.withValues(alpha: .22), Colors.black),
       radiusSmall: e.buttonRadius.clamp(8, 14),

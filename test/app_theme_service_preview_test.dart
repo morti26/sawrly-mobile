@@ -63,6 +63,25 @@ void main() {
     service.dispose();
   });
 
+  test('custom surfaces derive hero tones instead of legacy maroon fallbacks', () {
+    final service = AppThemeService(ApiClient(TokenStorage()));
+    service.applyPreview({
+      'colors': {
+        'background': '#F8FAFCFF',
+        'surface': '#E2E8F0FF',
+        'surfaceLight': '#FFFFFFFF',
+        'textPrimary': '#111827FF',
+      },
+    });
+
+    // A payload with its own light surfaces must not recreate the default
+    // maroon hero midpoint/end just because optional hero keys were omitted.
+    expect(service.colors.heroMid.computeLuminance(), greaterThan(.5));
+    expect(service.colors.heroEnd.computeLuminance(), greaterThan(.5));
+    expect(service.colors.heroMid.toARGB32(), isNot(0xFF3E0A1B));
+    service.dispose();
+  });
+
   testWidgets('shared route background premium-tones the composer gradient',
       (tester) async {
     final service = AppThemeService(ApiClient(TokenStorage()));
@@ -102,8 +121,11 @@ void main() {
       gradient.colors.map((color) => color.toARGB32()),
       premium.backgroundGradient.colors.map((color) => color.toARGB32()),
     );
-    expect(gradient.colors.every((color) => color.computeLuminance() < .08),
-        isTrue);
+    // The composer may intentionally provide bright hero tones; the shared
+    // renderer must preserve the selected palette rather than forcing every
+    // gradient stop into the historical dark-maroon range.
+    expect(gradient.colors.first.toARGB32(), 0xFF380D24);
+    expect(gradient.colors[1].toARGB32(), 0xFFE4255B);
     final scaffoldContext = tester.element(find.byType(Scaffold));
     expect(
       Theme.of(scaffoldContext).scaffoldBackgroundColor,

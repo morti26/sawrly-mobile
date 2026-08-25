@@ -7,6 +7,8 @@ import 'features/navigation/main_navigation.dart';
 import 'core/design/design_tokens.dart';
 import 'core/theme/app_theme_service.dart';
 import 'core/theme/app_theme_background.dart';
+import 'core/localization/app_locale_service.dart';
+import 'core/localization/app_strings.dart';
 
 class FotgrafApp extends StatelessWidget {
   final int initialPreviewTab;
@@ -15,8 +17,8 @@ class FotgrafApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppThemeService>(
-      builder: (context, themeService, child) {
+    return Consumer2<AppThemeService, AppLocaleService>(
+      builder: (context, themeService, localeService, child) {
         final c = themeService.colors;
         final e = themeService.effects;
         final premium = PremiumDesignTokens.from(themeService.config);
@@ -42,9 +44,9 @@ class FotgrafApp extends StatelessWidget {
         );
 
         return MaterialApp(
-          title: 'صورلي',
+          title: AppStrings.appName,
           debugShowCheckedModeBanner: false,
-          locale: const Locale('ar', ''),
+          locale: localeService.locale,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -52,6 +54,7 @@ class FotgrafApp extends StatelessWidget {
           ],
           supportedLocales: const [
             Locale('ar', ''),
+            Locale('en', ''),
           ],
           themeMode: ThemeMode.dark,
           darkTheme: ThemeData(
@@ -212,6 +215,9 @@ class FotgrafApp extends StatelessWidget {
               ),
               child: AppThemeBackground(
                 child: Directionality(
+                  // Preserve the app's original geometry and icon placement;
+                  // language changes translate labels without mirroring the
+                  // established layout.
                   textDirection: TextDirection.ltr,
                   child: child!,
                 ),

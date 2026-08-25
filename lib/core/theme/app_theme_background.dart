@@ -80,8 +80,11 @@ class AppThemeBackground extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      (isLight ? theme.colors.primaryDark : Colors.black)
-                          .withValues(alpha: isLight ? .055 : .22),
+                      // Keep the depth treatment neutral for light themes.
+                      // Tinting this layer with primaryDark made the legacy
+                      // maroon color bleed back in at the bottom of every
+                      // screen even after a new palette was selected.
+                      Colors.black.withValues(alpha: isLight ? .035 : .22),
                     ],
                     stops: const [.58, 1],
                   ),

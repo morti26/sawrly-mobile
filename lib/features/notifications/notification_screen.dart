@@ -4,6 +4,7 @@ import '../../core/design/design_tokens.dart';
 import '../../core/services/notification_service.dart';
 import '../../models/notification_item.dart';
 import 'package:intl/intl.dart';
+import '../../core/localization/app_locale_service.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -25,11 +26,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     final notificationService = context.watch<NotificationService>();
+    context.watch<AppLocaleService>();
     final notifications = notificationService.notifications;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الإشعارات'), // Notifications in Arabic
+        title: Text(tr('الإشعارات', 'Notifications')),
         centerTitle: true,
       ),
       body: notificationService.isLoading && notifications.isEmpty
@@ -47,7 +49,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               size: 64, color: Colors.grey[400]),
                           const SizedBox(height: 16),
                           Text(
-                            'لا توجد إشعارات حالياً', // No notifications currently
+                            tr('لا توجد إشعارات حالياً', 'No notifications yet'),
                             style: TextStyle(
                                 color: Colors.grey[600], fontSize: 16),
                           ),

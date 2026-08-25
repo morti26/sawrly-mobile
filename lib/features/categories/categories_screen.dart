@@ -6,6 +6,7 @@ import '../../models/banner_ad.dart';
 import '../home/widgets/home_header.dart';
 import '../home/widgets/banner_announcement.dart';
 import '../search/global_search_screen.dart';
+import '../../core/localization/app_locale_service.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -73,6 +74,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.watch<AppThemeService>().colors;
+    context.watch<AppLocaleService>();
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
@@ -102,7 +104,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16.0),
                           child: Text(
-                            'المتجر',
+                            tr('المتجر', 'Store'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -122,11 +124,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           ),
                         )
                       else if (_categories.isEmpty)
-                        const Center(
+                        Center(
                           child: Padding(
-                            padding: EdgeInsets.all(32.0),
+                            padding: const EdgeInsets.all(32.0),
                             child: Text(
-                              'لا توجد عناصر في المتجر حاليا',
+                              tr('لا توجد عناصر في المتجر حاليا', 'The store is empty'),
                               style: TextStyle(color: Colors.grey),
                             ),
                           ),
@@ -155,7 +157,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
                               final imageUrl =
                                   _normalizeUrl(cat['image_url'] ?? '');
-                              final title = cat['title'] ?? 'بدون عنوان';
+                              final title = cat['title'] ?? tr('بدون عنوان', 'Untitled');
 
                               return GestureDetector(
                                 onTap: () {

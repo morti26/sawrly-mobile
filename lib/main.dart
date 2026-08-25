@@ -14,6 +14,7 @@ import 'core/services/media_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/support_service.dart';
 import 'core/theme/app_theme_service.dart';
+import 'core/localization/app_locale_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,8 @@ Future<void> main() async {
   final cartService = CartService();
   final supportService = SupportService(apiClient);
   final themeService = AppThemeService(apiClient);
+  final localeService = AppLocaleService();
+  await localeService.init();
 
   final previewPayload = Uri.base.queryParameters['previewTheme'];
   var isPreview = false;
@@ -122,6 +125,7 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: cartService), // Add CartService
         ChangeNotifierProvider.value(value: supportService),
         ChangeNotifierProvider.value(value: themeService),
+        ChangeNotifierProvider.value(value: localeService),
         Provider.value(value: apiClient),
       ],
       child: FotgrafApp(initialPreviewTab: initialPreviewTab),

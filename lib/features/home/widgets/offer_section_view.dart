@@ -3,6 +3,7 @@ import 'package:fotgraf_mobile/models/offer.dart';
 import 'package:provider/provider.dart';
 import '../../../core/design/design_tokens.dart';
 import '../../../core/theme/app_theme_service.dart';
+import '../../../core/localization/app_locale_service.dart';
 import 'offer_card.dart';
 
 class OfferSectionView extends StatelessWidget {
@@ -24,6 +25,7 @@ class OfferSectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<AppThemeService>();
+    context.watch<AppLocaleService>();
     final premium = PremiumDesignTokens.from(theme.config);
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = (screenWidth * 0.43).clamp(152.0, 182.0).toDouble();
@@ -60,7 +62,7 @@ class OfferSectionView extends StatelessWidget {
                   ),
                   onPressed: onSeeAll,
                   child: Text(
-                    'المزيد',
+                    tr('المزيد', 'More'),
                     style: TextStyle(color: premium.accentWarm),
                   ), // Arabic "More"
                 )

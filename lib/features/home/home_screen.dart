@@ -16,6 +16,7 @@ import '../../core/auth/auth_service.dart';
 import 'widgets/status_viewer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
+import '../../core/localization/app_locale_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -295,8 +296,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text(
-              "إضافة قصة جديدة",
+            Text(
+              tr("إضافة قصة جديدة", "Add new story"),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
@@ -306,14 +307,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildSelectionItem(
                   context,
                   icon: Icons.camera_alt_rounded,
-                  label: "التقاط صورة",
+                  label: tr("التقاط صورة", "Take photo"),
                   color: Theme.of(context).colorScheme.primary,
                   onTap: () => Navigator.pop(context, "camera_photo"),
                 ),
                 _buildSelectionItem(
                   context,
                   icon: Icons.photo_library_rounded,
-                  label: "معرض الصور",
+                  label: tr("معرض الصور", "Photo library"),
                   color: Theme.of(context).colorScheme.primary,
                   onTap: () => Navigator.pop(context, "gallery_photo"),
                 ),
@@ -326,14 +327,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildSelectionItem(
                   context,
                   icon: Icons.videocam_rounded,
-                  label: "تسجيل فيديو",
+                  label: tr("تسجيل فيديو", "Record video"),
                   color: Colors.red,
                   onTap: () => Navigator.pop(context, "camera_video"),
                 ),
                 _buildSelectionItem(
                   context,
                   icon: Icons.video_library_rounded,
-                  label: "معرض الفيديو",
+                  label: tr("معرض الفيديو", "Video library"),
                   color: Colors.red,
                   onTap: () => Navigator.pop(context, "gallery_video"),
                 ),
@@ -723,7 +724,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // All Offers
                     if (!_isLoadingOffers)
                       OfferSectionView(
-                        title: 'عروض مقترحة',
+                        title: tr('عروض مقترحة', 'Suggested offers'),
                         offers: _allOffers,
                         showDiscountBadge: false,
                         onSeeAll: () {
@@ -731,7 +732,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => SeeAllScreen(
-                                title: 'عروض مقترحة',
+                                title: tr('عروض مقترحة', 'Suggested offers'),
                                 offers: _allOffers,
                               ),
                             ),
@@ -743,7 +744,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Top Popular
                     if (!_isLoadingOffers && _popularOffers.isNotEmpty)
                       OfferSectionView(
-                        title: 'الاكثر طلباً',
+                        title: tr('الاكثر طلباً', 'Most popular'),
                         offers: _popularOffers,
                         showDiscountBadge: false,
                         onSeeAll: () {
@@ -751,7 +752,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => SeeAllScreen(
-                                title: 'الاكثر طلباً',
+                                title: tr('الاكثر طلباً', 'Most popular'),
                                 offers: _popularOffers,
                               ),
                             ),
@@ -762,7 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Discounts
                     if (!_isLoadingOffers && effectiveDiscountOffers.isNotEmpty)
                       OfferSectionView(
-                        title: 'الخصومات',
+                        title: tr('الخصومات', 'Discounts'),
                         offers: effectiveDiscountOffers,
                         showDiscountBadge: true,
                         onSeeAll: () {
@@ -770,7 +771,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => SeeAllScreen(
-                                title: 'الخصومات',
+                                title: tr('الخصومات', 'Discounts'),
                                 offers: effectiveDiscountOffers,
                               ),
                             ),

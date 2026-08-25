@@ -4,6 +4,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../../core/auth/auth_service.dart';
 import '../../core/services/support_service.dart';
 import '../../core/theme/app_theme_service.dart';
+import '../../core/localization/app_locale_service.dart';
 
 class SupportChatScreen extends StatefulWidget {
   const SupportChatScreen({super.key});
@@ -61,7 +62,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل إرسال الرسالة')), // Failed to send message
+          SnackBar(
+              content: Text(tr('فشل إرسال الرسالة', 'Failed to send message'))),
         );
       }
     }
@@ -70,18 +72,21 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   @override
   Widget build(BuildContext context) {
     final supportService = context.watch<SupportService>();
+    context.watch<AppLocaleService>();
     final isGuest = context.watch<AuthService>().currentUser == null;
 
     if (isGuest) {
-       return Scaffold(
-          appBar: AppBar(title: const Text('الدعم')),
-          body: const Center(child: Text("يرجى تسجيل الدخول للتحدث مع الدعم")),
-       );
+      return Scaffold(
+        appBar: AppBar(title: Text(tr('الدعم', 'Support'))),
+        body: Center(
+            child: Text(tr('يرجى تسجيل الدخول للتحدث مع الدعم',
+                'Please log in to chat with support'))),
+      );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الدعم'), // Support
+        title: Text(tr('الدعم', 'Support')),
         elevation: 1,
       ),
       body: supportService.isLoading && supportService.messages.isEmpty
@@ -96,7 +101,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                     itemBuilder: (context, index) {
                       final message = supportService.messages[index];
                       final isMe = message.senderType == 'user';
-                      
+
                       return _buildMessageBubble(message, isMe);
                     },
                   ),
@@ -123,9 +128,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             bottomRight: isMe ? Radius.zero : const Radius.circular(16),
           ),
         ),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
@@ -139,7 +146,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             Text(
               DateFormat('HH:mm').format(message.createdAt),
               style: TextStyle(
-                color: isMe ? colors.textPrimary.withValues(alpha: 0.72) : colors.textSecondary,
+                color: isMe
+                    ? colors.textPrimary.withValues(alpha: 0.72)
+                    : colors.textSecondary,
                 fontSize: 10,
               ),
             ),
@@ -171,14 +180,15 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                 controller: _messageController,
                 textDirection: TextDirection.rtl,
                 decoration: InputDecoration(
-                  hintText: 'اكتب رسالتك...', // Type your message...
+                  hintText: tr('اكتب رسالتك...', 'Type your message...'),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
                   fillColor: colors.surfaceLight.withValues(alpha: 0.45),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
