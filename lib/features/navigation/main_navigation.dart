@@ -250,10 +250,13 @@ class _MainNavigationState extends State<MainNavigation>
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 280),
                       curve: Curves.easeOutCubic,
-                      left: (_currentIndex * itemWidth) + 9,
-                      top: 8,
-                      width: itemWidth - 18,
-                      height: 38,
+                      // Keep the visible highlight compact and identically
+                      // sized for every item while the full Expanded child
+                      // remains the touch target.
+                      left: (_currentIndex * itemWidth) + 13,
+                      top: 7,
+                      width: itemWidth - 26,
+                      height: 40,
                       child: _buildSlidingHighlight(premium),
                     ),
                     Row(
@@ -370,7 +373,7 @@ class _MainNavigationState extends State<MainNavigation>
             premium.surfacePrimary.withValues(alpha: .42),
           ],
         ),
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: premium.accentPrimary.withValues(alpha: .42),
           width: 1,
@@ -378,15 +381,15 @@ class _MainNavigationState extends State<MainNavigation>
         boxShadow: [
           BoxShadow(
             color: premium.accentPrimary.withValues(alpha: .14),
-            blurRadius: 13,
-            spreadRadius: -1,
-            offset: const Offset(0, 6),
+            blurRadius: 10,
+            spreadRadius: -2,
+            offset: Offset.zero,
           ),
           BoxShadow(
             color: premium.accentSoft.withValues(alpha: .08),
-            blurRadius: 22,
-            spreadRadius: 1,
-            offset: const Offset(0, -2),
+            blurRadius: 16,
+            spreadRadius: -3,
+            offset: Offset.zero,
           ),
         ],
       ),
