@@ -21,6 +21,7 @@ class AppThemeBackground extends StatelessWidget {
     final visuals = theme.visuals;
     final premium = PremiumDesignTokens.from(theme.config);
     final size = MediaQuery.sizeOf(context);
+    final isLight = theme.colors.background.computeLuminance() > .52;
 
     Widget glowLayer(ThemeGlow glow, double blurFactor, double spreadFactor) {
       return Positioned(
@@ -79,7 +80,11 @@ class AppThemeBackground extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: .22),
+                      // Keep the depth treatment neutral for light themes.
+                      // Tinting this layer with primaryDark made the legacy
+                      // maroon color bleed back in at the bottom of every
+                      // screen even after a new palette was selected.
+                      Colors.black.withValues(alpha: isLight ? .035 : .22),
                     ],
                     stops: const [.58, 1],
                   ),

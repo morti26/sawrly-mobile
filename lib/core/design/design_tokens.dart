@@ -296,37 +296,23 @@ class PremiumDesignTokens {
   factory PremiumDesignTokens.from(AppThemeConfig theme) {
     final c = theme.colors;
     final e = theme.effects;
-    // The reference establishes the luminance hierarchy. The live brand
-    // palette only tints these dark anchors, preventing bright admin colors
-    // from turning entire pages into solid pink/blue while retaining identity.
-    final backgroundTop = Color.alphaBlend(
-      c.primaryDark.withValues(alpha: .16),
-      const Color(0xFF200810),
-    );
-    final backgroundMiddle = Color.alphaBlend(
-      c.primary.withValues(alpha: .12),
-      const Color(0xFF3E0A1B),
-    );
-    final backgroundLower = Color.alphaBlend(
-      c.primaryDark.withValues(alpha: .10),
-      const Color(0xFF260711),
-    );
-    final backgroundDeep = Color.alphaBlend(
-      c.primaryDark.withValues(alpha: .05),
-      const Color(0xFF0D0509),
-    );
-    final surfacePrimary = Color.alphaBlend(
-      c.primary.withValues(alpha: .10),
-      const Color(0xFF180A10),
-    );
-    final surfaceSecondary = Color.alphaBlend(
-      c.primaryDark.withValues(alpha: .12),
-      const Color(0xFF35101A),
-    );
-    final surfaceElevated = Color.alphaBlend(
-      c.primary.withValues(alpha: .14),
-      const Color(0xFF531020),
-    );
+    final dna = theme.styleDNA;
+    // The resolved Theme Studio tokens are the source of truth. The previous
+    // implementation blended every preset over fixed Sawrly Noir anchors,
+    // leaving Ocean/Purple/Light themes visibly burgundy.
+    final backgroundTop = c.heroStart;
+    final backgroundMiddle = c.heroMid;
+    final backgroundLower = Color.lerp(c.heroMid, c.heroEnd, .58)!;
+    final backgroundDeep = c.heroEnd;
+    final surfacePrimary = c.surface;
+    final surfaceSecondary = theme.visuals.cardTint == Colors.transparent
+        ? c.surfaceLight
+        : theme.visuals.cardTint;
+    final surfaceElevated = c.surfaceLight;
+    final glassSurface = theme.visuals.navigationTint == Colors.transparent
+        ? c.menuBackground
+        : theme.visuals.navigationTint;
+    final isLight = c.background.computeLuminance() > .52;
 
     return PremiumDesignTokens._(
       backgroundTop: backgroundTop,
@@ -336,31 +322,33 @@ class PremiumDesignTokens {
       surfacePrimary: surfacePrimary,
       surfaceSecondary: surfaceSecondary,
       surfaceElevated: surfaceElevated,
-      glassSurface: Color.alphaBlend(
-        c.primary.withValues(alpha: .08),
-        const Color(0xFF250512),
-      ),
-      borderSubtle: Colors.white.withValues(
-        alpha: e.borderOpacity.clamp(.08, .13),
+      glassSurface: glassSurface,
+      borderSubtle: c.border.withValues(
+        alpha: (e.borderOpacity * (.9 + dna.contrast * .25)).clamp(.10, .42),
       ),
       borderHighlight: c.primaryLight.withValues(
         alpha: e.borderOpacity.clamp(.12, .20),
       ),
-      textPrimary: Colors.white.withValues(alpha: .98),
-      textSecondary: Colors.white.withValues(alpha: .70),
-      textMuted: Colors.white.withValues(alpha: .58),
-      accentPrimary: Color.lerp(c.primaryLight, const Color(0xFFFF326F), .72)!,
-      accentSoft: Color.lerp(c.accentPink, const Color(0xFFF0296B), .62)!,
+      textPrimary: c.textPrimary,
+      textSecondary: c.textSecondary,
+      textMuted: c.textTertiary,
+      accentPrimary: Color.lerp(
+          c.primary, c.primaryLight, dna.accentStrength.clamp(.12, .45))!,
+      accentSoft: Color.lerp(
+          c.primary, c.accentPink, dna.accentStrength.clamp(.12, .55))!,
       accentWarm: const Color(0xFFF4B63F),
       priceColor: const Color(0xFFFFC34A),
-      shadowColor: Color.alphaBlend(
-        c.primaryDark.withValues(alpha: .22),
-        Colors.black,
-      ),
-      radiusSmall: e.buttonRadius.clamp(10, 12),
-      radiusMedium: e.cardRadius.clamp(18, 22),
-      radiusLarge: (e.cardRadius + 6).clamp(20, 24),
-      radiusFloating: (e.cardRadius + 18).clamp(32, 40),
+      // A light palette should use a neutral shadow. Reusing primaryDark
+      // here allowed the legacy maroon tone to tint every card and elevated
+      // surface after the administrator selected a different theme.
+      shadowColor: isLight
+          ? Colors.black.withValues(alpha: .16)
+          : Color.alphaBlend(
+              c.primaryDark.withValues(alpha: .22), Colors.black),
+      radiusSmall: e.buttonRadius.clamp(8, 14),
+      radiusMedium: e.cardRadius.clamp(14, 26),
+      radiusLarge: (e.cardRadius + 6 * dna.radiusStyle).clamp(18, 28),
+      radiusFloating: (e.cardRadius + 18 * dna.radiusStyle).clamp(24, 44),
       cardShadowOpacity: e.cardShadowOpacity.clamp(.10, .18),
     );
   }

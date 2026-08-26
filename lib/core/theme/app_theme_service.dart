@@ -115,9 +115,10 @@ class AppThemeService extends ChangeNotifier with WidgetsBindingObserver {
     );
     _config = AppThemeConfig(
         colors: colors,
-        navIcons: _config.navIcons,
+        navIcons: parseRemoteNavIcons(raw['navIcons']),
         effects: effects,
-        visuals: parseRemoteVisuals(raw['visuals']));
+        visuals: parseRemoteVisuals(raw['visuals']),
+        styleDNA: parseRemoteStyleDNA(raw['styleDNA'], schemaVersion: raw['schemaVersion']));
     notifyListeners();
   }
 
@@ -157,11 +158,15 @@ class AppThemeService extends ChangeNotifier with WidgetsBindingObserver {
             parseRemoteEffects(theme is Map ? theme['effects'] : null);
         final visuals =
             parseRemoteVisuals(theme is Map ? theme['composerVisuals'] : null);
+        final styleDNA = parseRemoteStyleDNA(
+            theme is Map ? theme['styleDNA'] : null,
+            schemaVersion: theme is Map ? theme['schemaVersion'] : null);
         _config = AppThemeConfig(
             colors: colors,
             navIcons: navIcons,
             effects: effects,
-            visuals: visuals);
+            visuals: visuals,
+            styleDNA: styleDNA);
         _lastFetchAt = now;
         notifyListeners();
       }

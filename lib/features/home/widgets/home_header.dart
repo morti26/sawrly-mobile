@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/design/design_tokens.dart';
@@ -7,6 +8,7 @@ import '../../notifications/notification_screen.dart';
 import '../../support/support_chat_screen.dart';
 import '../../qa/feature_test_screen.dart';
 import '../../../core/services/media_service.dart';
+import '../../../core/localization/app_locale_service.dart';
 
 /// Camera logo built from pure Flutter widgets — no PNG, no white background, never black
 class CameraLogoWidget extends StatelessWidget {
@@ -204,7 +206,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'صورلي',
+                  tr('صورلي', 'Sawrly'),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -229,7 +231,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                     padding: EdgeInsets.zero,
                     constraints:
                         const BoxConstraints.tightFor(width: 30, height: 30),
-                    icon: Icon(Icons.fact_check_outlined,
+                    icon: Icon(PhosphorIconsRegular.checkSquare,
                         size: 20, color: iconColor),
                     tooltip: 'Testsida',
                   ),
@@ -246,7 +248,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                   padding: EdgeInsets.zero,
                   constraints:
                       const BoxConstraints.tightFor(width: 30, height: 30),
-                  icon: Icon(Icons.notifications_none,
+                  icon: Icon(PhosphorIconsRegular.bell,
                       size: 22, color: iconColor),
                 ),
                 const SizedBox(width: 10),
@@ -261,9 +263,9 @@ class _HomeHeaderState extends State<HomeHeader> {
                   padding: EdgeInsets.zero,
                   constraints:
                       const BoxConstraints.tightFor(width: 30, height: 30),
-                  icon: Icon(Icons.headset_mic_outlined,
+                  icon: Icon(PhosphorIconsRegular.headset,
                       size: 20, color: iconColor),
-                  tooltip: 'تحدث مع الدعم', // Chat with Support
+                  tooltip: tr('تحدث مع الدعم', 'Chat with support'),
                 ),
               ],
             ),

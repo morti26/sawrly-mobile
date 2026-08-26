@@ -194,17 +194,42 @@ class RemoteThemeEffects {
   }
 }
 
+/// Versioned Style DNA sent by Theme Studio. Defaults preserve v1 themes.
+class RemoteStyleDNA {
+  final int schemaVersion;
+  final double darkness;
+  final double contrast;
+  final double accentStrength;
+  final double glassStrength;
+  final double ambientLight;
+  final double vignetteStrength;
+  final double radiusStyle;
+
+  const RemoteStyleDNA({
+    this.schemaVersion = 1,
+    this.darkness = .82,
+    this.contrast = .74,
+    this.accentStrength = .18,
+    this.glassStrength = .54,
+    this.ambientLight = .18,
+    this.vignetteStrength = .22,
+    this.radiusStyle = .72,
+  });
+}
+
 class AppThemeConfig {
   final RemoteThemeColors colors;
   final RemoteNavIcons navIcons;
   final RemoteThemeEffects effects;
   final RemoteThemeVisuals visuals;
+  final RemoteStyleDNA styleDNA;
 
   const AppThemeConfig({
     required this.colors,
     required this.navIcons,
     required this.effects,
     this.visuals = const RemoteThemeVisuals(),
+    this.styleDNA = const RemoteStyleDNA(),
   });
 }
 
@@ -248,8 +273,23 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final primaryLight = maybe('primaryLight');
   final primaryDark = maybe('primaryDark');
 
-  final hasCustomPrimary =
-      primary != null || primaryLight != null || primaryDark != null;
+  // A theme can be sent with a complete surface/background palette while
+  // omitting one of the optional legacy keys. Treat those values as a custom
+  // palette too; otherwise all derived colors silently fall back to the old
+  // maroon defaults.
+  final hasCustomPalette = <String>[
+    'primary',
+    'primaryLight',
+    'primaryDark',
+    'accentPink',
+    'background',
+    'surface',
+    'surfaceLight',
+    'menuBackground',
+    'heroStart',
+    'heroMid',
+    'heroEnd',
+  ].any((key) => maybe(key) != null);
   final effectivePrimary = primary ?? defaults.primary;
   final effectivePrimaryLight =
       primaryLight ?? _lighten(effectivePrimary, 0.18);
@@ -262,7 +302,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveBackground;
   if (maybe('background') case final bg?) {
     effectiveBackground = bg;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveBackground = _darken(_desaturate(effectivePrimary, 0.35), 0.45);
   } else {
     effectiveBackground = defaults.background;
@@ -271,7 +311,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveSurface;
   if (maybe('surface') case final s?) {
     effectiveSurface = s;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveSurface = _lighten(effectiveBackground, 0.12);
   } else {
     effectiveSurface = defaults.surface;
@@ -280,7 +320,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveSurfaceLight;
   if (maybe('surfaceLight') case final sl?) {
     effectiveSurfaceLight = sl;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveSurfaceLight = _lighten(effectiveSurface, 0.12);
   } else {
     effectiveSurfaceLight = defaults.surfaceLight;
@@ -289,7 +329,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveMenuBackground;
   if (maybe('menuBackground') case final mb?) {
     effectiveMenuBackground = mb;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveMenuBackground = _darken(effectiveBackground, 0.06);
   } else {
     effectiveMenuBackground = defaults.menuBackground;
@@ -297,11 +337,11 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
 
   final effectiveTextPrimary = maybe('textPrimary') ?? defaults.textPrimary;
   final effectiveTextSecondary = maybe('textSecondary') ??
-      (hasCustomPrimary
+      (hasCustomPalette
           ? effectiveTextPrimary.withValues(alpha: 0.72)
           : defaults.textSecondary);
   final effectiveTextTertiary = maybe('textTertiary') ??
-      (hasCustomPrimary
+      (hasCustomPalette
           ? effectiveTextPrimary.withValues(alpha: 0.48)
           : defaults.textTertiary);
   final effectiveSuccess = maybe('success') ?? defaults.success;
@@ -312,7 +352,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveBorder;
   if (maybe('border') case final b?) {
     effectiveBorder = b;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveBorder = _lighten(_desaturate(effectivePrimaryDark, 0.2), 0.08);
   } else {
     effectiveBorder = defaults.border;
@@ -321,7 +361,7 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
   final Color effectiveBorderLight;
   if (maybe('borderLight') case final bl?) {
     effectiveBorderLight = bl;
-  } else if (hasCustomPrimary) {
+  } else if (hasCustomPalette) {
     effectiveBorderLight = _lighten(effectiveBorder, 0.18);
   } else {
     effectiveBorderLight = defaults.borderLight;
@@ -346,8 +386,20 @@ RemoteThemeColors parseRemoteColors(dynamic raw) {
     border: effectiveBorder,
     borderLight: effectiveBorderLight,
     heroStart: maybe('heroStart') ?? effectiveBackground,
-    heroMid: maybe('heroMid') ?? effectivePrimaryDark,
-    heroEnd: maybe('heroEnd') ?? effectiveAccentPink,
+    // Do not use the historical maroon primaryDark/accent fallback for a
+    // palette that supplied its own surfaces. The hero must be derived from
+    // the same background/surface family so a light/blue/green theme cannot
+    // retain a red-brown band in the app background.
+    heroMid: maybe('heroMid') ??
+        (hasCustomPalette
+            ? Color.lerp(effectiveBackground, effectiveSurfaceLight, .5)!
+            : effectivePrimaryDark),
+    heroEnd: maybe('heroEnd') ??
+        (hasCustomPalette
+            ? (effectiveBackground.computeLuminance() > .52
+                ? Color.lerp(effectiveBackground, effectiveSurface, .35)!
+                : _darken(effectiveBackground, .18))
+            : effectiveAccentPink),
   );
 }
 
@@ -967,6 +1019,23 @@ RemoteThemeVisuals parseRemoteVisuals(dynamic raw) {
       vignetteEnabled: vignette['enabled'] == true,
       vignetteStrength:
           _parseDouble(vignette['strength'], 0.0, min: 0, max: .3));
+}
+
+RemoteStyleDNA parseRemoteStyleDNA(dynamic raw, {dynamic schemaVersion}) {
+  if (raw is! Map) return const RemoteStyleDNA();
+  final map = Map<String, dynamic>.from(raw);
+  double pick(String key, double fallback) =>
+      _parseDouble(map[key], fallback, min: 0, max: 1);
+  return RemoteStyleDNA(
+    schemaVersion: schemaVersion is num ? schemaVersion.toInt() : 1,
+    darkness: pick('darkness', .82),
+    contrast: pick('contrast', .74),
+    accentStrength: pick('accentStrength', .18),
+    glassStrength: pick('glassStrength', .54),
+    ambientLight: pick('ambientLight', .18),
+    vignetteStrength: pick('vignetteStrength', .22),
+    radiusStyle: pick('radiusStyle', .72),
+  );
 }
 
 List<ThemeGlow> listFrom(dynamic value) => value is List

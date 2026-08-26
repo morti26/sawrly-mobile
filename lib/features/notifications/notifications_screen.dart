@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fotgraf_mobile/models/notification_item.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme_service.dart';
+import '../../core/localization/app_locale_service.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -9,20 +10,21 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.watch<AppThemeService>().colors;
+    context.watch<AppLocaleService>();
     // Mock Data
     final notifications = [
       NotificationItem(
         id: '1',
-        title: 'طلب حجز جديد',
-        message: 'طلب علي سعراً لباقة حفل زفاف',
+        title: tr('طلب حجز جديد', 'New booking request'),
+        message: tr('طلب علي سعراً لباقة حفل زفاف', 'Ali requested a quote for a wedding package'),
         timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
         isRead: false,
         type: 'booking',
       ),
       NotificationItem(
         id: '2',
-        title: 'تمت الموافقة على المشروع',
-        message: 'تم قبول مشروع تصميم الشعار من قبل العميل',
+        title: tr('تمت الموافقة على المشروع', 'Project approved'),
+        message: tr('تم قبول مشروع تصميم الشعار من قبل العميل', 'The logo design project was accepted by the client'),
         timestamp: DateTime.now().subtract(const Duration(hours: 2)),
         isRead: true,
         type: 'approval',
@@ -31,7 +33,7 @@ class NotificationsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الإشعارات'),
+        title: Text(tr('الإشعارات', 'Notifications')),
       ),
       body: ListView.separated(
         itemCount: notifications.length,

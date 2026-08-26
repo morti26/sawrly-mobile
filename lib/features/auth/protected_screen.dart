@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_service.dart';
 import 'login_sheet.dart';
+import '../../core/localization/app_locale_service.dart';
+import '../../core/localization/app_strings.dart';
 
 class ProtectedScreen extends StatelessWidget {
   final Widget child;
@@ -16,6 +18,12 @@ class ProtectedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    context.watch<AppLocaleService>();
+    final localizedTitle = switch (title) {
+      'حجوزاتي' => AppStrings.bookings,
+      'البروفايل' => AppStrings.profile,
+      _ => tr(title, title),
+    };
 
     if (auth.isAuthenticated) {
       return child;
@@ -23,7 +31,7 @@ class ProtectedScreen extends StatelessWidget {
 
     // Not authenticated -> Show Login Prompt
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(localizedTitle)),
       body: Center(
         child: SingleChildScrollView(
           child: Column(
@@ -31,14 +39,14 @@ class ProtectedScreen extends StatelessWidget {
             children: [
               const Icon(Icons.lock_outline, size: 80, color: Colors.grey),
               const SizedBox(height: 16),
-              const Text(
-                'يجب تسجيل الدخول', // Must login
+              Text(
+                tr('يجب تسجيل الدخول', 'Please log in'),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
                 child: Text(
-                  'يرجى تسجيل الدخول أو إنشاء حساب جديد للوصول إلى هذه الصفحة', // Please login or register to access this page
+                  tr('يرجى تسجيل الدخول أو إنشاء حساب جديد للوصول إلى هذه الصفحة', 'Please log in or create an account to access this page'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
@@ -54,7 +62,7 @@ class ProtectedScreen extends StatelessWidget {
                     builder: (_) => const LoginSheet(),
                   );
                 },
-                child: const Text('دخول / تسجيل جديد'), // Login / New Register
+                child: Text(tr('دخول / تسجيل جديد', 'Log in / Register')),
               ),
             ],
           ),

@@ -17,6 +17,7 @@ import '../home/offer_details_screen.dart';
 import 'edit_profile_screen.dart';
 import 'profile_settings_screen.dart';
 import 'create_offer_screen.dart';
+import '../../core/localization/app_locale_service.dart';
 
 // Used by runtime debug evidence logging below.
 String? _debugLastNormalizedUrl;
@@ -52,6 +53,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   bool _isFollowing = false;
   int _badgeReloadTick = 0;
   String? _badgeReloadStatus;
+  double? _uploadBubbleLeft;
+  double? _uploadBubbleTop;
 
   @override
   void initState() {
@@ -174,7 +177,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   void _showProfileReportDialog(User user) {
     showReportDialog(
       context: context,
-      title: 'الإبلاغ عن الحساب',
+      title: tr('الإبلاغ عن الحساب', 'Report account'),
       onSubmit: (reason, details) {
         return context.read<MediaService>().reportContent(
               targetType: 'profile',
@@ -193,12 +196,12 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     await showDialog<void>(
       context: screenContext,
       builder: (context) => AlertDialog(
-        title: const Text("اشتراك مطلوب", textAlign: TextAlign.right),
+        title: Text(tr('اشتراك مطلوب', 'Subscription required'), textAlign: TextAlign.right),
         content: Text(message, textAlign: TextAlign.right),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("موافق"),
+            child: Text(tr('موافق', 'OK')),
           ),
         ],
       ),
@@ -584,6 +587,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<AppThemeService>();
+    context.watch<AppLocaleService>();
     final colors = theme.colors;
     final authService = context.watch<AuthService>();
     final currentUser = authService.currentUser;
@@ -605,11 +609,11 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     final List<Widget> tabViews;
 
     if (isCreator) {
-      tabs = const [
-        Tab(text: "إعلاناتي"),
-        Tab(text: "الصور"),
-        Tab(text: "الفيديوهات"),
-        Tab(text: "الجدول"),
+      tabs = [
+        Tab(text: tr('إعلاناتي', 'My offers')),
+        Tab(text: tr('الصور', 'Photos')),
+        Tab(text: tr('الفيديوهات', 'Videos')),
+        Tab(text: tr('الجدول', 'Schedule')),
       ];
       tabViews = [
         Align(
@@ -642,9 +646,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                 refreshToken: _mediaReloadTick)),
       ];
     } else {
-      tabs = const [
-        Tab(text: "مشترياتي"),
-        Tab(text: "محفوظات"),
+      tabs = [
+        Tab(text: tr('مشترياتي', 'Purchased')),
+        Tab(text: tr('محفوظات', 'Saved')),
       ];
       tabViews = [
         Align(
@@ -674,8 +678,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
     final bio = displayUser.bio ??
         (isCreator
-            ? "مصور ومخرج سينمائي مقيم في بغداد. متخصص في حفلات الزفاف والإعلانات التجارية."
-            : "عاشق للتصوير الفوتوغرافي.");
+            ? tr("مصور ومخرج سينمائي مقيم في بغداد. متخصص في حفلات الزفاف والإعلانات التجارية.", 'A filmmaker and photographer based in Baghdad, specializing in weddings and commercial advertising.')
+            : tr("عاشق للتصوير الفوتوغرافي.", 'Photography enthusiast.'));
     final serviceAreaParts = [
       if ((displayUser.city ?? '').trim().isNotEmpty) displayUser.city!.trim(),
       if ((displayUser.country ?? '').trim().isNotEmpty)
@@ -732,7 +736,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: Icon(Icons.settings, color: colors.textPrimary),
+                icon: Icon(Icons.edit_square, color: colors.textPrimary),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -768,8 +772,13 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             )
         ],
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewPadding.bottom + 96,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -855,27 +864,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        if ((displayUser.gender ?? '')
-                                                .trim()
-                                                .toLowerCase() ==
-                                            'male')
-                                          Icon(Icons.male,
-                                              color: colors.primary, size: 20)
-                                        else if ((displayUser.gender ?? '')
-                                                .trim()
-                                                .toLowerCase() ==
-                                            'female')
-                                          Icon(Icons.female,
-                                              color: colors.accentPink,
-                                              size: 20),
-                                        if (displayUser.role ==
-                                            UserRole.creator)
-                                          const SizedBox(width: 6),
-                                        if (displayUser.role ==
-                                            UserRole.creator)
-                                          Icon(Icons.verified,
-                                              color: colors.info, size: 20),
                                       ],
                                     ),
                                   ),
@@ -892,13 +880,30 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                                       (displayUser.creatorLevelIcon ?? '')
                                           .trim()
                                           .isNotEmpty) ||
-                                  displayUser.isSuperadmin) ...[
+                                  displayUser.isSuperadmin ||
+                                  displayUser.role == UserRole.creator ||
+                                  (displayUser.gender ?? '').trim().isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
                                   children: [
-                                    if (displayUser.role == UserRole.creator &&
+                                    if ((displayUser.gender ?? '')
+                                            .trim()
+                                            .toLowerCase() ==
+                                        'male')
+                                      Icon(Icons.male,
+                                          color: colors.primary, size: 20)
+                                    else if ((displayUser.gender ?? '')
+                                            .trim()
+                                            .toLowerCase() ==
+                                        'female')
+                                      Icon(Icons.female,
+                                          color: colors.accentPink, size: 20),
+                                    if (displayUser.role == UserRole.creator)
+                                      Icon(Icons.verified,
+                                          color: colors.info, size: 20),
+                                    if (false && displayUser.role == UserRole.creator &&
                                         (displayUser.creatorLevelName ?? '')
                                             .trim()
                                             .isNotEmpty &&
@@ -954,13 +959,13 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildStatItem("متابعون", _followersCount.toString()),
-                          _buildStatItem("متابع", _followingCount.toString()),
+                          _buildStatItem(tr("متابعون", 'Followers'), _followersCount.toString()),
+                          _buildStatItem(tr("متابع", 'Following'), _followingCount.toString()),
                         ],
                       ),
                     const SizedBox(height: 20),
                   ],
-                  const Text("نبذة تعريفية",
+                  Text(tr("نبذة تعريفية", 'Bio'),
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 8),
@@ -969,8 +974,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                           TextStyle(color: colors.textTertiary, height: 1.4)),
                   if (serviceAreaLabel.isNotEmpty) ...[
                     const SizedBox(height: 14),
-                    const Text(
-                      "نطاق الخدمة",
+                    Text(
+                      tr("نطاق الخدمة", 'Service area'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -1055,7 +1060,51 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
             const SizedBox(height: 40),
           ],
         ),
+        ),
+          if (showUpload)
+            Positioned(
+              left: _uploadBubbleLeft ?? 16,
+              top: _uploadBubbleTop ?? 100,
+              child: GestureDetector(
+                onPanUpdate: (details) {
+                  final size = MediaQuery.sizeOf(context);
+                  setState(() {
+                    _uploadBubbleLeft = ((_uploadBubbleLeft ?? 16) + details.delta.dx)
+                        .clamp(8.0, size.width - 44.0);
+                    _uploadBubbleTop = ((_uploadBubbleTop ?? 100) + details.delta.dy)
+                        .clamp(8.0, size.height - 100.0);
+                  });
+                },
+                child: _buildUploadBubble(colors, theme.config),
+              ),
+            ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildUploadBubble(dynamic colors, dynamic config) {
+    return GestureDetector(
+      onTap: _handleUpload,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: config.effects.primaryGradient(
+              colors.primary, colors.primaryDark),
+          boxShadow: [
+            BoxShadow(
+              color: colors.primary.withValues(alpha: 0.22),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(Icons.add_rounded, color: colors.textPrimary, size: 18),
+          ),
+        ),
     );
   }
 
@@ -1067,7 +1116,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
     VoidCallback? onUpload,
     required List<Widget> tabs,
   }) {
-    const double uploadSlotWidth = 48;
     return Container(
       color: colors.background,
       child: Column(
@@ -1078,8 +1126,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: uploadSlotWidth,
-                  child: showUpload
+                  width: 0,
+                  child: false
                       ? Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2.0),
                           child: DecoratedBox(
@@ -1111,7 +1159,6 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                         )
                       : const SizedBox.shrink(),
                 ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: TabBar(
                     controller: controller,

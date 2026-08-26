@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/design/design_tokens.dart';
+import '../../core/localization/app_locale_service.dart';
 import 'register_sheet.dart';
 
 class LoginSheet extends StatefulWidget {
@@ -21,6 +22,7 @@ class _LoginSheetState extends State<LoginSheet> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    context.watch<AppLocaleService>();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -36,31 +38,35 @@ class _LoginSheetState extends State<LoginSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'تسجيل الدخول', // Login
+              tr('تسجيل الدخول', 'Log in'),
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             TextFormField(
               controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'البريد الإلكتروني', // Email
+              decoration: InputDecoration(
+                labelText: tr('البريد الإلكتروني', 'Email'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.email),
               ),
               keyboardType: TextInputType.emailAddress,
-              validator: (value) => value?.isEmpty ?? true ? 'الرجاء إدخال البريد الإلكتروني' : null,
+              validator: (value) => value?.isEmpty ?? true
+                  ? tr('الرجاء إدخال البريد الإلكتروني', 'Please enter your email')
+                  : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'كلمة المرور', // Password
+              decoration: InputDecoration(
+                labelText: tr('كلمة المرور', 'Password'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.lock),
               ),
               obscureText: true,
-              validator: (value) => value?.isEmpty ?? true ? 'الرجاء إدخال كلمة المرور' : null,
+              validator: (value) => value?.isEmpty ?? true
+                  ? tr('الرجاء إدخال كلمة المرور', 'Please enter your password')
+                  : null,
             ),
             if (auth.error != null) ...[
               const SizedBox(height: 16),
@@ -78,7 +84,7 @@ class _LoginSheetState extends State<LoginSheet> {
               ),
               child: auth.isLoading 
                 ? const CircularProgressIndicator()
-                : const Text('دخول'), // Enter
+                : Text(tr('دخول', 'Log in')),
             ),
             const SizedBox(height: 16),
             TextButton(
@@ -90,7 +96,7 @@ class _LoginSheetState extends State<LoginSheet> {
                   builder: (_) => RegisterSheet(onSuccess: widget.onSuccess),
                 );
               },
-              child: const Text('ليس لديك حساب؟ إنشاء حساب جديد'), // No account? Register
+              child: Text(tr('ليس لديك حساب؟ إنشاء حساب جديد', 'No account? Create one')),
             ),
             const SizedBox(height: 24),
           ],

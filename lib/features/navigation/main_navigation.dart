@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import '../../core/design/design_tokens.dart';
 import '../../core/theme/app_theme_config.dart';
 import '../../core/theme/app_theme_service.dart';
+import '../../core/localization/app_locale_service.dart';
+import '../../core/localization/app_strings.dart';
 import '../auth/protected_screen.dart';
 import '../categories/categories_screen.dart';
 import '../home/home_screen.dart';
@@ -47,28 +49,28 @@ class _MainNavigationState extends State<MainNavigation>
     PhosphorIconsRegular.house,
     PhosphorIconsRegular.magnifyingGlass,
     PhosphorIconsRegular.squaresFour,
-    PhosphorIconsRegular.shoppingBag,
-    PhosphorIconsRegular.user,
+    PhosphorIconsRegular.calendarBlank,
+    PhosphorIconsRegular.person,
   ];
 
-  final List<IconData> _webIcons = [
-    Icons.home_outlined,
-    Icons.search_rounded,
-    Icons.grid_view_rounded,
-    Icons.shopping_bag_outlined,
-    Icons.person_outline_rounded,
+  final List<IconData> _activeIcons = [
+    PhosphorIconsFill.house,
+    PhosphorIconsFill.magnifyingGlass,
+    PhosphorIconsFill.squaresFour,
+    PhosphorIconsFill.calendarBlank,
+    PhosphorIconsFill.person,
   ];
 
-  final List<String> _labels = const [
-    '\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629',
-    '\u0628\u062d\u062b',
-    '\u0627\u0644\u0623\u0642\u0633\u0627\u0645',
-    '\u062d\u062c\u0648\u0632\u0627\u062a\u064a',
-    '\u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644',
-  ];
+  List<String> get _labels => [
+        AppStrings.home,
+        AppStrings.search,
+        AppStrings.categories,
+        AppStrings.bookings,
+        AppStrings.profile,
+      ];
 
-  IconData _fallbackIcon(int index) =>
-      kIsWeb ? _webIcons[index] : _icons[index];
+  IconData _fallbackIcon(int index, {required bool active}) =>
+      active ? _activeIcons[index] : _icons[index];
 
   String? _navIconUrlForIndex(RemoteNavIcons navIcons, int index,
       {required bool active}) {
@@ -124,7 +126,6 @@ class _MainNavigationState extends State<MainNavigation>
 
   IconData? _resolveNavIcon(RemoteNavIcons navIcons, int index,
       {required bool active}) {
-    if (kIsWeb) return null;
     final rawId = _navIconIdForIndex(navIcons, index, active: active);
     if (rawId == null) return null;
     final parsed = parsePhosphorIconId(rawId);
@@ -170,6 +171,8 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   Widget build(BuildContext context) {
+    // Watching the locale makes the labels and direction update immediately.
+    context.watch<AppLocaleService>();
     return Consumer<AppThemeService>(
       builder: (context, themeService, child) {
         final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
@@ -199,46 +202,72 @@ class _MainNavigationState extends State<MainNavigation>
   /// only its material treatment follows the active premium theme.
   Widget _buildVersionNineNavBar(AppThemeService theme) {
     final premium = PremiumDesignTokens.from(theme.config);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(premium.radiusFloating),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-        child: Container(
-          height: 54,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color.alphaBlend(
-                  Colors.white.withValues(alpha: .18),
-                  premium.glassSurface,
-                ).withValues(alpha: .38),
-                Color.alphaBlend(
-                  Colors.white.withValues(alpha: .08),
-                  premium.backgroundDeep,
-                ).withValues(alpha: .24),
+    // Keep the original bottom-menu geometry and ordering regardless of the
+    // selected app language. Only the labels are localized.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(premium.radiusFloating),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+          child: Container(
+            height: 54,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color.alphaBlend(
+                    Colors.white.withValues(alpha: .18),
+                    premium.glassSurface,
+                  ).withValues(alpha: .38),
+                  Color.alphaBlend(
+                    Colors.white.withValues(alpha: .08),
+                    premium.backgroundDeep,
+                  ).withValues(alpha: .24),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(premium.radiusFloating),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: .13),
+                width: .8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: premium.shadowColor.withValues(alpha: .12),
+                  blurRadius: 14,
+                  spreadRadius: -5,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
-            borderRadius: BorderRadius.circular(premium.radiusFloating),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: .13),
-              width: .8,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: premium.shadowColor.withValues(alpha: .12),
-                blurRadius: 14,
-                spreadRadius: -5,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(
-              _icons.length,
-              (index) => _buildVersionNineItem(theme, index),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final itemWidth = constraints.maxWidth / _icons.length;
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeOutCubic,
+                      // Keep the visible highlight compact and identically
+                      // sized for every item while the full Expanded child
+                      // remains the touch target.
+                      left: (_currentIndex * itemWidth) + 13,
+                      top: 7,
+                      width: itemWidth - 26,
+                      height: 40,
+                      child: _buildSlidingHighlight(premium),
+                    ),
+                    Row(
+                      children: List.generate(
+                        _icons.length,
+                        (index) => _buildVersionNineItem(theme, index),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -282,32 +311,32 @@ class _MainNavigationState extends State<MainNavigation>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 340),
-                        switchInCurve: Curves.easeOutBack,
+                        duration: const Duration(milliseconds: 220),
+                        switchInCurve: Curves.easeOutCubic,
                         switchOutCurve: Curves.easeInCubic,
                         transitionBuilder: (child, animation) => FadeTransition(
                           opacity: animation,
                           child: ScaleTransition(
-                            scale: Tween<double>(begin: .72, end: 1)
+                            scale: Tween<double>(begin: .82, end: 1)
                                 .animate(animation),
                             child: child,
                           ),
                         ),
-                        child: isActive
-                            ? KeyedSubtree(
-                                key: ValueKey('active-$index'),
-                                child:
-                                    _buildVersionNineActiveIcon(theme, index),
-                              )
-                            : KeyedSubtree(
-                                key: ValueKey('inactive-$index'),
-                                child:
-                                    _buildVersionNineInactiveIcon(theme, index),
-                              ),
+                        child: SizedBox(
+                          key: ValueKey(
+                              '${isActive ? 'filled' : 'outline'}-$index'),
+                          width: 27,
+                          height: 27,
+                          child: Center(
+                            child:
+                                _buildMenuGlyph(theme, index, active: isActive),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 1),
                       Text(
                         label,
+                        textAlign: index == 0 ? TextAlign.center : null,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -331,11 +360,8 @@ class _MainNavigationState extends State<MainNavigation>
     );
   }
 
-  Widget _buildVersionNineActiveIcon(AppThemeService theme, int index) {
-    final premium = PremiumDesignTokens.from(theme.config);
-    return Container(
-      width: 32,
-      height: 32,
+  Widget _buildSlidingHighlight(PremiumDesignTokens premium) {
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -347,7 +373,7 @@ class _MainNavigationState extends State<MainNavigation>
             premium.surfacePrimary.withValues(alpha: .42),
           ],
         ),
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: premium.accentPrimary.withValues(alpha: .42),
           width: 1,
@@ -355,55 +381,18 @@ class _MainNavigationState extends State<MainNavigation>
         boxShadow: [
           BoxShadow(
             color: premium.accentPrimary.withValues(alpha: .14),
-            blurRadius: 13,
-            spreadRadius: -1,
-            offset: const Offset(0, 6),
+            blurRadius: 10,
+            spreadRadius: -2,
+            offset: Offset.zero,
           ),
           BoxShadow(
             color: premium.accentSoft.withValues(alpha: .08),
-            blurRadius: 22,
-            spreadRadius: 1,
-            offset: const Offset(-2, -2),
+            blurRadius: 16,
+            spreadRadius: -3,
+            offset: Offset.zero,
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned(
-                left: 6,
-                right: 10,
-                top: 3,
-                child: Container(
-                  height: 7,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(99),
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: .24),
-                        Colors.white.withValues(alpha: .02),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              _buildMenuGlyph(theme, index, active: true),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVersionNineInactiveIcon(AppThemeService theme, int index) {
-    return SizedBox(
-      width: 25,
-      height: 25,
-      child: Center(child: _buildMenuGlyph(theme, index, active: false)),
     );
   }
 
@@ -414,6 +403,17 @@ class _MainNavigationState extends State<MainNavigation>
         ? premium.accentPrimary
         : premium.textPrimary.withValues(alpha: .68);
     final size = active ? 23.0 : 22.0;
+
+    // The profile reference uses a small, detached head over a single curved
+    // shoulder line rather than a large person silhouette.
+    if (index == 4) {
+      return _ProfileGlyph(
+        color: color,
+        active: active,
+        size: size,
+      );
+    }
+
     final navIcons = theme.navIcons;
     final customUrl = _navIconUrlForIndex(navIcons, index, active: active);
     final resolvedUrl =
@@ -430,10 +430,75 @@ class _MainNavigationState extends State<MainNavigation>
         height: 22,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
-        errorBuilder: (_, __, ___) =>
-            Icon(_fallbackIcon(index), color: color, size: size),
+        errorBuilder: (_, __, ___) => Icon(_fallbackIcon(index, active: active),
+            color: color, size: size),
       );
     }
-    return Icon(_fallbackIcon(index), color: color, size: size);
+    return Icon(_fallbackIcon(index, active: active), color: color, size: size);
   }
+}
+
+class _ProfileGlyph extends StatelessWidget {
+  final Color color;
+  final bool active;
+  final double size;
+
+  const _ProfileGlyph({
+    required this.color,
+    required this.active,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _ProfileGlyphPainter(color: color, active: active),
+      ),
+    );
+  }
+}
+
+class _ProfileGlyphPainter extends CustomPainter {
+  final Color color;
+  final bool active;
+
+  const _ProfileGlyphPainter({required this.color, required this.active});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final headPaint = Paint()
+      ..color = color
+      ..style = active ? PaintingStyle.fill : PaintingStyle.stroke
+      ..strokeWidth = active ? 1.6 : 1.45
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+
+    final center = Offset(size.width * .5, size.height * .28);
+    canvas.drawCircle(center, size.width * .17, headPaint);
+
+    final shoulderPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = active ? 2.2 : 1.65
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+    final shoulders = Path()
+      ..moveTo(size.width * .18, size.height * .84)
+      ..cubicTo(
+        size.width * .25,
+        size.height * .62,
+        size.width * .75,
+        size.height * .62,
+        size.width * .82,
+        size.height * .84,
+      );
+    canvas.drawPath(shoulders, shoulderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProfileGlyphPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.active != active;
 }

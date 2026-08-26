@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/design/design_tokens.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/localization/app_locale_service.dart';
 
 class RegisterSheet extends StatefulWidget {
   final VoidCallback? onSuccess;
@@ -23,6 +24,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    context.watch<AppLocaleService>();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -39,36 +41,38 @@ class _RegisterSheetState extends State<RegisterSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'إنشاء حساب جديد',
+                tr('إنشاء حساب جديد', 'Create a new account'),
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'الاسم الكامل',
+                decoration: InputDecoration(
+                  labelText: tr('الاسم الكامل', 'Full name'),
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person),
                 ),
                 validator: (value) =>
-                    value?.isEmpty ?? true ? 'الرجاء إدخال الاسم' : null,
+                    value?.isEmpty ?? true
+                        ? tr('الرجاء إدخال الاسم', 'Please enter your name')
+                        : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'البريد الإلكتروني',
+                decoration: InputDecoration(
+                  labelText: tr('البريد الإلكتروني', 'Email'),
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.email),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال البريد الإلكتروني';
+                    return tr('الرجاء إدخال البريد الإلكتروني', 'Please enter your email');
                   }
                   if (!value.contains('@')) {
-                    return 'البريد الإلكتروني غير صحيح';
+                    return tr('البريد الإلكتروني غير صحيح', 'Invalid email address');
                   }
                   return null;
                 },
@@ -76,14 +80,14 @@ class _RegisterSheetState extends State<RegisterSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'كلمة المرور',
+                decoration: InputDecoration(
+                  labelText: tr('كلمة المرور', 'Password'),
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.lock),
                 ),
                 obscureText: true,
                 validator: (value) => value?.isEmpty ?? true
-                    ? 'الرجاء إدخال كلمة المرور'
+                    ? tr('الرجاء إدخال كلمة المرور', 'Please enter your password')
                     : null,
               ),
               if (auth.error != null) ...[
@@ -96,9 +100,10 @@ class _RegisterSheetState extends State<RegisterSheet> {
               ],
               const SizedBox(height: 12),
               CheckboxListTile(
-                title: const Text('تسجيل كصانع محتوى'),
-                subtitle:
-                    const Text('حدد هذا الخيار إذا كنت تريد تقديم خدماتك داخل التطبيق'),
+                title: Text(tr('تسجيل كصانع محتوى', 'Register as a creator')),
+                subtitle: Text(tr(
+                    'حدد هذا الخيار إذا كنت تريد تقديم خدماتك داخل التطبيق',
+                    'Select this if you want to offer services in the app')),
                 value: _isCreator,
                 onChanged: (val) {
                   setState(() {
@@ -116,14 +121,14 @@ class _RegisterSheetState extends State<RegisterSheet> {
                 ),
                 child: auth.isLoading
                     ? const CircularProgressIndicator()
-                    : const Text('تسجيل حساب'),
+                    : Text(tr('تسجيل حساب', 'Create account')),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: const Text('لديك حساب بالفعل؟ تسجيل الدخول'),
+                child: Text(tr('لديك حساب بالفعل؟ تسجيل الدخول', 'Already have an account? Log in')),
               ),
               const SizedBox(height: 24),
             ],
@@ -140,8 +145,8 @@ class _RegisterSheetState extends State<RegisterSheet> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       debugPrint('Register form validation failed.');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الرجاء التحقق من الحقول المطلوبة'),
+        SnackBar(
+          content: Text(tr('الرجاء التحقق من الحقول المطلوبة', 'Please check the required fields')),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -177,7 +182,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
       Navigator.pop(context);
       widget.onSuccess?.call();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم إنشاء الحساب بنجاح')),
+        SnackBar(content: Text(tr('تم إنشاء الحساب بنجاح', 'Account created successfully'))),
       );
       return;
     }
@@ -185,7 +190,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
     debugPrint('Registration failed: ${authService.error}');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(authService.error ?? 'فشل إنشاء الحساب'),
+        content: Text(authService.error ?? tr('فشل إنشاء الحساب', 'Account creation failed')),
         backgroundColor: AppColors.error,
         duration: const Duration(seconds: 4),
       ),
